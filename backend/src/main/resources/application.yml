@@ -1,0 +1,19 @@
+spring:
+  application:
+    name: beauty-ecommerce
+  datasource:
+    url: jdbc:mysql://localhost:3306/beauty_ecommerce?createDatabaseIfNotExist=true&useSSL=false&serverTimezone=UTC
+    username: root
+    password: password
+    driver-class-name: com.mysql.cj.jdbc.Driver
+  jpa:
+    hibernate:
+      ddl-auto: update
+    show-sql: true
+    properties:
+      hibernate:
+        format_sql: true
+        dialect: org.hibernate.dialect.MySQLDialect
+
+server:
+  port: 8080
