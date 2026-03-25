@@ -91,4 +91,4 @@ CREATE TABLE IF NOT EXISTS refresh_tokens (
 
 -- Insert default admin user (password: admin123 - BCrypt encoded)
 INSERT IGNORE INTO users (email, password, full_name, role, created_at)
-VALUES ('admin@beauty.com', '$2a$10$N9qo8uLOickgx2ZMRZoMyeIjZAgcfl7p92ldGxad68LJZdL17lhWy', 'Admin', 'ADMIN', NOW());
+VALUES ('admin@beauty.com', '$2a$10$oSkrd55wSMEt1fdFMbyfT.SXcqejjgLCfdY.B12BTTkTVvgZGhwYi', 'Admin', 'ADMIN', NOW());

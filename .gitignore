@@ -1,22 +1,25 @@
-# Java
+# OS
+.DS_Store
+Thumbs.db
+.AppleDouble
+.LSOverride
+
+# Java & Maven
 target/
 *.class
 *.jar
 *.war
 *.ear
-
-# Maven
 mvnw
 mvnw.cmd
 .mvn/
-pom.xml.tag
-pom.xml.releaseBackup
-pom.xml.versionsBackup
-pom.xml.next
-release.properties
 dependency-reduced-pom.xml
-buildNumber.properties
-.lsconnect
+
+# Node & Frontend
+node_modules/
+dist/
+dist-ssr/
+*.local
 
 # IDE
 .idea/
@@ -27,12 +30,15 @@ buildNumber.properties
 .project
 .classpath
 .settings/
-.nb-gradle/
 
 # Secrets & Config
 .env
-.env.local
+.env.*
 application-local.yml
+
+# Testing
+*.http
+*.rest
 
 # Logs
 *.log
