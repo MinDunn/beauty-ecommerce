@@ -1,0 +1,85 @@
+body {
+  font-family: Arial;
+  margin: 0;
+  padding: 10px;
+}
+
+.grid {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 20px;
+}
+
+.card {
+  border: 1px solid #ddd;
+  padding: 10px;
+  text-decoration: none;
+  color: black;
+  transition: 0.3s;
+}
+
+.card:hover {
+  transform: scale(1.05);
+}
+
+.image-box {
+  position: relative;
+}
+
+.image-box img {
+  width: 100%;
+}
+
+.badge {
+  position: absolute;
+  top: 10px;
+  left: 10px;
+  color: white;
+  padding: 5px;
+  font-size: 12px;
+}
+
+.sale {
+  background: red;
+}
+
+.hot {
+  background: orange;
+}
+
+.old {
+  text-decoration: line-through;
+  color: gray;
+  margin-right: 10px;
+}
+
+.new {
+  color: red;
+  font-weight: bold;
+}
+
+.layout {
+  display: flex;
+}
+
+.sidebar {
+  width: 200px;
+}
+
+.content {
+  flex: 1;
+}
+
+.banner img {
+  width: 100%;
+}
+
+@media (max-width: 768px) {
+  .grid {
+    grid-template-columns: repeat(2, 1fr);
+  }
+
+  .layout {
+    flex-direction: column;
+  }
+}
