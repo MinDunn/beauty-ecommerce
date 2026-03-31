@@ -31,6 +31,7 @@ CREATE TABLE IF NOT EXISTS products (
     stock_quantity INT DEFAULT 0,
     image_url VARCHAR(500),
     category_id BIGINT,
+    created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
     FOREIGN KEY (category_id) REFERENCES categories(id)
 );
 
@@ -92,3 +93,22 @@ CREATE TABLE IF NOT EXISTS refresh_tokens (
 -- Insert default admin user (password: admin123 - BCrypt encoded)
 INSERT IGNORE INTO users (email, password, full_name, role, created_at)
 VALUES ('admin@beauty.com', '$2a$10$oSkrd55wSMEt1fdFMbyfT.SXcqejjgLCfdY.B12BTTkTVvgZGhwYi', 'Admin', 'ADMIN', NOW());
+
+-- Sample Categories
+INSERT IGNORE INTO categories (id, name, description) VALUES (1, 'Trang điểm', 'Các sản phẩm trang điểm');
+INSERT IGNORE INTO categories (id, name, description) VALUES (2, 'Chăm sóc da', 'Các sản phẩm chăm sóc da');
+
+-- Sample Products
+INSERT IGNORE INTO products (name, description, original_price, current_price, stock_quantity, image_url, category_id, created_at) 
+VALUES ('Son môi Matte', 'Son lì lâu trôi', 300000, 250000, 50, 'son_matte.jpg', 1, NOW());
+
+INSERT IGNORE INTO products (name, description, original_price, current_price, stock_quantity, image_url, category_id, created_at) 
+VALUES ('Kem nền', 'Kem nền che phủ tốt', 500000, 450000, 30, 'kem_nen.jpg', 1, DATE_SUB(NOW(), INTERVAL 1 DAY));
+
+INSERT IGNORE INTO products (name, description, original_price, current_price, stock_quantity, image_url, category_id, created_at) 
+VALUES ('Sữa rửa mặt', 'Sữa rửa mặt dịu nhẹ', 200000, 180000, 100, 'sua_rua_mat.jpg', 2, DATE_SUB(NOW(), INTERVAL 2 DAY));
+
+-- Sample Reviews
+INSERT IGNORE INTO reviews (user_id, product_id, rating_star, comment, created_at) VALUES (1, 1, 5, 'Rất tốt!', NOW());
+INSERT IGNORE INTO reviews (user_id, product_id, rating_star, comment, created_at) VALUES (1, 1, 4, 'Màu đẹp', NOW());
+INSERT IGNORE INTO reviews (user_id, product_id, rating_star, comment, created_at) VALUES (1, 2, 5, 'Tuyệt vời', NOW());

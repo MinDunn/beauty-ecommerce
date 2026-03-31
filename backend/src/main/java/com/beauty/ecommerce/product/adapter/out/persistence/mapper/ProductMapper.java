@@ -16,6 +16,8 @@ public class ProductMapper {
                 .currentPrice(jpaEntity.getCurrentPrice())
                 .stockQuantity(jpaEntity.getStockQuantity())
                 .imageUrl(jpaEntity.getImageUrl())
+                .categoryId(jpaEntity.getCategoryId())
+                .createdAt(jpaEntity.getCreatedAt())
                 .build();
     }
 
@@ -28,6 +30,8 @@ public class ProductMapper {
                 .currentPrice(domainEntity.getCurrentPrice())
                 .stockQuantity(domainEntity.getStockQuantity())
                 .imageUrl(domainEntity.getImageUrl())
+                .categoryId(domainEntity.getCategoryId())
+                .createdAt(domainEntity.getCreatedAt())
                 .build();
     }
 }

@@ -18,6 +18,12 @@ spring:
     init:
       mode: always
 
+logging:
+  level:
+    org.hibernate.SQL: DEBUG
+    org.hibernate.type.descriptor.sql.BasicBinder: TRACE
+    com.beauty.ecommerce: DEBUG
+
 server:
   port: 8080
 

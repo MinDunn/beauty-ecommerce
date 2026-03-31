@@ -12,6 +12,7 @@ import lombok.NoArgsConstructor;
 import lombok.Setter;
 
 import java.math.BigDecimal;
+import java.time.LocalDateTime;
 
 @Entity
 @Table(name = "products")
@@ -37,4 +38,11 @@ public class ProductJpaEntity {
     private Integer stockQuantity;
     
     private String imageUrl;
+
+    @jakarta.persistence.Column(name = "category_id")
+    private Long categoryId;
+
+    @jakarta.persistence.Column(name = "created_at")
+    @Builder.Default
+    private LocalDateTime createdAt = LocalDateTime.now();
 }

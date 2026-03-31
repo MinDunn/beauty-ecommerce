@@ -1,4 +1,4 @@
-package com.beauty.ecommerce.product.domain.entity;
+package com.beauty.ecommerce.product.adapter.in.web.response;
 
 import lombok.AllArgsConstructor;
 import lombok.Builder;
@@ -11,10 +11,10 @@ import java.time.LocalDateTime;
 
 @Getter
 @Setter
-@AllArgsConstructor
-@NoArgsConstructor
 @Builder
-public class Product {
+@NoArgsConstructor
+@AllArgsConstructor
+public class ProductResponse {
     private Long id;
     private String name;
     private String description;
@@ -24,4 +24,5 @@ public class Product {
     private String imageUrl;
     private Long categoryId;
     private LocalDateTime createdAt;
+    private Double averageRating;
 }
