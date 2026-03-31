@@ -1,33 +1,30 @@
-package com.beauty.ecommerce.order.adapter.out.persistence;
+package com.beauty.ecommerce.cart.adapter.out.persistence;
 
 import com.beauty.ecommerce.product.adapter.out.persistence.ProductJpaEntity;
+import com.beauty.ecommerce.user.adapter.out.persistence.UserJpaEntity;
 import jakarta.persistence.*;
 import lombok.*;
 
-import java.math.BigDecimal;
-
 @Entity
-@Table(name = "order_items")
+@Table(name = "cart_items")
 @Getter
 @Setter
 @NoArgsConstructor
 @AllArgsConstructor
 @Builder
-public class OrderItemJpaEntity {
+public class CartItemJpaEntity {
 
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
 
     @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "order_id")
-    private OrderJpaEntity order;
+    @JoinColumn(name = "user_id")
+    private UserJpaEntity user;
 
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "product_id")
     private ProductJpaEntity product;
 
     private Integer quantity;
-
-    private BigDecimal price;
 }

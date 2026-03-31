@@ -1,18 +1,13 @@
 package com.beauty.ecommerce.order.adapter.out.persistence;
 
-import jakarta.persistence.Entity;
-import jakarta.persistence.GeneratedValue;
-import jakarta.persistence.GenerationType;
-import jakarta.persistence.Id;
-import jakarta.persistence.Table;
-import lombok.AllArgsConstructor;
-import lombok.Builder;
-import lombok.Getter;
-import lombok.NoArgsConstructor;
-import lombok.Setter;
+import com.beauty.ecommerce.order.domain.entity.OrderStatus;
+import com.beauty.ecommerce.user.adapter.out.persistence.UserJpaEntity;
+import jakarta.persistence.*;
+import lombok.*;
 
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
+import java.util.List;
 
 @Entity
 @Table(name = "orders")
@@ -27,12 +22,23 @@ public class OrderJpaEntity {
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
 
-    private Long userId; // FK
-    private BigDecimal totalPrice;
-    private String status; // PENDING, PROCESSING, SHIPPED, DELIVERED, CANCELLED
-    private String shippingAddress;
-    private String contactPhone;
-    private String paymentMethod; // COD, VNPAY
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "user_id")
+    private UserJpaEntity user;
 
-    private LocalDateTime createdAt;
+    private LocalDateTime orderDate;
+
+    private BigDecimal totalPrice;
+
+    @Enumerated(EnumType.STRING)
+    private OrderStatus status;
+
+    private String receiverName;
+
+    private String receiverPhone;
+
+    private String shippingAddress;
+
+    @OneToMany(mappedBy = "order", cascade = CascadeType.ALL)
+    private List<OrderItemJpaEntity> items;
 }

@@ -1,14 +1,12 @@
 package com.beauty.ecommerce.order.adapter.in.web;
 
-import com.beauty.ecommerce.order.adapter.in.web.request.OrderRequest;
 import com.beauty.ecommerce.order.adapter.in.web.response.OrderItemResponse;
 import com.beauty.ecommerce.order.adapter.in.web.response.OrderResponse;
 import com.beauty.ecommerce.order.application.port.in.OrderUseCase;
 import com.beauty.ecommerce.order.domain.entity.Order;
-import jakarta.validation.Valid;
+import com.beauty.ecommerce.order.domain.entity.OrderStatus;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
-import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.web.bind.annotation.*;
 
 import java.math.BigDecimal;
@@ -16,26 +14,24 @@ import java.util.List;
 import java.util.stream.Collectors;
 
 @RestController
-@RequestMapping("/api/orders")
+@RequestMapping("/api/admin/orders")
 @RequiredArgsConstructor
-public class OrderController {
+public class AdminOrderController {
 
     private final OrderUseCase orderUseCase;
 
-    @PostMapping
-    public ResponseEntity<OrderResponse> placeOrder(@Valid @RequestBody OrderRequest request) {
-        String email = SecurityContextHolder.getContext().getAuthentication().getName();
-        Order order = orderUseCase.placeOrder(email, request.getReceiverName(), request.getReceiverPhone(), request.getShippingAddress());
-        return ResponseEntity.ok(mapToResponse(order));
-    }
-
-    @GetMapping("/history")
-    public ResponseEntity<List<OrderResponse>> getOrderHistory() {
-        String email = SecurityContextHolder.getContext().getAuthentication().getName();
-        List<OrderResponse> response = orderUseCase.getOrderHistory(email).stream()
+    @GetMapping
+    public ResponseEntity<List<OrderResponse>> getAllOrders() {
+        List<OrderResponse> response = orderUseCase.getAllOrders().stream()
                 .map(this::mapToResponse)
                 .collect(Collectors.toList());
         return ResponseEntity.ok(response);
+    }
+
+    @PutMapping("/{id}/status")
+    public ResponseEntity<Void> updateOrderStatus(@PathVariable Long id, @RequestParam OrderStatus status) {
+        orderUseCase.updateOrderStatus(id, status);
+        return ResponseEntity.ok().build();
     }
 
     private OrderResponse mapToResponse(Order order) {
