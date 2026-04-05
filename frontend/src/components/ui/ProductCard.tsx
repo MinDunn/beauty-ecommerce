@@ -1,5 +1,5 @@
 import { ShoppingCart } from 'lucide-react';
-// import { cn } from '../../utils/cn';
+import { Link } from 'react-router-dom';
 
 interface ProductCardProps {
   id: string;
@@ -10,9 +10,9 @@ interface ProductCardProps {
   badge?: string;
 }
 
-export const ProductCard = ({ name, price, originalPrice, image, badge }: ProductCardProps) => {
+export const ProductCard = ({ id, name, price, originalPrice, image, badge }: ProductCardProps) => {
   return (
-    <div className="group bg-white rounded-2xl border border-gray-100 overflow-hidden hover:shadow-xl hover:border-primary-200 transition-all duration-300">
+    <Link to={`/product/${id}`} className="block group bg-white rounded-2xl border border-gray-100 overflow-hidden hover:shadow-xl hover:border-primary-200 transition-all duration-300">
       <div className="relative aspect-square overflow-hidden bg-white p-4 flex items-center justify-center">
         {badge && (
           <span className="absolute top-3 left-3 bg-red-500 text-white text-[10px] font-black uppercase px-2 py-1 rounded-lg z-10 shadow-sm">
@@ -25,7 +25,13 @@ export const ProductCard = ({ name, price, originalPrice, image, badge }: Produc
           className="w-full h-full object-contain group-hover:scale-110 transition-transform duration-500 mix-blend-multiply"
         />
         {/* Quick Add Button overlay */}
-        <button className="absolute bottom-3 right-3 bg-white/90 backdrop-blur-sm p-3 rounded-xl shadow-lg text-primary-500 hover:bg-primary-500 hover:text-white transition-colors opacity-0 group-hover:opacity-100 translate-y-4 group-hover:translate-y-0">
+        <button 
+          onClick={(e) => {
+            e.preventDefault(); // Ngăn Link trigger chuyển trang
+            alert('Đã thêm sản phẩm vào túi chọn hàng tạm thời!');
+          }}
+          className="absolute bottom-3 right-3 bg-white/90 backdrop-blur-sm p-3 rounded-xl shadow-lg text-primary-500 hover:bg-primary-500 hover:text-white transition-colors opacity-0 group-hover:opacity-100 translate-y-4 group-hover:translate-y-0 z-20"
+        >
           <ShoppingCart size={20} />
         </button>
       </div>
@@ -35,7 +41,7 @@ export const ProductCard = ({ name, price, originalPrice, image, badge }: Produc
         </h3>
         <div className="flex items-end justify-between">
           <div>
-            <div className="font-black text-primary-600 text-lg lg:text-xl">
+            <div className="font-black text-primary-600 text-lg lg:text-xl tracking-tighter">
               {price.toLocaleString('vi-VN')} đ
             </div>
             {originalPrice && (
@@ -46,6 +52,6 @@ export const ProductCard = ({ name, price, originalPrice, image, badge }: Produc
           </div>
         </div>
       </div>
-    </div>
+    </Link>
   );
 };
