@@ -155,13 +155,13 @@ const Cart = () => {
                  </div>
                </div>
 
-               <button 
-                disabled={cartItems.length === 0}
-                className="w-full flex items-center justify-center gap-3 py-5 bg-primary-500 text-white font-black rounded-2xl shadow-xl shadow-primary-500/30 hover:bg-primary-600 transition-all hover:-translate-y-1 uppercase tracking-widest disabled:translate-y-0 disabled:opacity-50 disabled:shadow-none disabled:cursor-not-allowed group"
+               <Link 
+                to="/checkout"
+                className={`w-full flex items-center justify-center gap-3 py-5 bg-primary-500 text-white font-black rounded-2xl shadow-xl shadow-primary-500/30 hover:bg-primary-600 transition-all hover:-translate-y-1 uppercase tracking-widest group ${cartItems.length === 0 ? 'opacity-50 pointer-events-none' : ''}`}
                >
                  <span>Thanh toán ngay</span>
                  <ArrowRight size={20} className="group-hover:translate-x-1 transition-transform" />
-               </button>
+               </Link>
 
                <div className="mt-8 flex items-center justify-center gap-4 text-gray-400">
                   <div className="w-12 h-8 bg-gray-50 border border-gray-200 rounded flex items-center justify-center text-[10px] font-bold">VISA</div>
