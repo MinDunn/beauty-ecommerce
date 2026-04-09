@@ -17,6 +17,7 @@ import { cn } from '../../utils/cn';
 const Header = () => {
   const [isMenuOpen, setIsMenuOpen] = useState(false);
   const { isAuthenticated, user } = useSelector((state: RootState) => state.auth);
+  const { totalQuantity } = useSelector((state: RootState) => state.cart);
   const dispatch = useDispatch();
   const navigate = useNavigate();
 
@@ -65,9 +66,7 @@ const Header = () => {
 
         {/* Logo */}
         <Link to="/" className="flex items-center">
-          <div className="text-2xl md:text-3xl font-black text-guardian-green tracking-tighter flex items-center">
-            GUARDIAN<span className="text-guardian-orange">.</span>
-          </div>
+          <img src="/images/logo.png" alt="Guardian Logo" className="h-10 md:h-12 object-contain" />
         </Link>
 
         {/* Search Bar - Desktop */}
@@ -84,19 +83,33 @@ const Header = () => {
 
         {/* User Actions */}
         <div className="flex items-center space-x-2 md:space-x-6">
-          <div className="hidden md:flex flex-col items-center group cursor-pointer">
+          <div className="hidden md:flex flex-col items-center">
             {isAuthenticated ? (
-              <div className="flex items-center space-x-2">
-                 <div className="w-8 h-8 rounded-full bg-primary-100 flex items-center justify-center text-primary-600 font-bold uppercase">
-                  {user?.name?.[0] || 'U'}
+              <div className="relative group/user py-2 cursor-pointer">
+                <div className="flex items-center space-x-2">
+                   <div className="w-8 h-8 rounded-full bg-primary-100 flex items-center justify-center text-primary-600 font-bold uppercase">
+                    {user?.name?.[0] || 'U'}
+                  </div>
+                  <div className="flex flex-col">
+                     <span className="text-[10px] text-gray-500 uppercase font-bold">Xin chào</span>
+                     <span className="text-xs font-semibold">{user?.name}</span>
+                  </div>
                 </div>
-                <div className="flex flex-col">
-                   <span className="text-[10px] text-gray-500 uppercase font-bold">Xin chào</span>
-                   <span className="text-xs font-semibold">{user?.name}</span>
+                
+                {/* Dropdown Menu */}
+                <div className="absolute right-0 top-full w-48 bg-white border border-gray-100 rounded-2xl shadow-xl opacity-0 invisible group-hover/user:opacity-100 group-hover/user:visible transition-all duration-300 z-50 overflow-hidden transform translate-y-2 group-hover/user:translate-y-0">
+                   <div className="p-2">
+                     <Link to="/profile" className="block px-4 py-3 text-sm font-bold text-gray-700 hover:bg-gray-50 hover:text-primary-600 rounded-xl transition-colors">
+                        Hồ sơ cá nhân
+                     </Link>
+                     <button onClick={handleLogout} className="w-full text-left px-4 py-3 text-sm font-bold text-red-500 hover:bg-red-50 rounded-xl transition-colors">
+                        Đăng xuất
+                     </button>
+                   </div>
                 </div>
-                <button onClick={handleLogout} className="text-xs text-red-500 hover:underline">Thoát</button>
               </div>
             ) : (
+
               <Link to="/login" className="flex flex-col items-center group">
                 <User size={24} className="text-gray-700 group-hover:text-primary-500 transition-colors" />
                 <span className="text-[10px] mt-1 font-bold text-gray-500 uppercase tracking-widest group-hover:text-primary-500">Đăng nhập</span>
@@ -107,7 +120,9 @@ const Header = () => {
           <Link to="/cart" className="relative flex flex-col items-center group">
             <div className="relative">
               <ShoppingCart size={24} className="text-gray-700 group-hover:text-primary-500 transition-colors" />
-              <span className="absolute -top-2 -right-2 bg-primary-500 text-white text-[10px] font-bold w-4 h-4 rounded-full flex items-center justify-center">0</span>
+              <span className="absolute -top-2 -right-2 bg-primary-500 text-white text-[10px] font-bold w-4 h-4 rounded-full flex items-center justify-center">
+                {totalQuantity}
+              </span>
             </div>
             <span className="hidden md:block text-[10px] mt-1 font-bold text-gray-500 uppercase tracking-widest group-hover:text-primary-500">Giỏ hàng</span>
           </Link>

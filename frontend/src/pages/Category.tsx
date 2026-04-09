@@ -1,20 +1,11 @@
 import { useState } from 'react';
-import { useParams } from 'react-router-dom';
+import { products } from '../data/products';
+import { useParams, Link } from 'react-router-dom';
 import { FilterSidebar } from '../components/category/FilterSidebar';
 import { ProductCard } from '../components/ui/ProductCard';
 import { Filter, ChevronDown } from 'lucide-react';
 
-const mockCategoryProducts = [
-  { id: '1', name: 'Kem Chống Nắng La Roche-Posay Anthelios', price: 435000, image: 'https://images.unsplash.com/photo-1598440947619-2c35fc9aa908?q=80&w=600&auto=format&fit=crop', badge: '-10%' },
-  { id: '2', name: 'Sữa Rửa Mặt CeraVe Foaming Cleanser', price: 365000, image: 'https://images.unsplash.com/photo-1556228578-0d85b1a4d571?q=80&w=600&auto=format&fit=crop' },
-  { id: '3', name: 'Kem Dưỡng Ẩm Neutrogena Hydro Boost', price: 350000, image: 'https://images.unsplash.com/photo-1611078489935-0cb964de46d6?q=80&w=600&auto=format&fit=crop', badge: 'Mới' },
-  { id: '4', name: 'Serum Vichy Mineral 89', price: 790000, originalPrice: 950000, image: 'https://images.unsplash.com/photo-1608248543803-ba4f8c70ae0b?q=80&w=600&auto=format&fit=crop' },
-  { id: '5', name: 'Tẩy trang Bioderma Sensibio H2O', price: 495000, image: 'https://images.unsplash.com/photo-1556228578-0d85b1a4d571?q=80&w=600&auto=format&fit=crop', badge: 'Bán chạy' },
-  { id: '6', name: 'Son Mac Ruby Woo Matte Lipstick', price: 650000, image: 'https://images.unsplash.com/photo-1598440947619-2c35fc9aa908?q=80&w=600&auto=format&fit=crop' },
-  { id: '7', name: 'Kem dưỡng Paula\'s Choice 2% BHA', price: 899000, originalPrice: 1100000, image: 'https://images.unsplash.com/photo-1611078489935-0cb964de46d6?q=80&w=600&auto=format&fit=crop' },
-  { id: '8', name: 'Kem chống nắng Anessa Tone Up', price: 540000, image: 'https://images.unsplash.com/photo-1608248543803-ba4f8c70ae0b?q=80&w=600&auto=format&fit=crop' },
-  { id: '9', name: 'Nước hoa hồng Thayers', price: 290000, image: 'https://images.unsplash.com/photo-1598440947619-2c35fc9aa908?q=80&w=600&auto=format&fit=crop' },
-];
+
 
 const getCategoryName = (slug?: string) => {
   switch (slug) {
@@ -31,6 +22,49 @@ const Category = () => {
   const { slug } = useParams<{ slug: string }>();
   const categoryName = getCategoryName(slug);
   const [isMobileFilterOpen, setIsMobileFilterOpen] = useState(false);
+  
+  // Filter states
+  const [selectedBrands, setSelectedBrands] = useState<string[]>([]);
+  const [selectedPriceRange, setSelectedPriceRange] = useState<string | null>(null);
+  const [selectedSkinTypes, setSelectedSkinTypes] = useState<string[]>([]);
+
+  const handleFilterChange = (type: 'brand' | 'price' | 'skinType', value: string) => {
+     if (type === 'brand') {
+        setSelectedBrands(prev => prev.includes(value) ? prev.filter(b => b !== value) : [...prev, value]);
+     } else if (type === 'price') {
+        setSelectedPriceRange(prev => prev === value ? null : value);
+     } else if (type === 'skinType') {
+        setSelectedSkinTypes(prev => prev.includes(value) ? prev.filter(s => s !== value) : [...prev, value]);
+     }
+  };
+
+  const clearFilters = () => {
+    setSelectedBrands([]);
+    setSelectedPriceRange(null);
+    setSelectedSkinTypes([]);
+  };
+
+  const filteredProducts = products.filter(product => {
+     // Category slug filter
+     if (slug && product.category !== slug) return false;
+
+     // Brand filter
+     if (selectedBrands.length > 0 && !selectedBrands.includes(product.brand)) return false;
+     
+     // Price range filter
+     if (selectedPriceRange) {
+        const price = product.price;
+        if (selectedPriceRange === 'p1' && price >= 100000) return false;
+        if (selectedPriceRange === 'p2' && (price < 100000 || price > 300000)) return false;
+        if (selectedPriceRange === 'p3' && (price < 300000 || price > 500000)) return false;
+        if (selectedPriceRange === 'p4' && price <= 500000) return false;
+     }
+
+     // Skin type filter
+     if (selectedSkinTypes.length > 0 && product.skinType && !selectedSkinTypes.includes(product.skinType)) return false;
+
+     return true;
+  });
 
   return (
     <div className="bg-white min-h-screen pb-20">
@@ -39,7 +73,7 @@ const Category = () => {
         <div className="container mx-auto px-4 max-w-7xl">
             {/* Breadcrumb */}
             <div className="flex items-center space-x-2 text-xs md:text-sm text-primary-600 mb-4 font-bold uppercase tracking-widest">
-              <span className="hover:text-primary-800 cursor-pointer">Trang chủ</span>
+              <Link to="/" className="hover:text-primary-800 cursor-pointer transition-colors px-1">Trang chủ</Link>
               <span>/</span>
               <span className="text-gray-900">{categoryName}</span>
             </div>
@@ -54,14 +88,22 @@ const Category = () => {
         <div className="flex flex-col lg:flex-row gap-8 items-start">
           {/* Left Sidebar Filter */}
           <div className="lg:w-1/4 lg:sticky lg:top-24 w-full">
-             <FilterSidebar isMobileOpen={isMobileFilterOpen} setIsMobileOpen={setIsMobileFilterOpen} />
+             <FilterSidebar 
+              isMobileOpen={isMobileFilterOpen} 
+              setIsMobileOpen={setIsMobileFilterOpen}
+              selectedBrands={selectedBrands}
+              selectedPriceRange={selectedPriceRange}
+              selectedSkinTypes={selectedSkinTypes}
+              onFilterChange={handleFilterChange}
+              onReset={clearFilters}
+             />
           </div>
 
           {/* Right Content Area */}
           <div className="lg:w-3/4 flex-1 w-full">
             {/* Top Toolbar */}
             <div className="bg-white p-4 rounded-2xl border border-gray-100 flex flex-col sm:flex-row sm:items-center justify-between mb-8 shadow-sm gap-4">
-              <span className="text-sm text-gray-500 font-medium">Tìm thấy <strong className="text-gray-900 text-lg">145</strong> sản phẩm</span>
+              <span className="text-sm text-gray-500 font-medium">Tìm thấy <strong className="text-gray-900 text-lg">{filteredProducts.length}</strong> sản phẩm</span>
               
               <div className="flex items-center gap-3">
                  {/* Mobile Filter Toggle */}
@@ -83,7 +125,7 @@ const Category = () => {
 
             {/* Product Grid */}
             <div className="grid grid-cols-2 md:grid-cols-3 gap-3 md:gap-5">
-              {mockCategoryProducts.map((product) => (
+              {filteredProducts.map((product) => (
                 <ProductCard key={product.id} {...product} />
               ))}
             </div>

@@ -1,43 +1,22 @@
-import { useState } from 'react';
 import { Minus, Plus, Trash2, ArrowRight } from 'lucide-react';
 import { Link } from 'react-router-dom';
+import { useSelector, useDispatch } from 'react-redux';
+import { removeItem, updateQuantity } from '../store/slices/cartSlice';
+import type { RootState } from '../store';
 
 const Cart = () => {
-  // Mock cart items
-  const [cartItems, setCartItems] = useState([
-    {
-      id: '1',
-      name: 'Kem Chống Nắng La Roche-Posay Anthelios UVmune 400',
-      price: 435000,
-      quantity: 2,
-      image: 'https://images.unsplash.com/photo-1598440947619-2c35fc9aa908?q=80&w=200&auto=format&fit=crop',
-      brand: 'La Roche-Posay'
-    },
-    {
-      id: '2',
-      name: 'Sữa Rửa Mặt CeraVe Foaming Cleanser Cho Da Dầu',
-      price: 365000,
-      quantity: 1,
-      image: 'https://images.unsplash.com/photo-1556228578-0d85b1a4d571?q=80&w=200&auto=format&fit=crop',
-      brand: 'CeraVe'
-    }
-  ]);
+  const dispatch = useDispatch();
+  const { items: cartItems, totalAmount: subTotal } = useSelector((state: RootState) => state.cart);
 
-  const updateQuantity = (id: string, delta: number) => {
-    setCartItems(items => items.map(item => {
-      if (item.id === id) {
-         return { ...item, quantity: Math.max(1, item.quantity + delta) };
-      }
-      return item;
-    }));
+  const handleUpdateQuantity = (id: string, delta: number) => {
+    dispatch(updateQuantity({ id, delta }));
   };
 
-  const removeItem = (id: string) => {
-    setCartItems(items => items.filter(item => item.id !== id));
+  const handleRemoveItem = (id: string) => {
+    dispatch(removeItem(id));
   };
 
-  const subTotal = cartItems.reduce((acc, item) => acc + (item.price * item.quantity), 0);
-  const discount = 50000; // Fake discount
+  const discount = subTotal > 1000000 ? 50000 : 0; // Simple conditional discount
   const total = subTotal > 0 ? (subTotal - discount) : 0;
 
   return (
@@ -98,13 +77,13 @@ const Cart = () => {
                          <div className="col-span-1 md:col-span-2 flex items-center justify-between md:justify-center">
                            <div className="md:hidden font-black text-primary-600 text-xl">{item.price.toLocaleString('vi-VN')} đ</div>
                            <div className="flex items-center border-2 border-gray-100 rounded-xl overflow-hidden bg-gray-50">
-                              <button onClick={() => updateQuantity(item.id, -1)} className="w-9 h-9 flex items-center justify-center text-gray-500 hover:bg-white hover:text-primary-600 transition-colors">
+                              <button onClick={() => handleUpdateQuantity(item.id, -1)} className="w-9 h-9 flex items-center justify-center text-gray-500 hover:bg-white hover:text-primary-600 transition-colors">
                                 <Minus size={14} />
                               </button>
                               <div className="w-10 h-9 flex items-center justify-center font-black text-gray-900 text-sm bg-white border-x-2 border-gray-100">
                                 {item.quantity}
                               </div>
-                              <button onClick={() => updateQuantity(item.id, 1)} className="w-9 h-9 flex items-center justify-center text-gray-500 hover:bg-white hover:text-primary-600 transition-colors">
+                              <button onClick={() => handleUpdateQuantity(item.id, 1)} className="w-9 h-9 flex items-center justify-center text-gray-500 hover:bg-white hover:text-primary-600 transition-colors">
                                 <Plus size={14} />
                               </button>
                            </div>
@@ -112,7 +91,7 @@ const Cart = () => {
   
                          {/* Delete Button */}
                          <div className="col-span-1 text-right flex justify-end">
-                            <button onClick={() => removeItem(item.id)} className="w-12 h-12 bg-red-50/50 text-red-500 rounded-2xl flex items-center justify-center hover:bg-red-500 hover:text-white transition-colors">
+                            <button onClick={() => handleRemoveItem(item.id)} className="w-12 h-12 bg-red-50/50 text-red-500 rounded-2xl flex items-center justify-center hover:bg-red-500 hover:text-white transition-colors">
                                <Trash2 size={20} />
                             </button>
                          </div>

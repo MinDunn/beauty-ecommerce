@@ -1,44 +1,7 @@
 import { ProductCard } from '../ui/ProductCard';
+import { products } from '../../data/products';
 
-const mockProducts = [
-  {
-    id: '1',
-    name: 'Kem Chống Nắng La Roche-Posay Anthelios UVmune 400 Oil Control',
-    price: 435000,
-    originalPrice: 535000,
-    image: 'https://images.unsplash.com/photo-1598440947619-2c35fc9aa908?q=80&w=600&auto=format&fit=crop',
-    badge: 'Mới'
-  },
-  {
-    id: '2',
-    name: 'Nước Tẩy Trang L\'Oreal Paris Micellar Water 3-in-1',
-    price: 189000,
-    originalPrice: 219000,
-    image: 'https://images.unsplash.com/photo-1556228578-0d85b1a4d571?q=80&w=600&auto=format&fit=crop',
-    badge: '-15%'
-  },
-  {
-    id: '3',
-    name: 'Sữa Rửa Mặt CeraVe Foaming Cleanser Cho Da Dầu',
-    price: 365000,
-    image: 'https://images.unsplash.com/photo-1556228578-0d85b1a4d571?q=80&w=600&auto=format&fit=crop',
-  },
-  {
-    id: '4',
-    name: 'Serum Vichy Mineral 89 Phục Hồi Chuyên Sâu',
-    price: 790000,
-    originalPrice: 950000,
-    image: 'https://images.unsplash.com/photo-1608248543803-ba4f8c70ae0b?q=80&w=600&auto=format&fit=crop',
-    badge: 'Bán chạy'
-  },
-  {
-    id: '5',
-    name: 'Kem Dưỡng Ẩm Neutrogena Hydro Boost Water Gel',
-    price: 350000,
-    originalPrice: 420000,
-    image: 'https://images.unsplash.com/photo-1598440947619-2c35fc9aa908?q=80&w=600&auto=format&fit=crop',
-  }
-];
+const featuredProducts = products.filter(p => p.isFeatured).slice(0, 5);
 
 export const ProductGrid = ({ title = "Sản phẩm nổi bật" }: { title?: string }) => {
   return (
@@ -58,7 +21,7 @@ export const ProductGrid = ({ title = "Sản phẩm nổi bật" }: { title?: st
         </div>
         
         <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-4 md:gap-6">
-          {mockProducts.map((product) => (
+          {featuredProducts.map((product) => (
             <ProductCard key={product.id} {...product} />
           ))}
         </div>
