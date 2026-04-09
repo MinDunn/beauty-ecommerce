@@ -33,7 +33,7 @@ export const products: Product[] = [
     brand: 'CeraVe',
     category: 'skincare',
     skinType: 'Da Dầu / Mụn',
-    image: '/images/st_ives_scrub.png',
+    image: '/images/st_ives_scrub.png', // Sử dụng ảnh cục bộ (tuýp mỹ phẩm)
     isFeatured: true
   },
   {
@@ -44,7 +44,7 @@ export const products: Product[] = [
     brand: 'Vichy',
     category: 'skincare',
     skinType: 'Mọi loại da',
-    image: '/images/thayer_toner.png', // Chai nước khoáng trong suốt
+    image: '/images/bioderma_shower_gel.png', // Sử dụng ảnh cục bộ (chai xanh dương cao cấp)
     badge: 'Hot',
     isFeatured: true
   },
@@ -55,7 +55,7 @@ export const products: Product[] = [
     brand: 'Bioderma',
     category: 'skincare',
     skinType: 'Da Nhạy Cảm',
-    image: '/images/thayer_toner.png',
+    image: '/images/thayer_toner.png', // Sử dụng ảnh cục bộ (chai nước tẩy trang trong suốt)
     badge: 'Best Seller'
   },
   {
@@ -66,7 +66,7 @@ export const products: Product[] = [
     brand: 'Neutrogena',
     category: 'skincare',
     skinType: 'Da Khô',
-    image: '/images/bioderma_shower_gel.png', // Chai gel xanh dương
+    image: '/images/vaseline_lotion.png', // Sử dụng ảnh cục bộ (chai hồng ánh kim cao cấp)
     isFeatured: true
   },
   {
@@ -77,7 +77,7 @@ export const products: Product[] = [
     brand: 'Paula\'s Choice',
     category: 'skincare',
     skinType: 'Da Dầu / Mụn',
-    image: '/images/mac_lipstick.png', // Chai trụ đứng (mặc dù là son nhưng nhìn xa rất giống chai PC BHA)
+    image: '/images/lrp_anthelios.png', // Sử dụng ảnh cục bộ (chai mỹ phẩm dạng đứng)
     badge: 'Đặc trị'
   },
   {
@@ -87,7 +87,7 @@ export const products: Product[] = [
     brand: 'L\'Oréal Paris',
     category: 'skincare',
     skinType: 'Mọi loại da',
-    image: '/images/love_beauty_planet.png' // Chai serum trắng cao cấp
+    image: '/images/love_beauty_planet.png' // Sử dụng ảnh cục bộ (chai serum trắng có vòi nhấn)
   },
   {
     id: 'anessa-gold-1',
@@ -97,7 +97,7 @@ export const products: Product[] = [
     brand: 'Anessa',
     category: 'skincare',
     skinType: 'Mọi loại da',
-    image: '/images/lrp_anthelios.png', // Chai chống nắng vàng cam
+    image: '/images/lrp_anthelios.png', // Sử dụng ảnh cục bộ (chai chống nắng cùng phân khúc)
     badge: 'Summer Sale'
   },
   {
@@ -227,7 +227,7 @@ export const products: Product[] = [
     price: 25000,
     brand: 'Guardian',
     category: 'skincare',
-    image: '/images/maybelline_foundation.png', // Chai thủy tinh nhỏ
+    image: '/images/maybelline_foundation.png',
     badge: 'Độc quyền'
   },
   {
@@ -236,7 +236,7 @@ export const products: Product[] = [
     price: 45000,
     brand: 'Guardian',
     category: 'skincare',
-    image: '/images/makeup.png', // Ảnh gói đồ trang điểm
+    image: '/images/makeup.png',
     badge: 'Sản phẩm của năm'
   }
 ];
