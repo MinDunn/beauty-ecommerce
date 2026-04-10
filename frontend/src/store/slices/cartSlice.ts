@@ -19,7 +19,7 @@ const getSafeJSON = (key: string, defaultValue: string) => {
   try {
     const item = localStorage.getItem(key);
     return item ? JSON.parse(item) : JSON.parse(defaultValue);
-  } catch (e) {
+  } catch {
     return JSON.parse(defaultValue);
   }
 };

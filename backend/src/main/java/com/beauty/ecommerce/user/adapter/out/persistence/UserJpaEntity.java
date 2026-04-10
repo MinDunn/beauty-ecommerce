@@ -31,6 +31,7 @@ public class UserJpaEntity {
     private String fullName;
     private String phone;
     private String address;
+    private String avatarUrl;
     private String role; // USER, ADMIN
     
     private LocalDateTime createdAt;

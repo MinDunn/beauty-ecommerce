@@ -1,7 +1,11 @@
-import { ShoppingCart } from 'lucide-react';
+import { useState, useEffect } from 'react';
+import { ShoppingCart, Heart } from 'lucide-react';
 import { Link } from 'react-router-dom';
-import { useDispatch } from 'react-redux';
+import { useDispatch, useSelector } from 'react-redux';
 import { addItem } from '../../store/slices/cartSlice';
+import type { RootState } from '../../store';
+import wishlistService from '../../api/wishlistService';
+import toast from 'react-hot-toast';
 
 interface ProductCardProps {
   id: string;
@@ -15,6 +19,23 @@ interface ProductCardProps {
 
 export const ProductCard = ({ id, name, price, originalPrice, image, badge, brand = "Glowzy" }: ProductCardProps) => {
   const dispatch = useDispatch();
+  const { user } = useSelector((state: RootState) => state.auth);
+  const [isWishlisted, setIsWishlisted] = useState(false);
+
+  useEffect(() => {
+    const checkStatus = async () => {
+      try {
+        const resp = await wishlistService.checkWishlist(Number(id));
+        setIsWishlisted(resp.data.data);
+      } catch {
+        // Ignore
+      }
+    };
+
+    if (user && !isNaN(Number(id))) {
+      checkStatus();
+    }
+  }, [id, user]);
 
   const handleAddToCart = (e: React.MouseEvent) => {
     e.preventDefault();
@@ -27,44 +48,85 @@ export const ProductCard = ({ id, name, price, originalPrice, image, badge, bran
       brand,
       quantity: 1
     }));
+    toast.success('Đã thêm vào giỏ hàng');
+  };
+
+  const handleToggleWishlist = async (e: React.MouseEvent) => {
+    e.preventDefault();
+    e.stopPropagation();
+
+    if (!user) {
+      toast.error('Vui lòng đăng nhập để lưu sản phẩm');
+      return;
+    }
+
+    const numericId = Number(id);
+    if (isNaN(numericId)) {
+      setIsWishlisted(!isWishlisted);
+      toast.success(isWishlisted ? 'Đã xóa khỏi yêu thích' : 'Đã thêm vào yêu thích');
+      return;
+    }
+
+    const prev = isWishlisted;
+    setIsWishlisted(!prev);
+    try {
+      if (prev) {
+        await wishlistService.removeFromWishlist(numericId);
+      } else {
+        await wishlistService.addToWishlist(numericId);
+      }
+    } catch {
+      setIsWishlisted(prev);
+      toast.error('Lỗi khi cập nhật yêu thích');
+    }
   };
 
   return (
-    <Link to={`/product/${id}`} className="block group bg-white rounded-2xl border border-gray-100 overflow-hidden hover:shadow-xl hover:border-primary-200 transition-all duration-300">
-      <div className="relative aspect-square overflow-hidden bg-white p-4 flex items-center justify-center">
+    <Link to={`/product/${id}`} className="glowzy-card block group overflow-hidden">
+      <div className="relative aspect-square overflow-hidden bg-white p-6 flex items-center justify-center">
         {badge && (
-          <span className="absolute top-3 left-3 bg-red-500 text-white text-[10px] font-black uppercase px-2 py-1 rounded-lg z-10 shadow-sm">
+          <span className="absolute top-4 left-4 bg-red-500 text-white text-[10px] font-black uppercase px-2.5 py-1.5 rounded-lg z-10 shadow-lg shadow-red-500/20">
             {badge}
           </span>
         )}
+        
+        {/* Wishlist Button */}
+        <button 
+          onClick={handleToggleWishlist}
+          className={`absolute top-4 right-4 p-2.5 rounded-xl backdrop-blur-md transition-all z-20 shadow-lg ${isWishlisted ? 'bg-red-500 text-white shadow-red-500/30' : 'bg-white/90 text-gray-400 opacity-0 group-hover:opacity-100 border border-gray-100 hover:text-red-500 active:scale-90'}`}
+        >
+          <Heart size={18} fill={isWishlisted ? "currentColor" : "none"} />
+        </button>
+
         <img 
           src={image} 
           alt={name} 
-          className="w-full h-full object-contain group-hover:scale-110 transition-transform duration-500 mix-blend-multiply"
+          className="w-full h-full object-contain group-hover:scale-110 transition-transform duration-700 mix-blend-multiply"
         />
         {/* Quick Add Button overlay */}
         <button 
           onClick={handleAddToCart}
-          className="absolute bottom-3 right-3 bg-white/90 backdrop-blur-sm p-3 rounded-xl shadow-lg text-primary-500 hover:bg-primary-500 hover:text-white transition-colors opacity-0 group-hover:opacity-100 translate-y-4 group-hover:translate-y-0 z-20"
+          className="absolute bottom-4 right-4 glowzy-btn-primary p-4 rounded-2xl shadow-xl translate-y-4 opacity-0 group-hover:translate-y-0 group-hover:opacity-100 z-20"
         >
-          <ShoppingCart size={20} />
+          <ShoppingCart size={22} />
         </button>
       </div>
-      <div className="p-4 pt-2">
-        <h3 className="font-semibold text-gray-800 text-sm line-clamp-2 min-h-[40px] mb-2 group-hover:text-primary-500 transition-colors">
+      <div className="p-6 pt-2">
+        <h3 className="font-bold text-gray-800 text-sm line-clamp-2 min-h-[40px] mb-3 group-hover:text-primary-600 transition-colors">
           {name}
         </h3>
         <div className="flex items-end justify-between">
           <div>
-            <div className="font-black text-primary-600 text-lg lg:text-xl tracking-tighter">
+            <div className="font-black text-primary-600 text-xl tracking-tighter">
               {price.toLocaleString('vi-VN')} đ
             </div>
             {originalPrice && (
-              <div className="text-xs text-gray-400 line-through font-medium">
+              <div className="text-xs text-gray-400 line-through font-bold opacity-60">
                 {originalPrice.toLocaleString('vi-VN')} đ
               </div>
             )}
           </div>
+          <div className="text-[10px] font-black text-gray-300 uppercase tracking-widest italic group-hover:text-primary-400 transition-colors">Glowzy Choice</div>
         </div>
       </div>
     </Link>

@@ -142,9 +142,37 @@ public class AuthService {
                 .fullName(user.getFullName())
                 .phone(user.getPhone())
                 .address(user.getAddress())
+                .avatarUrl(user.getAvatarUrl())
                 .role(user.getRole())
                 .createdAt(user.getCreatedAt())
                 .build();
+    }
+
+    @Transactional
+    public UserProfileResponse updateProfile(String email, com.beauty.ecommerce.user.adapter.in.web.request.UpdateProfileRequest request) {
+        log.info("Cập nhật thông tin profile cho: {}", email);
+        UserJpaEntity user = userRepository.findByEmail(email)
+                .orElseThrow(() -> new ResourceNotFoundException("Không tìm thấy người dùng"));
+
+        if (request.getFullName() != null) user.setFullName(request.getFullName());
+        if (request.getPhone() != null) user.setPhone(request.getPhone());
+        if (request.getAddress() != null) user.setAddress(request.getAddress());
+        if (request.getAvatarUrl() != null) user.setAvatarUrl(request.getAvatarUrl());
+
+        userRepository.save(user);
+        return getProfile(email);
+    }
+
+    @Transactional
+    public String updateAvatar(String email, org.springframework.web.multipart.MultipartFile file, com.beauty.ecommerce.common.service.CloudinaryService cloudinaryService) {
+        log.info("Cập nhật ảnh đại diện cho: {}", email);
+        UserJpaEntity user = userRepository.findByEmail(email)
+                .orElseThrow(() -> new ResourceNotFoundException("Không tìm thấy người dùng"));
+
+        String imageUrl = cloudinaryService.uploadImage(file);
+        user.setAvatarUrl(imageUrl);
+        userRepository.save(user);
+        return imageUrl;
     }
 
     @Transactional
@@ -192,5 +220,27 @@ public class AuthService {
         // Xóa token sau khi sử dụng thành công
         passwordResetTokenRepository.delete(resetToken);
         log.info("Đặt lại mật khẩu thành công cho người dùng: {}", user.getEmail());
+    }
+
+    @Transactional
+    public void logout(String email) {
+        log.info("Đang đăng xuất người dùng: {}", email);
+        UserJpaEntity user = userRepository.findByEmail(email)
+                .orElseThrow(() -> new ResourceNotFoundException("Không tìm thấy người dùng"));
+        refreshTokenRepository.deleteByUser(user);
+    }
+
+    @Transactional
+    public void changePassword(String email, String oldPassword, String newPassword) {
+        log.info("Đang đổi mật khẩu cho người dùng: {}", email);
+        UserJpaEntity user = userRepository.findByEmail(email)
+                .orElseThrow(() -> new ResourceNotFoundException("Không tìm thấy người dùng"));
+
+        if (!passwordEncoder.matches(oldPassword, user.getPassword())) {
+            throw new BadRequestException("Mật khẩu hiện tại không chính xác");
+        }
+
+        user.setPassword(passwordEncoder.encode(newPassword));
+        userRepository.save(user);
     }
 }

@@ -1,14 +1,17 @@
 package com.beauty.ecommerce.user.adapter.in.web;
 
 import com.beauty.ecommerce.common.dto.ApiResponse;
+import com.beauty.ecommerce.user.adapter.in.web.request.ChangePasswordRequest;
 import com.beauty.ecommerce.user.adapter.in.web.request.ForgotPasswordRequest;
 import com.beauty.ecommerce.user.adapter.in.web.request.LoginUserRequest;
 import com.beauty.ecommerce.user.adapter.in.web.request.RegisterUserRequest;
 import com.beauty.ecommerce.user.adapter.in.web.request.ResetPasswordRequest;
 import com.beauty.ecommerce.user.adapter.in.web.request.TokenRefreshRequest;
+import com.beauty.ecommerce.user.adapter.in.web.request.UpdateProfileRequest;
 import com.beauty.ecommerce.user.adapter.in.web.response.AuthResponse;
 import com.beauty.ecommerce.user.adapter.in.web.response.UserProfileResponse;
 import com.beauty.ecommerce.user.application.service.AuthService;
+import com.beauty.ecommerce.common.service.CloudinaryService;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -24,6 +27,7 @@ import org.springframework.web.bind.annotation.*;
 public class AuthController {
 
     private final AuthService authService;
+    private final CloudinaryService cloudinaryService;
 
     @PostMapping("/auth/register")
     public ResponseEntity<ApiResponse<AuthResponse>> register(@Valid @RequestBody RegisterUserRequest request) {
@@ -72,5 +76,39 @@ public class AuthController {
                 .status(200)
                 .message("Đặt lại mật khẩu thành công.")
                 .build());
+    }
+
+    @PostMapping("/auth/logout")
+    public ResponseEntity<ApiResponse<Void>> logout(Authentication authentication) {
+        log.info("Yêu cầu đăng xuất từ: {}", authentication.getName());
+        authService.logout(authentication.getName());
+        return ResponseEntity.ok(ApiResponse.success("Đăng xuất thành công", null));
+    }
+
+    @PostMapping("/users/change-password")
+    public ResponseEntity<ApiResponse<Void>> changePassword(
+            Authentication authentication,
+            @Valid @RequestBody ChangePasswordRequest request) {
+        log.info("Yêu cầu đổi mật khẩu cho: {}", authentication.getName());
+        authService.changePassword(authentication.getName(), request.getOldPassword(), request.getNewPassword());
+        return ResponseEntity.ok(ApiResponse.success("Đổi mật khẩu thành công", null));
+    }
+
+    @PutMapping("/users/profile")
+    public ResponseEntity<ApiResponse<UserProfileResponse>> updateProfile(
+            Authentication authentication,
+            @RequestBody UpdateProfileRequest request) {
+        log.info("Cập nhật profile cho: {}", authentication.getName());
+        UserProfileResponse response = authService.updateProfile(authentication.getName(), request);
+        return ResponseEntity.ok(ApiResponse.success("Cập nhật thông tin thành công", response));
+    }
+
+    @PostMapping("/users/avatar")
+    public ResponseEntity<ApiResponse<String>> updateAvatar(
+            Authentication authentication,
+            @RequestParam("file") org.springframework.web.multipart.MultipartFile file) {
+        log.info("Cập nhật avatar cho: {}", authentication.getName());
+        String avatarUrl = authService.updateAvatar(authentication.getName(), file, cloudinaryService);
+        return ResponseEntity.ok(ApiResponse.success("Tải ảnh đại diện thành công", avatarUrl));
     }
 }

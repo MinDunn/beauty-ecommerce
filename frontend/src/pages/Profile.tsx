@@ -1,29 +1,214 @@
-import { useState } from 'react';
-import { useSelector } from 'react-redux';
-import { User, Mail, Lock, Phone, MapPin, Package, Settings, ChevronRight, Camera } from 'lucide-react';
+import { useState, useEffect, useRef } from 'react';
+import { useSelector, useDispatch } from 'react-redux';
+import { User, Mail, Lock, Phone, MapPin, Package, Settings, ChevronRight, Camera, LogOut, Heart, Sparkles } from 'lucide-react';
 import type { RootState } from '../store';
+import { logout as logoutAction, updateUser } from '../store/slices/authSlice';
 import { cn } from '../utils/cn';
+import authService from '../api/authService';
+import type { UserProfile } from '../api/authService';
+import toast from 'react-hot-toast';
+import { useNavigate } from 'react-router-dom';
+import wishlistService from '../api/wishlistService';
+import { products as mockProducts } from '../data/products';
+import { ProductCard } from '../components/ui/ProductCard';
 
 const Profile = () => {
   const { user } = useSelector((state: RootState) => state.auth);
+  const dispatch = useDispatch();
+  const navigate = useNavigate();
+  const fileInputRef = useRef<HTMLInputElement>(null);
+  
   const [activeTab, setActiveTab] = useState('info');
   const [isSaving, setIsSaving] = useState(false);
+  const [isUploading, setIsUploading] = useState(false);
+  const [profile, setProfile] = useState<UserProfile | null>(null);
   
   // Form state
   const [formData, setFormData] = useState({
-    name: user?.name || '',
+    fullName: '',
     phone: '',
     address: ''
   });
 
+  const [passwordData, setPasswordData] = useState({
+    oldPassword: '',
+    newPassword: '',
+    confirmPassword: ''
+  });
+
+  useEffect(() => {
+    fetchProfile();
+  }, []);
+
+  const fetchProfile = async () => {
+    try {
+      const resp = await authService.getProfile();
+      setProfile(resp.data.data);
+      setFormData({
+        fullName: resp.data.data.fullName || '',
+        phone: resp.data.data.phone || '',
+        address: resp.data.data.address || ''
+      });
+    } catch (error) {
+      console.error('Error fetching profile', error);
+      toast.error('Không thể tải thông tin cá nhân');
+    }
+  };
+
   const handleSave = async (e: React.FormEvent) => {
     e.preventDefault();
     setIsSaving(true);
-    // Simulate API update
-    await new Promise(resolve => setTimeout(resolve, 1500));
-    setIsSaving(false);
-    // In a real app, we would dispatch an update user action here
-    alert('Đã cập nhật thông tin thành công!');
+    try {
+      const resp = await authService.updateProfile(formData);
+      setProfile(resp.data.data);
+      dispatch(updateUser({ name: resp.data.data.fullName }));
+      toast.success('Cập nhật thông tin thành công!');
+    } catch (error: any) {
+      toast.error(error.response?.data?.message || 'Cập nhật thất bại');
+    } finally {
+      setIsSaving(false);
+    }
+  };
+
+  const handleAvatarClick = () => {
+    fileInputRef.current?.click();
+  };
+
+  const handleFileChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    // Validate file size (e.g., < 2MB)
+    if (file.size > 2 * 1024 * 1024) {
+      toast.error('Kích thước ảnh quá lớn (tối đa 2MB)');
+      return;
+    }
+
+    setIsUploading(true);
+    const loadingToast = toast.loading('Đang tải ảnh lên...');
+    try {
+      const resp = await authService.uploadAvatar(file);
+      const newAvatarUrl = resp.data.data;
+      setProfile(prev => prev ? { ...prev, avatarUrl: newAvatarUrl } : null);
+      dispatch(updateUser({ avatarUrl: newAvatarUrl }));
+      toast.success('Cập nhật ảnh đại diện thành công!', { id: loadingToast });
+    } catch {
+      toast.error('Tải ảnh thất bại', { id: loadingToast });
+    } finally {
+      setIsUploading(false);
+    }
+  };
+
+  const handleChangePassword = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (passwordData.newPassword !== passwordData.confirmPassword) {
+      toast.error('Mật khẩu xác nhận không khớp');
+      return;
+    }
+
+    const loadingToast = toast.loading('Đang xử lý...');
+    try {
+      await authService.changePassword({
+        oldPassword: passwordData.oldPassword,
+        newPassword: passwordData.newPassword
+      });
+      toast.success('Đổi mật khẩu thành công!', { id: loadingToast });
+      setPasswordData({ oldPassword: '', newPassword: '', confirmPassword: '' });
+    } catch (error: any) {
+      toast.error(error.response?.data?.message || 'Đổi mật khẩu thất bại', { id: loadingToast });
+    }
+  };
+
+  const handleLogout = async () => {
+    try {
+      await authService.logout();
+    } catch (error) {
+      // Still logout on client side even if server fails
+      console.error('Server logout failed', error);
+    }
+    dispatch(logoutAction());
+    toast.success('Đã đăng xuất');
+    navigate('/');
+  };
+
+  const WishlistTab = () => {
+    const [wishlistProducts, setWishlistProducts] = useState<any[]>([]);
+    const [isLoading, setIsLoading] = useState(true);
+
+    useEffect(() => {
+      const loadWishlist = async () => {
+        try {
+          const resp = await wishlistService.getWishlist();
+          const savedIds = resp.data.data.map(String);
+          // Combine mock products that match saved IDs
+          const found = mockProducts.filter(p => savedIds.includes(p.id));
+          setWishlistProducts(found);
+        } catch (error) {
+          console.error('Error loading wishlist', error);
+        } finally {
+          setIsLoading(false);
+        }
+      };
+      loadWishlist();
+    }, []);
+
+    const handleRemove = async (productId: string) => {
+      try {
+        await wishlistService.removeFromWishlist(Number(productId));
+        setWishlistProducts(prev => prev.filter(p => p.id !== productId));
+        toast.success('Đã xóa khỏi danh sách yêu thích');
+      } catch (error) {
+        toast.error('Không thể xóa sản phẩm');
+      }
+    };
+
+    return (
+      <div className="space-y-8 animate-in fade-in slide-in-from-bottom-4 duration-500">
+        <div className="flex items-center justify-between">
+          <div>
+            <h2 className="text-2xl font-black text-gray-900 uppercase mb-2">Sản phẩm yêu thích</h2>
+            <p className="text-gray-500 font-medium">Danh sách các sản phẩm bạn đã lưu để mua sau.</p>
+          </div>
+          <span className="bg-red-50 text-red-600 px-4 py-2 rounded-xl text-xs font-black">
+            {wishlistProducts.length} sản phẩm
+          </span>
+        </div>
+
+        {isLoading ? (
+          <div className="py-20 flex flex-col items-center justify-center gap-4">
+            <div className="w-10 h-10 border-4 border-primary-500 border-t-transparent rounded-full animate-spin"></div>
+            <p className="text-xs font-black text-gray-400 uppercase tracking-widest">Đang tải danh sách...</p>
+          </div>
+        ) : wishlistProducts.length > 0 ? (
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+            {wishlistProducts.map(product => (
+              <div key={product.id} className="relative group">
+                <ProductCard {...product} />
+                <button 
+                  onClick={(e) => { e.preventDefault(); handleRemove(product.id); }}
+                  className="absolute top-4 right-4 p-2 bg-white/90 backdrop-blur-sm text-red-500 rounded-xl shadow-lg opacity-0 group-hover:opacity-100 transition-opacity z-30 border border-red-100"
+                  title="Xóa khỏi yêu thích"
+                >
+                  <Heart size={18} fill="currentColor" />
+                </button>
+              </div>
+            ))}
+          </div>
+        ) : (
+          <div className="text-center py-20 bg-gray-50 rounded-[2.5rem] border border-dashed border-gray-300">
+            <Sparkles size={48} className="mx-auto text-gray-200 mb-4" />
+            <h3 className="text-lg font-black text-gray-900 uppercase">Chưa có sản phẩm nào</h3>
+            <p className="text-gray-400 text-sm mt-1 italic italic">Hãy thả tim sản phẩm bạn yêu thích để lưu tại đây nhé!</p>
+            <button 
+              onClick={() => navigate('/')}
+              className="mt-6 px-8 py-3 bg-primary-500 text-white font-black rounded-xl text-xs uppercase tracking-widest hover:bg-primary-600 transition-all"
+            >
+              Tiếp tục mua sắm
+            </button>
+          </div>
+        )}
+      </div>
+    );
   };
 
   return (
@@ -33,23 +218,43 @@ const Profile = () => {
           
           {/* Left Sidebar */}
           <div className="w-full lg:w-1/4 space-y-4">
-            <div className="bg-white rounded-[2rem] p-6 shadow-sm border border-gray-100 text-center">
+            <div className="bg-white rounded-[2rem] p-6 shadow-sm border border-gray-100 text-center relative overflow-hidden">
               <div className="relative inline-block mb-4">
-                <div className="w-24 h-24 rounded-full bg-primary-100 flex items-center justify-center text-primary-600 text-3xl font-black border-4 border-white shadow-md">
-                   {user?.name?.[0] || 'U'}
+                <div className="w-24 h-24 rounded-full bg-primary-100 flex items-center justify-center text-primary-600 text-3xl font-black border-4 border-white shadow-md overflow-hidden bg-cover bg-center" style={{ backgroundImage: profile?.avatarUrl ? `url(${profile.avatarUrl})` : 'none' }}>
+                   {!profile?.avatarUrl && (profile?.fullName?.[0] || user?.name?.[0] || 'U')}
                 </div>
-                <button className="absolute bottom-0 right-0 p-2 bg-white rounded-full shadow-lg border border-gray-100 text-gray-500 hover:text-primary-500 transition-colors">
-                   <Camera size={16} />
+                <button 
+                  onClick={handleAvatarClick}
+                  disabled={isUploading}
+                  className="absolute bottom-0 right-0 p-2 bg-white rounded-full shadow-lg border border-gray-100 text-gray-500 hover:text-primary-500 transition-colors disabled:opacity-50"
+                >
+                   <Camera size={16} className={isUploading ? 'animate-pulse' : ''} />
                 </button>
+                <input 
+                  type="file" 
+                  ref={fileInputRef} 
+                  onChange={handleFileChange} 
+                  className="hidden" 
+                  accept="image/*"
+                />
               </div>
-              <h3 className="text-xl font-black text-gray-900">{user?.name}</h3>
-              <p className="text-xs text-gray-400 font-bold uppercase tracking-widest mt-1">{user?.email}</p>
+              <h3 className="text-xl font-black text-gray-900 line-clamp-1">{profile?.fullName || user?.name}</h3>
+              <p className="text-[10px] text-gray-400 font-bold uppercase tracking-widest mt-1 mb-4">{profile?.email || user?.email}</p>
+              
+              <button 
+                onClick={handleLogout}
+                className="glowzy-btn-secondary w-full py-3 bg-red-50 text-red-600 border-red-100/50 hover:bg-red-600 hover:text-white"
+              >
+                 <LogOut size={14} className="inline-block mr-2 translate-y-[-1px]" />
+                 <span>Đăng xuất</span>
+              </button>
             </div>
 
-            <nav className="bg-white rounded-[2rem] overflow-hidden shadow-sm border border-gray-100 p-2">
+            <nav className="glowzy-card overflow-hidden p-2">
               {[
                 { id: 'info', label: 'Thông tin cá nhân', icon: User },
                 { id: 'orders', label: 'Đơn hàng của tôi', icon: Package },
+                { id: 'wishlist', label: 'Sản phẩm yêu thích', icon: Heart },
                 { id: 'security', label: 'Bảo mật', icon: Lock },
                 { id: 'settings', label: 'Thiết lập', icon: Settings },
               ].map((item) => (
@@ -57,9 +262,9 @@ const Profile = () => {
                   key={item.id}
                   onClick={() => setActiveTab(item.id)}
                   className={cn(
-                    "w-full flex items-center justify-between px-6 py-4 rounded-2xl transition-all font-bold text-sm",
+                    "w-full flex items-center justify-between px-6 py-4 rounded-2xl transition-all duration-300 font-bold text-sm",
                     activeTab === item.id 
-                      ? "bg-primary-500 text-white shadow-lg shadow-primary-500/20" 
+                      ? "bg-primary-500 text-white shadow-lg shadow-primary-500/30 -translate-y-0.5" 
                       : "text-gray-500 hover:bg-gray-50 hover:text-gray-900"
                   )}
                 >
@@ -75,7 +280,7 @@ const Profile = () => {
 
           {/* Main Content Area */}
           <div className="flex-1">
-            <div className="bg-white rounded-[2rem] shadow-sm border border-gray-100 p-8 md:p-12 min-h-[600px]">
+            <div className="glowzy-card p-8 md:p-12 min-h-[600px]">
               
               {activeTab === 'info' && (
                 <div className="space-y-8 animate-in fade-in slide-in-from-bottom-4 duration-500">
@@ -86,46 +291,46 @@ const Profile = () => {
 
                   <form onSubmit={handleSave} className="grid grid-cols-1 md:grid-cols-2 gap-6">
                     <div className="space-y-2">
-                      <label className="text-xs font-black text-gray-400 uppercase tracking-widest ml-1">Họ và tên</label>
+                      <label className="text-[10px] font-black text-gray-400 uppercase tracking-widest ml-1">Họ và tên</label>
                       <div className="relative">
                         <input 
                           type="text" 
-                          value={formData.name}
-                          onChange={(e) => setFormData({...formData, name: e.target.value})}
-                          className="w-full pl-12 pr-4 py-4 bg-gray-50 border border-transparent rounded-2xl focus:bg-white focus:border-primary-500 focus:ring-4 focus:ring-primary-500/10 transition-all outline-none font-bold" 
+                          value={formData.fullName}
+                          onChange={(e) => setFormData({...formData, fullName: e.target.value})}
+                          className="glowzy-input pl-12" 
                         />
-                        <User className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-400" size={20} />
+                        <User className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-400 group-focus-within:text-primary-500 transition-colors" size={20} />
                       </div>
                     </div>
                     <div className="space-y-2">
-                       <label className="text-xs font-black text-gray-400 uppercase tracking-widest ml-1">Số điện thoại</label>
+                       <label className="text-[10px] font-black text-gray-400 uppercase tracking-widest ml-1">Số điện thoại</label>
                        <div className="relative">
                         <input 
                           type="tel" 
                           value={formData.phone}
                           onChange={(e) => setFormData({...formData, phone: e.target.value})}
                           placeholder="Chưa cập nhật" 
-                          className="w-full pl-12 pr-4 py-4 bg-gray-50 border border-transparent rounded-2xl focus:bg-white focus:border-primary-500 focus:ring-4 focus:ring-primary-500/10 transition-all outline-none font-bold" 
+                          className="glowzy-input pl-12" 
                         />
                         <Phone className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-400" size={20} />
                        </div>
                     </div>
                     <div className="space-y-2 md:col-span-2">
-                       <label className="text-xs font-black text-gray-400 uppercase tracking-widest ml-1">Email (Không thể thay đổi)</label>
+                       <label className="text-[10px] font-black text-gray-400 uppercase tracking-widest ml-1">Email (Không thể thay đổi)</label>
                        <div className="relative">
-                        <input type="email" readOnly defaultValue={user?.email} className="w-full pl-12 pr-4 py-4 bg-gray-100 border border-transparent rounded-2xl text-gray-500 cursor-not-allowed font-bold" />
+                        <input type="email" readOnly value={profile?.email || user?.email || ''} className="w-full pl-12 pr-4 py-4 bg-gray-100 border border-transparent rounded-2xl text-gray-500 cursor-not-allowed font-bold" />
                         <Mail className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-400" size={20} />
                        </div>
                     </div>
                     <div className="space-y-2 md:col-span-2">
-                       <label className="text-xs font-black text-gray-400 uppercase tracking-widest ml-1">Địa chỉ giao hàng mặc định</label>
+                       <label className="text-[10px] font-black text-gray-400 uppercase tracking-widest ml-1">Địa chỉ giao hàng mặc định</label>
                        <div className="relative">
                         <textarea 
                           rows={2} 
                           value={formData.address}
                           onChange={(e) => setFormData({...formData, address: e.target.value})}
                           placeholder="Vui lòng điền địa chỉ để nhận hàng" 
-                          className="w-full pl-12 pr-4 py-4 bg-gray-50 border border-transparent rounded-2xl focus:bg-white focus:border-primary-500 focus:ring-4 focus:ring-primary-500/10 transition-all outline-none font-bold resize-none" 
+                          className="glowzy-input pl-12 resize-none" 
                         />
                         <MapPin className="absolute left-4 top-6 text-gray-400" size={20} />
                        </div>
@@ -134,9 +339,9 @@ const Profile = () => {
                       <button 
                         type="submit" 
                         disabled={isSaving}
-                        className="px-10 py-4 bg-primary-500 text-white font-black rounded-2xl shadow-xl shadow-primary-500/20 hover:bg-primary-600 transition-all hover:-translate-y-1 uppercase tracking-widest disabled:opacity-70"
+                        className="glowzy-btn-primary px-12"
                       >
-                        {isSaving ? 'Đang lưu...' : 'Lưu thay đổi'}
+                        {isSaving ? 'Đang lưu...' : 'Lưu hồ sơ ngay'}
                       </button>
                     </div>
                   </form>
@@ -154,23 +359,22 @@ const Profile = () => {
                   </div>
 
                   <div className="space-y-4">
-                    {/* Fake Order List */}
-                    <div className="border border-gray-100 rounded-3xl p-6 hover:border-primary-200 transition-colors">
+                    <div className="border border-gray-100 rounded-3xl p-6 hover:border-primary-200 transition-colors bg-gray-50/20">
                       <div className="flex flex-wrap items-center justify-between gap-4 mb-4">
-                        <div className="flex items-center space-x-3 font-black text-sm uppercase tracking-tighter">
+                        <div className="flex items-center space-x-3 font-black text-[10px] uppercase tracking-tighter">
                           <span className="text-gray-400">Mã đơn:</span>
                           <span className="text-gray-900">#GLW88921</span>
                         </div>
-                        <span className="px-3 py-1 bg-green-50 text-green-600 text-[10px] font-black uppercase rounded-lg">Đã giao hàng</span>
-                        <span className="text-xs text-gray-400 font-bold ml-auto">01/01/2026</span>
+                        <span className="px-3 py-1 bg-green-50 text-green-600 text-[9px] font-black uppercase rounded-lg">Đã giao hàng</span>
+                        <span className="text-[10px] text-gray-400 font-bold ml-auto">01/01/2026</span>
                       </div>
                       <div className="flex items-center space-x-4">
-                         <div className="w-16 h-16 rounded-2xl bg-gray-50 p-2 overflow-hidden border border-gray-100 flex-shrink-0">
+                         <div className="w-16 h-16 rounded-2xl bg-white p-2 overflow-hidden border border-gray-100 flex-shrink-0">
                             <img src="https://images.unsplash.com/photo-1598440947619-2c35fc9aa908?q=80&w=100&auto=format&fit=crop" className="w-full h-full object-contain mix-blend-multiply" />
                          </div>
                          <div className="flex-1">
-                            <h4 className="font-bold text-gray-800 text-sm line-clamp-1">Kem Chống Nắng La Roche-Posay Anthelios...</h4>
-                            <p className="text-xs text-gray-400 mt-1">Số lượng: 02</p>
+                            <h4 className="font-bold text-gray-800 text-xs translate-y-[-1px] line-clamp-1">Kem Chống Nắng La Roche-Posay Anthelios UVmune 400</h4>
+                            <p className="text-[10px] text-gray-400 mt-1 font-bold">Số lượng: 02</p>
                          </div>
                          <div className="text-right">
                             <span className="text-lg font-black text-primary-600 tracking-tighter">870.000đ</span>
@@ -188,33 +392,58 @@ const Profile = () => {
                     <p className="text-gray-500 font-medium">Bảo vệ quyền truy cập và dữ liệu của bạn.</p>
                   </div>
 
-                  <form className="max-w-md space-y-6">
+                  <form onSubmit={handleChangePassword} className="max-w-md space-y-6">
                     <div className="space-y-2">
-                      <label className="text-xs font-black text-gray-400 uppercase tracking-widest ml-1">Mật khẩu hiện tại</label>
-                      <input type="password" placeholder="••••••••" className="w-full px-5 py-4 bg-gray-50 border border-transparent rounded-2xl focus:bg-white focus:border-primary-500 focus:ring-4 focus:ring-primary-500/10 transition-all outline-none font-bold" />
+                      <label className="text-[10px] font-black text-gray-400 uppercase tracking-widest ml-1">Mật khẩu hiện tại</label>
+                      <input 
+                        type="password" 
+                        required
+                        value={passwordData.oldPassword}
+                        onChange={(e) => setPasswordData({...passwordData, oldPassword: e.target.value})}
+                        placeholder="••••••••" 
+                        className="w-full px-5 py-4 bg-gray-50 border border-transparent rounded-2xl focus:bg-white focus:border-primary-500 focus:ring-4 focus:ring-primary-500/10 transition-all outline-none font-bold" 
+                      />
                     </div>
                     <div className="space-y-2">
-                      <label className="text-xs font-black text-gray-400 uppercase tracking-widest ml-1">Mật khẩu mới</label>
-                      <input type="password" placeholder="••••••••" className="w-full px-5 py-4 bg-gray-50 border border-transparent rounded-2xl focus:bg-white focus:border-primary-500 focus:ring-4 focus:ring-primary-500/10 transition-all outline-none font-bold" />
+                      <label className="text-[10px] font-black text-gray-400 uppercase tracking-widest ml-1">Mật khẩu mới</label>
+                      <input 
+                        type="password" 
+                        required
+                        value={passwordData.newPassword}
+                        onChange={(e) => setPasswordData({...passwordData, newPassword: e.target.value})}
+                        placeholder="••••••••" 
+                        className="w-full px-5 py-4 bg-gray-50 border border-transparent rounded-2xl focus:bg-white focus:border-primary-500 focus:ring-4 focus:ring-primary-500/10 transition-all outline-none font-bold" 
+                      />
                     </div>
                     <div className="space-y-2">
-                       <label className="text-xs font-black text-gray-400 uppercase tracking-widest ml-1">Xác nhận mật khẩu</label>
-                       <input type="password" placeholder="••••••••" className="w-full px-5 py-4 bg-gray-50 border border-transparent rounded-2xl focus:bg-white focus:border-primary-500 focus:ring-4 focus:ring-primary-500/10 transition-all outline-none font-bold" />
+                       <label className="text-[10px] font-black text-gray-400 uppercase tracking-widest ml-1">Xác nhận mật khẩu</label>
+                       <input 
+                        type="password" 
+                        required
+                        value={passwordData.confirmPassword}
+                        onChange={(e) => setPasswordData({...passwordData, confirmPassword: e.target.value})}
+                        placeholder="••••••••" 
+                        className="w-full px-5 py-4 bg-gray-50 border border-transparent rounded-2xl focus:bg-white focus:border-primary-500 focus:ring-4 focus:ring-primary-500/10 transition-all outline-none font-bold" 
+                      />
                     </div>
-                    <button type="button" className="w-full py-4 bg-gray-900 text-white font-black rounded-2xl hover:bg-black transition-all hover:scale-[1.02] uppercase tracking-widest">
+                    <button type="submit" className="w-full py-4 bg-gray-900 text-white font-black rounded-2xl hover:bg-black transition-all hover:scale-[1.02] uppercase tracking-widest shadow-xl">
                        Đổi mật khẩu ngay
                     </button>
                   </form>
                 </div>
               )}
 
+              {activeTab === 'wishlist' && (
+                <WishlistTab />
+              )}
+
               {activeTab === 'settings' && (
-                <div className="flex flex-col items-center justify-center h-full text-center">
-                   <div className="w-20 h-20 bg-gray-50 rounded-full flex items-center justify-center text-gray-300 mb-6">
+                <div className="flex flex-col items-center justify-center h-full text-center py-20">
+                   <div className="w-20 h-20 bg-gray-50 rounded-full flex items-center justify-center text-gray-300 mb-6 border border-dashed border-gray-300">
                       <Settings size={40} />
                    </div>
                    <h3 className="text-xl font-black text-gray-800 mb-2">Đang xây dựng</h3>
-                   <p className="text-gray-500">Tính năng này sẽ sớm ra mắt khách yêu nhé!</p>
+                   <p className="text-gray-500 text-sm italic">Tính năng thiết lập tào khoản sẽ sớm ra mắt khách yêu nhé!</p>
                 </div>
               )}
             </div>
