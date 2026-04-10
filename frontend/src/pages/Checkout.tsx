@@ -68,8 +68,9 @@ const Checkout = () => {
       const resp = await couponService.validate(couponCode, subTotal);
       setAppliedCoupon(resp.data.data);
       toast.success('Áp dụng mã giảm giá thành công!', { id: loadingToast });
-    } catch (error: any) {
-      toast.error(error.response?.data?.message || 'Không thể áp dụng mã này', { id: loadingToast });
+    } catch (error: unknown) {
+      const errMsg = error instanceof Error ? error.message : 'Không thể áp dụng mã này';
+      toast.error(errMsg, { id: loadingToast });
       setAppliedCoupon(null);
     } finally {
       setIsApplying(false);

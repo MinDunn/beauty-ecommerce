@@ -63,8 +63,9 @@ const Profile = () => {
       setProfile(resp.data.data);
       dispatch(updateUser({ name: resp.data.data.fullName }));
       toast.success('Cập nhật thông tin thành công!');
-    } catch (error: any) {
-      toast.error(error.response?.data?.message || 'Cập nhật thất bại');
+    } catch (error: unknown) {
+      const errMsg = error instanceof Error ? (error as any).response?.data?.message || error.message : 'Cập nhật thất bại';
+      toast.error(errMsg);
     } finally {
       setIsSaving(false);
     }
@@ -114,8 +115,9 @@ const Profile = () => {
       });
       toast.success('Đổi mật khẩu thành công!', { id: loadingToast });
       setPasswordData({ oldPassword: '', newPassword: '', confirmPassword: '' });
-    } catch (error: any) {
-      toast.error(error.response?.data?.message || 'Đổi mật khẩu thất bại', { id: loadingToast });
+    } catch (error: unknown) {
+      const errMsg = error instanceof Error ? (error as any).response?.data?.message || error.message : 'Đổi mật khẩu thất bại';
+      toast.error(errMsg, { id: loadingToast });
     }
   };
 
@@ -157,7 +159,7 @@ const Profile = () => {
         await wishlistService.removeFromWishlist(Number(productId));
         setWishlistProducts(prev => prev.filter(p => p.id !== productId));
         toast.success('Đã xóa khỏi danh sách yêu thích');
-      } catch (error) {
+      } catch {
         toast.error('Không thể xóa sản phẩm');
       }
     };

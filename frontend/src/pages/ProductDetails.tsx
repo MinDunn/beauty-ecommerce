@@ -1,6 +1,6 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { useParams, Link, useNavigate } from 'react-router-dom';
-import { Star, ShoppingCart, Heart, ShieldCheck, Truck, Minus, Plus, Share2, Facebook, MessageCircle, ChevronRight } from 'lucide-react';
+import { Star, ShoppingCart, Heart, ShieldCheck, Truck, Share2, Facebook, MessageCircle, ChevronRight, Minus, Plus } from 'lucide-react';
 import { useDispatch, useSelector } from 'react-redux';
 import { addItem } from '../store/slices/cartSlice';
 import { cn } from '../utils/cn';
@@ -46,34 +46,34 @@ const ProductDetails = () => {
 
   const [mainImage, setMainImage] = useState(product.images[0]);
 
-  useEffect(() => {
-    if (user && id) {
-      checkWishlistStatus();
-    }
-    fetchReviews();
-  }, [id, user]);
-
-  const checkWishlistStatus = async () => {
+  const checkWishlistStatus = useCallback(async () => {
     try {
       const resp = await wishlistService.checkWishlist(Number(id));
       setIsWishlisted(resp.data.data);
-    } catch (error) {
+    } catch (error: unknown) {
       console.error('Error checking wishlist', error);
     }
-  };
+  }, [id]);
 
-  const fetchReviews = async () => {
+  const fetchReviews = useCallback(async () => {
     if (!id) return;
     setIsLoadingReviews(true);
     try {
       const resp = await reviewService.getReviews(Number(id));
       setReviews(resp.data.data);
-    } catch (error) {
+    } catch (error: unknown) {
       console.error('Error fetching reviews', error);
     } finally {
       setIsLoadingReviews(false);
     }
-  };
+  }, [id]);
+
+  useEffect(() => {
+    if (user && id) {
+      checkWishlistStatus();
+    }
+    fetchReviews();
+  }, [id, user, checkWishlistStatus, fetchReviews]);
 
   const handleToggleWishlist = async () => {
     if (!user) {
@@ -100,9 +100,10 @@ const ProductDetails = () => {
         await wishlistService.addToWishlist(numericId);
         toast.success('Đã thêm vào danh sách yêu thích');
       }
-    } catch (error: any) {
+    } catch (error: unknown) {
       setIsWishlisted(previousState);
-      toast.error(error.response?.data?.message || 'Có lỗi xảy ra');
+      const errMsg = error instanceof Error ? (error as any).response?.data?.message || error.message : 'Có lỗi xảy ra';
+      toast.error(errMsg);
     }
   };
 
@@ -143,8 +144,9 @@ const ProductDetails = () => {
       toast.success('Cảm ơn bạn đã gửi đánh giá!');
       setNewReview({ rating: 5, comment: '' });
       fetchReviews();
-    } catch (error: any) {
-      toast.error(error.response?.data?.message || 'Có lỗi xảy ra');
+    } catch (error: unknown) {
+      const errMsg = error instanceof Error ? (error as any).response?.data?.message || error.message : 'Có lỗi xảy ra';
+      toast.error(errMsg);
     } finally {
       setIsSubmittingReview(false);
     }
