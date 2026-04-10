@@ -1,76 +1,146 @@
 # Beauty E-commerce System (MinDunn)
 
-Hệ thống thương mại điện tử chuyên cung cấp mỹ phẩm và các sản phẩm chăm sóc sắc đẹp, được xây dựng với kiến trúc hiện đại, bảo mật và hiệu năng cao.
+Hệ thống thương mại điện tử chuyên cung cấp mỹ phẩm và các sản phẩm chăm sóc sắc đẹp cao cấp. Dự án được phát triển với mục tiêu xây dựng một nền tảng mua sắm hiện đại, bảo mật và tối ưu hóa trải nghiệm người dùng.
 
-## 🚀 Công nghệ sử dụng
+---
+
+## 🚀 Công nghệ sử dụng (Tech Stack)
 
 ### Backend (Java Spring Boot)
-- **Framework:** Spring Boot 3.x
-- **Security:** Spring Security + JWT (JSON Web Token)
-- **Database:** MySQL
-- **ORM:** Spring Data JPA
+- **Framework:** Spring Boot 3.x (Java 17)
+- **Security:** Spring Security + JWT (Json Web Token) với cơ chế Refresh Token.
+- **Database:** MySQL 8.0
+- **ORM:** Spring Data JPA (Hibernate)
 - **Logging:** SLF4J + Lombok
-- **Architecture:** Modular Monolith / Hexagonal Architecture
+- **API Documentation:** Swagger/OpenAPI (Tích hợp sẵn)
 
 ### Frontend (React)
-- **Framework:** React + Vite
-- **Styling:** Vanilla CSS / Tailwind (Tùy chọn)
-- **State Management:** Redux Toolkit / Context API
-- **HTTP Client:** Axios
+- **Library:** React 19 + Vite (Siêu nhanh)
+- **Styling:** Tailwind CSS + Vanilla CSS (Aesthetics cao cấp)
+- **Animation:** Framer Motion (Hiệu ứng mượt mà)
+- **State Management:** Redux Toolkit (@reduxjs/toolkit)
+- **Routing:** React Router v7
+- **Form:** React Hook Form + Zod (Validation chặt chẽ)
+- **Icons:** Lucide React
 
-## ✨ Tính năng chính
+### Infrastructure & DevTools
+- **Containerization:** Docker & Docker Compose
+- **Build Tool:** Maven (Backend), NPM (Frontend)
+- **Version Control:** Git
 
-### 👤 Xác thực & Người dùng (Dũng - Lead)
-- Đăng ký & Đăng nhập bảo mật với BCrypt.
-- **Cơ chế Refresh Token:** Tự động duy trì phiên đăng nhập mà không cần login lại.
-- Profile người dùng và Phân quyền (User/Admin).
-- Tích hợp SLF4J Logging để giám sát hệ thống.
+---
 
-### 🛍️ Sản phẩm & Danh mục (Nhật Anh)
-- Quản lý danh mục sản phẩm (Categories).
-- Tìm kiếm, lọc sản phẩm theo giá và sắp xếp linh hoạt.
-- Quản lý kho hàng và hình ảnh sản phẩm.
+## ✨ Tính năng chính (Key Features)
 
-### 🛒 Giỏ hàng & Đặt hàng (Bảo)
-- Giỏ hàng cá nhân (Cart).
-- Quy trình Checkout chuyên nghiệp, trừ tồn kho và tạo đơn hàng.
-- Lịch sử mua hàng và quản lý trạng thái đơn hàng (Admin).
+### 👤 Xác thực & Phân quyền (Authentication & Authorization)
+- Đăng ký tài khoản và Đăng nhập bảo mật (BCrypt).
+- Phân quyền người dùng: **USER** (Khách hàng) và **ADMIN** (Quản trị viên).
+- Cấu trúc bảo mật JWT: Access Token ngắn hạn và Refresh Token dài hạn.
 
-### 💬 Tương tác & Phản hồi (Dũng)
-- Hệ thống đánh giá sản phẩm (Reviews) 1-5 sao.
-- Chat/Feedback từ khách hàng tới Admin (Contact Flow).
+### 🛍️ Quản lý Sản phẩm & Danh mục
+- Duyệt sản phẩm theo danh mục (Skincare, Makeup, Haircare, Beauty...).
+- Tìm kiếm sản phẩm thông minh, lọc theo giá và thương hiệu.
+- Trang chi tiết sản phẩm với đầy đủ thông tin, hình ảnh và gợi ý.
 
-## 🛠️ Cài đặt & Chạy ứng dụng
+### 🛒 Giỏ hàng & Thanh toán
+- Quản lý giỏ hàng (Thêm, sửa, xóa, cập nhật số lượng).
+- Quy trình Thanh toán (Checkout) chuyên nghiệp.
+- Tự động kiểm tra và trừ tồn kho khi đặt hàng thành công.
 
-### 1. Yêu cầu hệ thống
-- JDK 17+
-- MySQL 8.0+
-- Node.js 18+ & npm
+### 📊 Trang Quản trị (Admin Dashboard)
+- Quản lý danh sách sản phẩm (Thêm mới, cập nhật thông tin, hình ảnh).
+- Quản lý đơn hàng và trạng thái đơn hàng.
+- Theo dõi ý kiến phản hồi và đánh giá từ khách hàng.
 
-### 2. Cấu hình Backend
-Tạo database MySQL và cấu hình các biến môi trường sau (hoặc sửa trực tiếp trong `application.yml`):
-- `DB_URL`: JDBC URL (ví dụ: `jdbc:mysql://localhost:3306/beauty_db`)
-- `DB_USERNAME`: Tài khoản DB
-- `DB_PASSWORD`: Mật khẩu DB
-- `JWT_SECRET`: Khóa bí mật JWT
+### 💬 Tương tác khách hàng
+- Hệ thống đánh giá (Rating) & Bình luận sản phẩm.
+- Form liên hệ (Contact) và gửi yêu cầu hỗ trợ tới hệ thống.
 
+---
+
+## 🔑 Tài khoản thử nghiệm (Test Accounts)
+
+Bạn có thể sử dụng các tài khoản sau để kiểm tra các tính năng phân quyền:
+
+| Vai trò | Email | Mật khẩu |
+| :--- | :--- | :--- |
+| **Quản trị viên (Admin)** | `admin@beauty.com` | `admin123` |
+| **Khách hàng (User)** | `user@beauty.com` | `user123` (Cần đăng ký) |
+
+## 🔗 Đường dẫn truy cập (Access URLs)
+
+| Thành phần | URL công cộng | Cổng mặc định |
+| :--- | :--- | :--- |
+| **Frontend (Giao diện)** | `http://localhost:5173` | `5173` |
+| **Backend (API)** | `http://localhost:8080` | `8080` |
+| **Swagger UI (Docs)** | `http://localhost:8080/swagger-ui/index.html` | - |
+
+---
+
+## 🛠️ Cài đặt & Chạy ứng dụng (Installation)
+
+### 1. Yêu cầu hệ thống (Prerequisites)
+- [Node.js 18+](https://nodejs.org/)
+- [Java JDK 17+](https://adoptium.net/)
+- [Docker](https://www.docker.com/) (Tùy chọn, dùng để chạy nhanh MySQL)
+
+### 2. Cấu hình Biến môi trường
+Dự án sử dụng file `.env` ở thư mục gốc để quản lý cấu hình:
+```env
+MYSQL_DATABASE=beauty_ecommerce
+MYSQL_ROOT_PASSWORD=your_password
+MYSQL_PORT=3306
+DB_URL=jdbc:mysql://localhost:3306/beauty_ecommerce
+DB_USERNAME=root
+DB_PASSWORD=your_password
+JWT_SECRET=your_long_secret_key
+```
+
+### 3. Khởi chạy với Docker (Nhanh nhất)
+Sử dụng Docker Compose để tạo database MySQL:
+```bash
+docker-compose up -d
+```
+
+### 4. Khởi chạy Backend
 ```bash
 cd backend
 mvn clean install
 mvn spring-boot:run
 ```
 
-### 3. Cấu hình Frontend
+### 5. Khởi chạy Frontend
 ```bash
 cd frontend
 npm install
 npm run dev
 ```
 
-## 🔒 Bảo mật & Hạ tầng
-- **Environment Variables:** Mọi thông tin nhạy cảm được cấu hình qua biến môi trường.
-- **Global Exception Handling:** Xử lý lỗi tập trung, ẩn chi tiết lỗi hệ thống để bảo mật thông tin.
-- **Audit:** Dữ liệu được bảo vệ bằng cơ chế Transaction và các ràng buộc DB (Unique, Check constraints).
+---
+
+## 📁 Cấu trúc thư mục (Project Structure)
+
+```text
+beauty-ecommerce/
+├── backend/            # Spring Boot Maven Project
+│   ├── src/main/java/  # Layered Architecture (Controller, Service, Repository, Entity)
+│   └── pom.xml         # Backend dependencies
+├── frontend/           # Vite React Project
+│   ├── src/            # Components, Pages, Store (Redux), Assets
+│   └── package.json    # Frontend dependencies
+├── docker-compose.yml  # Database orchestration
+├── .env                # Global configuration
+└── README.md           # Documentation
+```
 
 ---
-© 2026 Beauty E-commerce Project - Developed by Team MinDunn.
+
+## 👥 Đội ngũ phát triển (Development Team)
+
+- **Dũng (Lead):** Chịu trách nhiệm Security (JWT), Refresh Token, Auth Flow và Hệ thống Feedback.
+- **Nhật Anh:** Chụp trách nhiệm Module Sản phẩm và Danh mục (Category/Product).
+- **Bảo:** Chụp trách nhiệm Module Giỏ hàng và Luồng đặt hàng (Cart/Checkout).
+
+---
+
+© 2026 **Beauty E-commerce Project**. Được xây dựng với niềm đam mê công nghệ và làm đẹp.
