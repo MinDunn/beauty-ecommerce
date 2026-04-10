@@ -1,20 +1,17 @@
 import { useState } from 'react';
-import { Link } from 'react-router-dom';
+import { Link, useNavigate } from 'react-router-dom';
 import { ShieldCheck, ArrowRight, MapPin, CreditCard, Wallet, Banknote } from 'lucide-react';
+import { useSelector } from 'react-redux';
+import type { RootState } from '../store';
 
 const Checkout = () => {
+  const navigate = useNavigate();
+  const { items: cartItems, totalAmount: subTotal } = useSelector((state: RootState) => state.cart);
   const [paymentMethod, setPaymentMethod] = useState('cod');
 
-  // Mock cart summary data
-  const mockItems = [
-    { id: '1', name: 'Kem Chống Nắng La Roche-Posay...', price: 435000, quantity: 2, image: 'https://images.unsplash.com/photo-1598440947619-2c35fc9aa908?q=80&w=200&auto=format&fit=crop' },
-    { id: '2', name: 'Sữa Rửa Mặt CeraVe Foaming Cleanser', price: 365000, quantity: 1, image: 'https://images.unsplash.com/photo-1556228578-0d85b1a4d571?q=80&w=200&auto=format&fit=crop' }
-  ];
-
-  const subTotal = 1235000;
-  const discount = 50000;
-  const shippingFee = 25000;
-  const total = subTotal - discount + shippingFee;
+  const discount = subTotal > 1000000 ? 50000 : 0;
+  const shippingFee = subTotal > 500000 ? 0 : 25000;
+  const total = subTotal > 0 ? (subTotal - discount + shippingFee) : 0;
 
   return (
     <div className="bg-gray-50 min-h-screen py-8 md:py-16">
@@ -114,7 +111,7 @@ const Checkout = () => {
                
                {/* Mini items list */}
                <div className="space-y-4 mb-8 max-h-[300px] overflow-y-auto hide-scrollbar pr-2">
-                 {mockItems.map((item) => (
+                 {cartItems.map((item) => (
                    <div key={item.id} className="flex items-center gap-4 border-b border-gray-50 pb-4">
                      <div className="w-16 h-16 rounded-xl bg-gray-50 flex-shrink-0 p-2 border border-gray-100/50">
                         <img src={item.image} alt={item.name} className="w-full h-full object-contain mix-blend-multiply" />
@@ -160,7 +157,7 @@ const Checkout = () => {
 
                <button 
                 className="w-full flex items-center justify-center gap-3 py-5 bg-gray-900 text-white font-black rounded-2xl shadow-xl hover:bg-black transition-all hover:-translate-y-1 uppercase tracking-widest group"
-                onClick={() => alert('Chức năng đặt hàng Demo đã hoàn thành!')}
+                onClick={() => navigate('/order-success')}
                >
                  <span>Đặt Hàng Ngay</span>
                  <ArrowRight size={20} className="group-hover:translate-x-1 transition-transform" />

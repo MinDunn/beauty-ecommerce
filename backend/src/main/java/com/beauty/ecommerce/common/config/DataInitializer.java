@@ -30,17 +30,29 @@ public class DataInitializer implements CommandLineRunner {
     }
 
     private void initializeUsers() {
-        if (userRepository.count() == 0) {
-            log.info("Khởi tạo dữ liệu người dùng mẫu...");
-            
-            UserJpaEntity admin = UserJpaEntity.builder()
-                    .email("admin@beauty.com")
-                    .password(passwordEncoder.encode("admin123"))
-                    .fullName("Quản Trị Viên")
-                    .role("ADMIN")
-                    .createdAt(LocalDateTime.now())
-                    .build();
+        String adminEmail = "admin@beauty.com";
+        userRepository.findByEmail(adminEmail).ifPresentOrElse(
+            admin -> {
+                log.info("Cập nhật lại mật khẩu cho tài khoản Admin: {}...", adminEmail);
+                admin.setPassword(passwordEncoder.encode("admin123"));
+                admin.setRole("ADMIN");
+                userRepository.save(admin);
+            },
+            () -> {
+                log.info("Khởi tạo tài khoản quản trị mặc định: {}...", adminEmail);
+                UserJpaEntity admin = UserJpaEntity.builder()
+                        .email(adminEmail)
+                        .password(passwordEncoder.encode("admin123"))
+                        .fullName("Quản Trị Viên")
+                        .role("ADMIN")
+                        .createdAt(LocalDateTime.now())
+                        .build();
+                userRepository.save(admin);
+                log.info("Đã tạo tài khoản Admin thành công: admin@beauty.com / admin123");
+            }
+        );
 
+        if (userRepository.findByEmail("user@beauty.com").isEmpty()) {
             UserJpaEntity user = UserJpaEntity.builder()
                     .email("user@beauty.com")
                     .password(passwordEncoder.encode("user123"))
@@ -49,8 +61,8 @@ public class DataInitializer implements CommandLineRunner {
                     .createdAt(LocalDateTime.now())
                     .build();
 
-            userRepository.saveAll(List.of(admin, user));
-            log.info("Đã tạo tài khoản: admin@beauty.com / admin123 và user@beauty.com / user123");
+            userRepository.save(user);
+            log.info("Đã tạo tài khoản User thành công: user@beauty.com / user123");
         }
     }
 

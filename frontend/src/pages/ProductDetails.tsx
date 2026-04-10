@@ -1,30 +1,55 @@
 import { useState } from 'react';
-import { useParams, Link } from 'react-router-dom';
+import { useParams, Link, useNavigate } from 'react-router-dom';
 import { Star, ShieldCheck, Truck, Minus, Plus, ShoppingCart, Heart } from 'lucide-react';
+import { useDispatch } from 'react-redux';
+import { addItem } from '../store/slices/cartSlice';
+
+import { products } from '../data/products';
 
 const ProductDetails = () => {
   const { id } = useParams<{ id: string }>();
+  const navigate = useNavigate();
+  const dispatch = useDispatch();
   const [quantity, setQuantity] = useState(1);
   const [activeTab, setActiveTab] = useState('description');
 
-  // Static mock data
+  // Find product from central data
+  const realProduct = products.find(p => p.id === id);
+  
+  // Fallback / Enhanced data
   const product = {
-    id: id || '1',
-    name: 'Kem Chống Nắng La Roche-Posay Anthelios UVmune 400 Oil Control',
-    price: 435000,
-    originalPrice: 535000,
-    brand: 'La Roche-Posay',
+    id: realProduct?.id || id || '1',
+    name: realProduct?.name || 'Sản phẩm đang cập nhật',
+    price: realProduct?.price || 0,
+    originalPrice: realProduct?.originalPrice,
+    brand: realProduct?.brand || 'Guardian',
     rating: 4.8,
     reviews: 1254,
     sold: 5400,
     images: [
-      'https://images.unsplash.com/photo-1598440947619-2c35fc9aa908?q=80&w=600&auto=format&fit=crop',
+      realProduct?.image || 'https://images.unsplash.com/photo-1598440947619-2c35fc9aa908?q=80&w=600&auto=format&fit=crop',
       'https://images.unsplash.com/photo-1556228578-0d85b1a4d571?q=80&w=600&auto=format&fit=crop',
       'https://images.unsplash.com/photo-1611078489935-0cb964de46d6?q=80&w=600&auto=format&fit=crop',
     ],
   };
 
   const [mainImage, setMainImage] = useState(product.images[0]);
+
+  const handleAddToCart = () => {
+    dispatch(addItem({
+      id: product.id,
+      name: product.name,
+      price: product.price,
+      image: product.images[0],
+      brand: product.brand,
+      quantity: quantity
+    }));
+  };
+
+  const handleBuyNow = () => {
+    handleAddToCart();
+    navigate('/cart');
+  };
 
   return (
     <div className="bg-white min-h-screen pb-20">
@@ -125,13 +150,19 @@ const ProductDetails = () => {
 
             {/* Action Buttons */}
             <div className="flex flex-col sm:flex-row gap-4 mb-10">
-              <button className="flex-1 flex items-center justify-center gap-2 py-4 bg-primary-50 text-primary-600 font-black border-2 border-primary-500 rounded-2xl hover:bg-primary-100 transition-colors uppercase tracking-widest text-sm">
+              <button 
+                onClick={handleAddToCart}
+                className="flex-1 flex items-center justify-center gap-2 py-4 bg-primary-50 text-primary-600 font-black border-2 border-primary-500 rounded-2xl hover:bg-primary-100 transition-colors uppercase tracking-widest text-sm"
+              >
                  <ShoppingCart size={20} />
                  <span>Thêm vào giỏ</span>
               </button>
-              <Link to="/cart" className="flex-1 flex items-center justify-center py-4 bg-primary-500 text-white font-black rounded-2xl shadow-xl shadow-primary-500/30 hover:bg-primary-600 hover:-translate-y-1 transition-all uppercase tracking-widest text-sm">
+              <button 
+                onClick={handleBuyNow}
+                className="flex-1 flex items-center justify-center py-4 bg-primary-500 text-white font-black rounded-2xl shadow-xl shadow-primary-500/30 hover:bg-primary-600 hover:-translate-y-1 transition-all uppercase tracking-widest text-sm"
+              >
                  Mua ngay
-              </Link>
+              </button>
               <button className="w-14 h-14 flex items-center justify-center bg-gray-50 text-gray-400 font-black border border-gray-200 rounded-2xl hover:text-red-500 hover:border-red-200 hover:bg-red-50 transition-colors">
                  <Heart size={24} />
               </button>

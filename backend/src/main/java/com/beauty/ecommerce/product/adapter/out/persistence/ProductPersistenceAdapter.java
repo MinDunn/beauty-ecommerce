@@ -1,7 +1,9 @@
 package com.beauty.ecommerce.product.adapter.out.persistence;
 
 import com.beauty.ecommerce.product.application.port.out.LoadProductPort;
+import com.beauty.ecommerce.product.application.port.out.SaveProductPort;
 import com.beauty.ecommerce.product.application.port.out.UpdateProductStockPort;
+import com.beauty.ecommerce.product.application.port.out.DeleteProductPort;
 import com.beauty.ecommerce.product.domain.entity.Product;
 import com.beauty.ecommerce.product.adapter.out.persistence.mapper.ProductMapper;
 import lombok.RequiredArgsConstructor;
@@ -13,7 +15,7 @@ import java.util.stream.Collectors;
 
 @RequiredArgsConstructor
 @Component
-public class ProductPersistenceAdapter implements LoadProductPort, UpdateProductStockPort {
+public class ProductPersistenceAdapter implements LoadProductPort, UpdateProductStockPort, SaveProductPort, DeleteProductPort {
 
     private final ProductRepository productRepository;
     private final ProductMapper productMapper;
@@ -42,5 +44,17 @@ public class ProductPersistenceAdapter implements LoadProductPort, UpdateProduct
         
         product.setStockQuantity(product.getStockQuantity() - quantity);
         productRepository.save(product);
+    }
+
+    @Override
+    public Product saveProduct(Product product) {
+        ProductJpaEntity entity = productMapper.mapToJpaEntity(product);
+        ProductJpaEntity savedEntity = productRepository.save(entity);
+        return productMapper.mapToDomainEntity(savedEntity);
+    }
+
+    @Override
+    public void deleteProduct(Long id) {
+        productRepository.deleteById(id);
     }
 }

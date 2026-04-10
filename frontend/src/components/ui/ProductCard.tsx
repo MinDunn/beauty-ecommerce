@@ -1,5 +1,7 @@
 import { ShoppingCart } from 'lucide-react';
 import { Link } from 'react-router-dom';
+import { useDispatch } from 'react-redux';
+import { addItem } from '../../store/slices/cartSlice';
 
 interface ProductCardProps {
   id: string;
@@ -8,9 +10,25 @@ interface ProductCardProps {
   originalPrice?: number;
   image: string;
   badge?: string;
+  brand?: string;
 }
 
-export const ProductCard = ({ id, name, price, originalPrice, image, badge }: ProductCardProps) => {
+export const ProductCard = ({ id, name, price, originalPrice, image, badge, brand = "Guardian" }: ProductCardProps) => {
+  const dispatch = useDispatch();
+
+  const handleAddToCart = (e: React.MouseEvent) => {
+    e.preventDefault();
+    e.stopPropagation();
+    dispatch(addItem({
+      id,
+      name,
+      price,
+      image,
+      brand,
+      quantity: 1
+    }));
+  };
+
   return (
     <Link to={`/product/${id}`} className="block group bg-white rounded-2xl border border-gray-100 overflow-hidden hover:shadow-xl hover:border-primary-200 transition-all duration-300">
       <div className="relative aspect-square overflow-hidden bg-white p-4 flex items-center justify-center">
@@ -26,10 +44,7 @@ export const ProductCard = ({ id, name, price, originalPrice, image, badge }: Pr
         />
         {/* Quick Add Button overlay */}
         <button 
-          onClick={(e) => {
-            e.preventDefault(); // Ngăn Link trigger chuyển trang
-            alert('Đã thêm sản phẩm vào túi chọn hàng tạm thời!');
-          }}
+          onClick={handleAddToCart}
           className="absolute bottom-3 right-3 bg-white/90 backdrop-blur-sm p-3 rounded-xl shadow-lg text-primary-500 hover:bg-primary-500 hover:text-white transition-colors opacity-0 group-hover:opacity-100 translate-y-4 group-hover:translate-y-0 z-20"
         >
           <ShoppingCart size={20} />

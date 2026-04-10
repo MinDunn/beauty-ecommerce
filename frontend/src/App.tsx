@@ -8,6 +8,10 @@ import Login from './pages/auth/Login';
 import Register from './pages/auth/Register';
 import { ReturnPolicy, ShippingPolicy, WarrantyPolicy } from './pages/policies/Policies';
 import Contact from './pages/Contact';
+=======
+import Profile from './pages/Profile';
+import OrderSuccess from './pages/OrderSuccess';
+
 import Home from './pages/Home';
 
 import { Sidebar } from './components/admin/Sidebar';
@@ -25,7 +29,7 @@ function AdminLayout({ logout }: { logout: () => void }) {
         <Header logout={logout} />
         <div className="p-4">
           <Routes>
-            <Route path="" element={<div>Bảng điều khiển</div>} />
+            <Route path="" element={<div>Bang dieu khien</div>} />
             <Route path="products" element={<Products />} />
             <Route path="orders" element={<Orders />} />
             <Route path="feedback" element={<FeedbackPage />} />
@@ -41,11 +45,24 @@ function App() {
 
   return (
     <Router>
+
       <Routes>
         <Route
           path="/admin/*"
           element={isAdmin ? <AdminLayout logout={logout} /> : <Navigate to="/login" />}
         />
+=======
+      <MainLayout>
+        <Routes>
+          <Route path="/" element={<Home />} />
+          <Route path="/category/:slug" element={<Category />} />
+          <Route path="/product/:id" element={<ProductDetails />} />
+          <Route path="/cart" element={<Cart />} />
+          <Route path="/checkout" element={<Checkout />} />
+          
+          {/* Auth Routes */}
+          <Route path="/login" element={<Login />} />
+          <Route path="/register" element={<Register />} />
 
         <Route
           path="/*"
@@ -71,6 +88,16 @@ function App() {
           }
         />
       </Routes>
+=======
+          {/* Contact Route */}
+          <Route path="/contact" element={<Contact />} />
+
+          {/* User Account Routes */}
+          <Route path="/profile" element={<Profile />} />
+          <Route path="/order-success" element={<OrderSuccess />} />
+        </Routes>
+      </MainLayout>
+
     </Router>
   );
 }
