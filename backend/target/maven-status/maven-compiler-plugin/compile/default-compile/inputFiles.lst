@@ -13,11 +13,15 @@
 /Users/dunhatanh/beauty-ecommerce/backend/src/main/java/com/beauty/ecommerce/EcommerceApplication.java
 /Users/dunhatanh/beauty-ecommerce/backend/src/main/java/com/beauty/ecommerce/order/adapter/in/web/response/OrderItemResponse.java
 /Users/dunhatanh/beauty-ecommerce/backend/src/main/java/com/beauty/ecommerce/user/adapter/in/web/AuthController.java
+/Users/dunhatanh/beauty-ecommerce/backend/src/main/java/com/beauty/ecommerce/common/config/WebMvcConfig.java
 /Users/dunhatanh/beauty-ecommerce/backend/src/main/java/com/beauty/ecommerce/contact/adapter/in/web/request/CreateContactRequest.java
 /Users/dunhatanh/beauty-ecommerce/backend/src/main/java/com/beauty/ecommerce/order/adapter/out/persistence/mapper/OrderMapper.java
 /Users/dunhatanh/beauty-ecommerce/backend/src/main/java/com/beauty/ecommerce/category/adapter/out/persistence/CategoryRepository.java
 /Users/dunhatanh/beauty-ecommerce/backend/src/main/java/com/beauty/ecommerce/product/adapter/in/web/response/ProductResponse.java
+/Users/dunhatanh/beauty-ecommerce/backend/src/main/java/com/beauty/ecommerce/product/application/port/out/DeleteProductPort.java
 /Users/dunhatanh/beauty-ecommerce/backend/src/main/java/com/beauty/ecommerce/user/adapter/in/web/request/RegisterUserRequest.java
+/Users/dunhatanh/beauty-ecommerce/backend/src/main/java/com/beauty/ecommerce/product/application/service/ProductManagementService.java
+/Users/dunhatanh/beauty-ecommerce/backend/src/main/java/com/beauty/ecommerce/product/adapter/in/web/request/AdminProductRequest.java
 /Users/dunhatanh/beauty-ecommerce/backend/src/main/java/com/beauty/ecommerce/cart/adapter/out/persistence/CartRepository.java
 /Users/dunhatanh/beauty-ecommerce/backend/src/main/java/com/beauty/ecommerce/order/adapter/out/persistence/OrderJpaEntity.java
 /Users/dunhatanh/beauty-ecommerce/backend/src/main/java/com/beauty/ecommerce/common/dto/ApiResponse.java
@@ -27,6 +31,7 @@
 /Users/dunhatanh/beauty-ecommerce/backend/src/main/java/com/beauty/ecommerce/review/adapter/in/web/ReviewController.java
 /Users/dunhatanh/beauty-ecommerce/backend/src/main/java/com/beauty/ecommerce/order/application/service/OrderService.java
 /Users/dunhatanh/beauty-ecommerce/backend/src/main/java/com/beauty/ecommerce/user/adapter/in/web/request/TokenRefreshRequest.java
+/Users/dunhatanh/beauty-ecommerce/backend/src/main/java/com/beauty/ecommerce/product/adapter/out/storage/LocalImageUploadAdapter.java
 /Users/dunhatanh/beauty-ecommerce/backend/src/main/java/com/beauty/ecommerce/order/adapter/out/persistence/OrderRepository.java
 /Users/dunhatanh/beauty-ecommerce/backend/src/main/java/com/beauty/ecommerce/product/adapter/out/persistence/ProductPersistenceAdapter.java
 /Users/dunhatanh/beauty-ecommerce/backend/src/main/java/com/beauty/ecommerce/common/config/DataInitializer.java
@@ -35,6 +40,7 @@
 /Users/dunhatanh/beauty-ecommerce/backend/src/main/java/com/beauty/ecommerce/common/exception/GlobalExceptionHandler.java
 /Users/dunhatanh/beauty-ecommerce/backend/src/main/java/com/beauty/ecommerce/common/security/CustomUserDetailsService.java
 /Users/dunhatanh/beauty-ecommerce/backend/src/main/java/com/beauty/ecommerce/user/adapter/out/persistence/RefreshTokenJpaEntity.java
+/Users/dunhatanh/beauty-ecommerce/backend/src/main/java/com/beauty/ecommerce/product/application/port/out/UploadImagePort.java
 /Users/dunhatanh/beauty-ecommerce/backend/src/main/java/com/beauty/ecommerce/common/exception/ResourceNotFoundException.java
 /Users/dunhatanh/beauty-ecommerce/backend/src/main/java/com/beauty/ecommerce/product/application/port/in/GetProductUseCase.java
 /Users/dunhatanh/beauty-ecommerce/backend/src/main/java/com/beauty/ecommerce/review/application/service/ReviewService.java
@@ -46,9 +52,11 @@
 /Users/dunhatanh/beauty-ecommerce/backend/src/main/java/com/beauty/ecommerce/product/domain/entity/Product.java
 /Users/dunhatanh/beauty-ecommerce/backend/src/main/java/com/beauty/ecommerce/cart/adapter/out/persistence/CartPersistenceAdapter.java
 /Users/dunhatanh/beauty-ecommerce/backend/src/main/java/com/beauty/ecommerce/contact/adapter/out/persistence/ContactJpaEntity.java
+/Users/dunhatanh/beauty-ecommerce/backend/src/main/java/com/beauty/ecommerce/product/application/port/in/ManageProductUseCase.java
 /Users/dunhatanh/beauty-ecommerce/backend/src/main/java/com/beauty/ecommerce/product/application/port/out/LoadProductPort.java
 /Users/dunhatanh/beauty-ecommerce/backend/src/main/java/com/beauty/ecommerce/order/domain/entity/Order.java
 /Users/dunhatanh/beauty-ecommerce/backend/src/main/java/com/beauty/ecommerce/product/application/port/out/UpdateProductStockPort.java
+/Users/dunhatanh/beauty-ecommerce/backend/src/main/java/com/beauty/ecommerce/product/adapter/in/web/AdminProductController.java
 /Users/dunhatanh/beauty-ecommerce/backend/src/main/java/com/beauty/ecommerce/category/adapter/in/web/response/CategoryResponse.java
 /Users/dunhatanh/beauty-ecommerce/backend/src/main/java/com/beauty/ecommerce/order/adapter/out/persistence/OrderItemRepository.java
 /Users/dunhatanh/beauty-ecommerce/backend/src/main/java/com/beauty/ecommerce/user/adapter/out/persistence/UserJpaEntity.java
@@ -64,6 +72,7 @@
 /Users/dunhatanh/beauty-ecommerce/backend/src/main/java/com/beauty/ecommerce/category/adapter/in/web/CategoryController.java
 /Users/dunhatanh/beauty-ecommerce/backend/src/main/java/com/beauty/ecommerce/product/application/service/ProductReaderService.java
 /Users/dunhatanh/beauty-ecommerce/backend/src/main/java/com/beauty/ecommerce/common/security/JwtAuthenticationFilter.java
+/Users/dunhatanh/beauty-ecommerce/backend/src/main/java/com/beauty/ecommerce/product/application/port/out/SaveProductPort.java
 /Users/dunhatanh/beauty-ecommerce/backend/src/main/java/com/beauty/ecommerce/category/adapter/in/web/request/CategoryRequest.java
 /Users/dunhatanh/beauty-ecommerce/backend/src/main/java/com/beauty/ecommerce/order/adapter/in/web/OrderController.java
 /Users/dunhatanh/beauty-ecommerce/backend/src/main/java/com/beauty/ecommerce/product/adapter/out/persistence/mapper/ProductMapper.java
