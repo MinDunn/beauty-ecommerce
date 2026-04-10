@@ -9,10 +9,8 @@ import com.beauty.ecommerce.user.adapter.in.web.request.RegisterUserRequest;
 import com.beauty.ecommerce.user.adapter.in.web.request.TokenRefreshRequest;
 import com.beauty.ecommerce.user.adapter.in.web.response.AuthResponse;
 import com.beauty.ecommerce.user.adapter.in.web.response.UserProfileResponse;
-import com.beauty.ecommerce.user.adapter.out.persistence.RefreshTokenJpaEntity;
-import com.beauty.ecommerce.user.adapter.out.persistence.RefreshTokenRepository;
-import com.beauty.ecommerce.user.adapter.out.persistence.UserJpaEntity;
-import com.beauty.ecommerce.user.adapter.out.persistence.UserRepository;
+import com.beauty.ecommerce.user.adapter.out.persistence.*;
+import com.beauty.ecommerce.common.service.EmailService;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
@@ -33,9 +31,11 @@ public class AuthService {
 
     private final UserRepository userRepository;
     private final RefreshTokenRepository refreshTokenRepository;
+    private final PasswordResetTokenRepository passwordResetTokenRepository;
     private final PasswordEncoder passwordEncoder;
     private final JwtUtil jwtUtil;
     private final AuthenticationManager authenticationManager;
+    private final EmailService emailService;
 
     @Value("${jwt.refresh-expiration}")
     private Long refreshTokenDurationMs;
@@ -145,5 +145,52 @@ public class AuthService {
                 .role(user.getRole())
                 .createdAt(user.getCreatedAt())
                 .build();
+    }
+
+    @Transactional
+    public void forgotPassword(String email) {
+        log.info("Yêu cầu quên mật khẩu cho email: {}", email);
+        UserJpaEntity user = userRepository.findByEmail(email)
+                .orElseThrow(() -> new ResourceNotFoundException("Không tìm thấy người dùng với email: " + email));
+
+        // Xóa token cũ nếu có
+        passwordResetTokenRepository.deleteByUser(user);
+
+        String token = UUID.randomUUID().toString();
+        PasswordResetTokenJpaEntity resetToken = PasswordResetTokenJpaEntity.builder()
+                .user(user)
+                .token(token)
+                .expiryDate(LocalDateTime.now().plusHours(24)) // Token valid for 24 hours
+                .build();
+
+        passwordResetTokenRepository.save(resetToken);
+
+        // Gửi email giả lập
+        String resetLink = "http://localhost:5173/reset-password?token=" + token;
+        emailService.sendSimpleMessage(
+                user.getEmail(),
+                "Đặt lại mật khẩu - Glowzy Beauty",
+                "Chào " + user.getFullName() + ",\n\nBạn đã yêu cầu đặt lại mật khẩu. Vui lòng click vào link sau:\n" + resetLink + "\n\nLink này có hiệu lực trong 24 giờ."
+        );
+    }
+
+    @Transactional
+    public void resetPassword(String token, String newPassword) {
+        log.info("Đang thực hiện đặt lại mật khẩu với token");
+        PasswordResetTokenJpaEntity resetToken = passwordResetTokenRepository.findByToken(token)
+                .orElseThrow(() -> new BadRequestException("Token không hợp lệ hoặc không tồn tại"));
+
+        if (resetToken.isExpired()) {
+            passwordResetTokenRepository.delete(resetToken);
+            throw new BadRequestException("Token đã hết hạn");
+        }
+
+        UserJpaEntity user = resetToken.getUser();
+        user.setPassword(passwordEncoder.encode(newPassword));
+        userRepository.save(user);
+
+        // Xóa token sau khi sử dụng thành công
+        passwordResetTokenRepository.delete(resetToken);
+        log.info("Đặt lại mật khẩu thành công cho người dùng: {}", user.getEmail());
     }
 }

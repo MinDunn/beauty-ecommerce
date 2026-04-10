@@ -13,7 +13,7 @@ interface ProductCardProps {
   brand?: string;
 }
 
-export const ProductCard = ({ id, name, price, originalPrice, image, badge, brand = "Guardian" }: ProductCardProps) => {
+export const ProductCard = ({ id, name, price, originalPrice, image, badge, brand = "Glowzy" }: ProductCardProps) => {
   const dispatch = useDispatch();
 
   const handleAddToCart = (e: React.MouseEvent) => {

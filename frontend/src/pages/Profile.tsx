@@ -7,6 +7,24 @@ import { cn } from '../utils/cn';
 const Profile = () => {
   const { user } = useSelector((state: RootState) => state.auth);
   const [activeTab, setActiveTab] = useState('info');
+  const [isSaving, setIsSaving] = useState(false);
+  
+  // Form state
+  const [formData, setFormData] = useState({
+    name: user?.name || '',
+    phone: '',
+    address: ''
+  });
+
+  const handleSave = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setIsSaving(true);
+    // Simulate API update
+    await new Promise(resolve => setTimeout(resolve, 1500));
+    setIsSaving(false);
+    // In a real app, we would dispatch an update user action here
+    alert('Đã cập nhật thông tin thành công!');
+  };
 
   return (
     <div className="bg-gray-50 min-h-screen py-12">
@@ -66,18 +84,29 @@ const Profile = () => {
                     <p className="text-gray-500 font-medium">Cập nhật thông tin của bạn để có trải nghiệm mua sắm tốt nhất.</p>
                   </div>
 
-                  <form className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                  <form onSubmit={handleSave} className="grid grid-cols-1 md:grid-cols-2 gap-6">
                     <div className="space-y-2">
                       <label className="text-xs font-black text-gray-400 uppercase tracking-widest ml-1">Họ và tên</label>
                       <div className="relative">
-                        <input type="text" defaultValue={user?.name} className="w-full pl-12 pr-4 py-4 bg-gray-50 border border-transparent rounded-2xl focus:bg-white focus:border-primary-500 focus:ring-4 focus:ring-primary-500/10 transition-all outline-none font-bold" />
+                        <input 
+                          type="text" 
+                          value={formData.name}
+                          onChange={(e) => setFormData({...formData, name: e.target.value})}
+                          className="w-full pl-12 pr-4 py-4 bg-gray-50 border border-transparent rounded-2xl focus:bg-white focus:border-primary-500 focus:ring-4 focus:ring-primary-500/10 transition-all outline-none font-bold" 
+                        />
                         <User className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-400" size={20} />
                       </div>
                     </div>
                     <div className="space-y-2">
                        <label className="text-xs font-black text-gray-400 uppercase tracking-widest ml-1">Số điện thoại</label>
                        <div className="relative">
-                        <input type="tel" placeholder="Chưa cập nhật" className="w-full pl-12 pr-4 py-4 bg-gray-50 border border-transparent rounded-2xl focus:bg-white focus:border-primary-500 focus:ring-4 focus:ring-primary-500/10 transition-all outline-none font-bold" />
+                        <input 
+                          type="tel" 
+                          value={formData.phone}
+                          onChange={(e) => setFormData({...formData, phone: e.target.value})}
+                          placeholder="Chưa cập nhật" 
+                          className="w-full pl-12 pr-4 py-4 bg-gray-50 border border-transparent rounded-2xl focus:bg-white focus:border-primary-500 focus:ring-4 focus:ring-primary-500/10 transition-all outline-none font-bold" 
+                        />
                         <Phone className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-400" size={20} />
                        </div>
                     </div>
@@ -91,13 +120,23 @@ const Profile = () => {
                     <div className="space-y-2 md:col-span-2">
                        <label className="text-xs font-black text-gray-400 uppercase tracking-widest ml-1">Địa chỉ giao hàng mặc định</label>
                        <div className="relative">
-                        <textarea rows={2} placeholder="Vui lòng điền địa chỉ để nhận hàng" className="w-full pl-12 pr-4 py-4 bg-gray-50 border border-transparent rounded-2xl focus:bg-white focus:border-primary-500 focus:ring-4 focus:ring-primary-500/10 transition-all outline-none font-bold resize-none" />
+                        <textarea 
+                          rows={2} 
+                          value={formData.address}
+                          onChange={(e) => setFormData({...formData, address: e.target.value})}
+                          placeholder="Vui lòng điền địa chỉ để nhận hàng" 
+                          className="w-full pl-12 pr-4 py-4 bg-gray-50 border border-transparent rounded-2xl focus:bg-white focus:border-primary-500 focus:ring-4 focus:ring-primary-500/10 transition-all outline-none font-bold resize-none" 
+                        />
                         <MapPin className="absolute left-4 top-6 text-gray-400" size={20} />
                        </div>
                     </div>
                     <div className="md:col-span-2 pt-4">
-                      <button type="button" className="px-10 py-4 bg-primary-500 text-white font-black rounded-2xl shadow-xl shadow-primary-500/20 hover:bg-primary-600 transition-all hover:-translate-y-1 uppercase tracking-widest">
-                        Lưu thay đổi
+                      <button 
+                        type="submit" 
+                        disabled={isSaving}
+                        className="px-10 py-4 bg-primary-500 text-white font-black rounded-2xl shadow-xl shadow-primary-500/20 hover:bg-primary-600 transition-all hover:-translate-y-1 uppercase tracking-widest disabled:opacity-70"
+                      >
+                        {isSaving ? 'Đang lưu...' : 'Lưu thay đổi'}
                       </button>
                     </div>
                   </form>
@@ -120,7 +159,7 @@ const Profile = () => {
                       <div className="flex flex-wrap items-center justify-between gap-4 mb-4">
                         <div className="flex items-center space-x-3 font-black text-sm uppercase tracking-tighter">
                           <span className="text-gray-400">Mã đơn:</span>
-                          <span className="text-gray-900">#GD88921</span>
+                          <span className="text-gray-900">#GLW88921</span>
                         </div>
                         <span className="px-3 py-1 bg-green-50 text-green-600 text-[10px] font-black uppercase rounded-lg">Đã giao hàng</span>
                         <span className="text-xs text-gray-400 font-bold ml-auto">01/01/2026</span>

@@ -1,33 +1,43 @@
-type TableProps = {
+interface TableProps {
   columns: string[];
   data: any[];
-};
+}
 
 export const Table = ({ columns, data }: TableProps) => (
-  <table className="w-full bg-white rounded shadow">
-    <thead>
-      <tr>
-        {columns.map((col) => (
-          <th key={col} className="p-2 text-left">{col}</th>
-        ))}
-      </tr>
-    </thead>
-    <tbody>
-      {data.length === 0 ? (
-        <tr>
-          <td colSpan={columns.length} className="p-4 text-center text-gray-500">
-            Không có dữ liệu
-          </td>
+  <div className="overflow-hidden rounded-2xl border border-slate-800 bg-slate-900 shadow-xl">
+    <table className="w-full text-left border-collapse">
+      <thead>
+        <tr className="bg-slate-800/50">
+          {columns.map((col) => (
+            <th key={col} className="px-6 py-4 text-xs font-black text-slate-400 uppercase tracking-widest border-b border-slate-800">
+              {col}
+            </th>
+          ))}
         </tr>
-      ) : (
-        data.map((row, i) => (
-          <tr key={i} className="border-t">
-            {columns.map((_, idx) => (
-              <td key={idx} className="p-2">{Object.values(row)[idx] as any}</td>
-            ))}
+      </thead>
+      <tbody className="divide-y divide-slate-800">
+        {data.length === 0 ? (
+          <tr>
+            <td colSpan={columns.length} className="px-6 py-12 text-center">
+              <div className="flex flex-col items-center gap-2">
+                <div className="text-slate-700 font-bold text-lg">Chưa có dữ liệu</div>
+                <p className="text-slate-500 text-sm">Thông tin sẽ hiển thị khi có bản ghi mới được cập nhật.</p>
+              </div>
+            </td>
           </tr>
-        ))
-      )}
-    </tbody>
-  </table>
+        ) : (
+          data.map((row, i) => (
+            <tr key={i} className="hover:bg-slate-800/30 transition-colors group">
+              {columns.map((_, idx) => (
+                <td key={idx} className="px-6 py-4 text-sm text-slate-300 font-medium group-hover:text-white transition-colors">
+                  {Object.values(row)[idx] as any}
+                </td>
+              ))}
+            </tr>
+          ))
+        )}
+      </tbody>
+    </table>
+  </div>
 );
+

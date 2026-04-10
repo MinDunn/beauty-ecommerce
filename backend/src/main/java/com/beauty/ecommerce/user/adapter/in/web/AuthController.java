@@ -1,8 +1,10 @@
 package com.beauty.ecommerce.user.adapter.in.web;
 
 import com.beauty.ecommerce.common.dto.ApiResponse;
+import com.beauty.ecommerce.user.adapter.in.web.request.ForgotPasswordRequest;
 import com.beauty.ecommerce.user.adapter.in.web.request.LoginUserRequest;
 import com.beauty.ecommerce.user.adapter.in.web.request.RegisterUserRequest;
+import com.beauty.ecommerce.user.adapter.in.web.request.ResetPasswordRequest;
 import com.beauty.ecommerce.user.adapter.in.web.request.TokenRefreshRequest;
 import com.beauty.ecommerce.user.adapter.in.web.response.AuthResponse;
 import com.beauty.ecommerce.user.adapter.in.web.response.UserProfileResponse;
@@ -50,5 +52,25 @@ public class AuthController {
         log.info("Yêu cầu làm mới Token");
         AuthResponse response = authService.refreshToken(request);
         return ResponseEntity.ok(ApiResponse.success("Token refreshed successfully", response));
+    }
+
+    @PostMapping("/auth/forgot-password")
+    public ResponseEntity<ApiResponse<Void>> forgotPassword(@Valid @RequestBody ForgotPasswordRequest request) {
+        log.info("Yêu cầu quên mật khẩu cho email: {}", request.getEmail());
+        authService.forgotPassword(request.getEmail());
+        return ResponseEntity.ok(ApiResponse.<Void>builder()
+                .status(200)
+                .message("Yêu cầu thành công. Vui lòng kiểm tra email.")
+                .build());
+    }
+
+    @PostMapping("/auth/reset-password")
+    public ResponseEntity<ApiResponse<Void>> resetPassword(@Valid @RequestBody ResetPasswordRequest request) {
+        log.info("Yêu cầu đặt lại mật khẩu với token");
+        authService.resetPassword(request.getToken(), request.getNewPassword());
+        return ResponseEntity.ok(ApiResponse.<Void>builder()
+                .status(200)
+                .message("Đặt lại mật khẩu thành công.")
+                .build());
     }
 }

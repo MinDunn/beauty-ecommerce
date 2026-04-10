@@ -10,4 +10,5 @@ public interface OrderUseCase {
     List<Order> getOrderHistory(String email);
     List<Order> getAllOrders();
     void updateOrderStatus(Long orderId, OrderStatus status);
+    Order lookupOrder(Long orderId);
 }

@@ -23,7 +23,7 @@ const PolicyLayout: React.FC<PolicyLayoutProps> = ({ title, children }) => {
 export const ReturnPolicy = () => (
   <PolicyLayout title="Chính sách đổi trả">
     <h3>1. Thời hạn đổi trả</h3>
-    <p>Guardian hỗ trợ đổi trả sản phẩm trong vòng 30 ngày kể từ ngày nhận hàng.</p>
+    <p>Glowzy hỗ trợ đổi trả sản phẩm trong vòng 30 ngày kể từ ngày nhận hàng.</p>
     <h3>2. Điều kiện đổi trả</h3>
     <ul>
       <li>Sản phẩm còn nguyên tem, mác, niêm phong.</li>
@@ -52,10 +52,12 @@ export const ShippingPolicy = () => (
 export const WarrantyPolicy = () => (
   <PolicyLayout title="Chính sách bảo hành">
     <h3>1. Đối tượng bảo hành</h3>
-    <p>Áp dụng cho các thiết bị điện tử, máy massage, máy rửa mặt chính hãng tại Guardian.</p>
-    <h3>2. Thời gian bảo hành</h3>
-    <p>Theo chính sách từ nhà sản xuất (thường từ 6 - 12 tháng).</p>
-    <h3>3. Địa điểm bảo hành</h3>
-    <p>Tại các trung tâm bảo hành ủy quyền của hãng hoặc thông qua Guardian.</p>
+    <p>Áp dụng cho các thiết bị điện tử, máy massage, máy rửa mặt chính hãng tại Glowzy.</p>
+    <ul className="list-disc pl-5 mt-2">
+      <li>Thiết bị làm đẹp: 6 tháng - 1 năm (tùy hãng)</li>
+      <li>Máy massage mặt: 12 tháng</li>
+    </ul>
+    <p className="mt-4 font-bold">Nơi nhận bảo hành:</p>
+    <p>Tại các trung tâm bảo hành ủy quyền của hãng hoặc thông qua Glowzy.</p>
   </PolicyLayout>
 );

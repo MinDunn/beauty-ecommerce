@@ -33,7 +33,7 @@ export const products: Product[] = [
     brand: 'CeraVe',
     category: 'skincare',
     skinType: 'Da Dầu / Mụn',
-    image: '/images/st_ives_scrub.png', // Sử dụng ảnh cục bộ (tuýp mỹ phẩm)
+    image: '/images/st_ives_scrub.png',
     isFeatured: true
   },
   {
@@ -44,7 +44,7 @@ export const products: Product[] = [
     brand: 'Vichy',
     category: 'skincare',
     skinType: 'Mọi loại da',
-    image: '/images/bioderma_shower_gel.png', // Sử dụng ảnh cục bộ (chai xanh dương cao cấp)
+    image: '/images/bioderma_shower_gel.png',
     badge: 'Hot',
     isFeatured: true
   },
@@ -55,7 +55,7 @@ export const products: Product[] = [
     brand: 'Bioderma',
     category: 'skincare',
     skinType: 'Da Nhạy Cảm',
-    image: '/images/thayer_toner.png', // Sử dụng ảnh cục bộ (chai nước tẩy trang trong suốt)
+    image: '/images/thayer_toner.png',
     badge: 'Best Seller'
   },
   {
@@ -66,7 +66,7 @@ export const products: Product[] = [
     brand: 'Neutrogena',
     category: 'skincare',
     skinType: 'Da Khô',
-    image: '/images/vaseline_lotion.png', // Sử dụng ảnh cục bộ (chai hồng ánh kim cao cấp)
+    image: '/images/vaseline_lotion.png',
     isFeatured: true
   },
   {
@@ -77,7 +77,7 @@ export const products: Product[] = [
     brand: 'Paula\'s Choice',
     category: 'skincare',
     skinType: 'Da Dầu / Mụn',
-    image: '/images/lrp_anthelios.png', // Sử dụng ảnh cục bộ (chai mỹ phẩm dạng đứng)
+    image: '/images/lrp_anthelios.png',
     badge: 'Đặc trị'
   },
   {
@@ -87,7 +87,7 @@ export const products: Product[] = [
     brand: 'L\'Oréal Paris',
     category: 'skincare',
     skinType: 'Mọi loại da',
-    image: '/images/love_beauty_planet.png' // Sử dụng ảnh cục bộ (chai serum trắng có vòi nhấn)
+    image: '/images/love_beauty_planet.png'
   },
   {
     id: 'anessa-gold-1',
@@ -97,7 +97,7 @@ export const products: Product[] = [
     brand: 'Anessa',
     category: 'skincare',
     skinType: 'Mọi loại da',
-    image: '/images/lrp_anthelios.png', // Sử dụng ảnh cục bộ (chai chống nắng cùng phân khúc)
+    image: '/images/lrp_anthelios.png',
     badge: 'Summer Sale'
   },
   {
@@ -220,21 +220,23 @@ export const products: Product[] = [
     image: '/images/blackmores_fishoil.png'
   },
 
-  // GUARDIAN EXCLUSIVE
+  // GLOWZY EXCLUSIVE
   {
-    id: 'guardian-mask-1',
-    name: 'Mặt Nạ Giấy Guardian Moisturising Facial Mask (Bản Đặc Biệt)',
-    price: 25000,
-    brand: 'Guardian',
+    id: 'glowzy-mask-1',
+    name: 'Mặt Nạ Giấy Glowzy Moisturising Facial Mask (Bản Đặc Biệt)',
+    price: 22500,
+    originalPrice: 45000,
+    brand: 'Glowzy',
     category: 'skincare',
-    image: '/images/maybelline_foundation.png',
+    image: '/images/mac_lipstick.png',
     badge: 'Độc quyền'
   },
   {
-    id: 'guardian-cotton-1',
-    name: 'Bông Tẩy Trang Guardian Soft & Silky Cotton Rounds (80 Miếng)',
-    price: 45000,
-    brand: 'Guardian',
+    id: 'glowzy-cotton-1',
+    name: 'Bông Tẩy Trang Glowzy Soft & Silky Cotton Rounds (80 Miếng)',
+    price: 25000,
+    originalPrice: 35000,
+    brand: 'Glowzy',
     category: 'skincare',
     image: '/images/makeup.png',
     badge: 'Sản phẩm của năm'

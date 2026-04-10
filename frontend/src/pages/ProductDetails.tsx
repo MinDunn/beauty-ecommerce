@@ -22,7 +22,7 @@ const ProductDetails = () => {
     name: realProduct?.name || 'Sản phẩm đang cập nhật',
     price: realProduct?.price || 0,
     originalPrice: realProduct?.originalPrice,
-    brand: realProduct?.brand || 'Guardian',
+    brand: realProduct?.brand || 'Glowzy',
     rating: 4.8,
     reviews: 1254,
     sold: 5400,

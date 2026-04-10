@@ -21,11 +21,18 @@ const Login = () => {
     
     // Giả lập kết quả thành công
     const nameFromEmail = data.email.split('@')[0];
+    const role = data.email === 'admin@beauty.com' ? 'ADMIN' : 'USER';
+    
     dispatch(setCredentials({
-      user: { name: nameFromEmail, email: data.email },
+      user: { name: nameFromEmail, email: data.email, role },
       token: 'demo-token-123',
     }));
-    navigate('/');
+
+    if (role === 'ADMIN') {
+      navigate('/admin');
+    } else {
+      navigate('/');
+    }
   };
 
   return (
@@ -33,7 +40,7 @@ const Login = () => {
       <div className="max-w-md w-full space-y-8 bg-white p-10 rounded-2xl shadow-xl border border-gray-100">
         <div className="text-center">
           <h2 className="text-3xl font-black text-gray-900 tracking-tight">Đăng nhập</h2>
-          <p className="mt-2 text-sm text-gray-600">Chào mừng bạn quay lại với Guardian</p>
+          <p className="mt-2 text-sm text-gray-600">Chào mừng bạn quay lại với Glowzy</p>
         </div>
         
         <form className="mt-8 space-y-6" onSubmit={handleSubmit(onSubmit)}>
@@ -73,7 +80,7 @@ const Login = () => {
               <label className="ml-2 block text-sm text-gray-900 font-medium">Ghi nhớ đăng nhập</label>
             </div>
             <div className="text-sm">
-              <a href="#" className="font-bold text-primary-600 hover:text-primary-500">Quên mật khẩu?</a>
+              <Link to="/forgot-password" className="font-bold text-primary-600 hover:text-primary-500">Quên mật khẩu?</Link>
             </div>
           </div>
 

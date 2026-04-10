@@ -9,22 +9,49 @@ import {
   X, 
   PhoneCall, 
   MapPin,
+  ChevronDown,
+  Sparkles,
+  Flower2,
+  Wind,
+  Smile,
+  Zap
 } from 'lucide-react';
 import type { RootState } from '../../store';
-import { logout } from '../../store/slices/authSlice';
+import { logout as logoutAction } from '../../store/slices/authSlice';
 import { cn } from '../../utils/cn';
+import { OrderLookupModal } from '../modals/OrderLookupModal';
 
 const Header = () => {
   const [isMenuOpen, setIsMenuOpen] = useState(false);
+  const [isCategoryOpen, setIsCategoryOpen] = useState(false);
+  const [isOrderLookupOpen, setIsOrderLookupOpen] = useState(false);
+  const [searchQuery, setSearchQuery] = useState('');
+  
   const { isAuthenticated, user } = useSelector((state: RootState) => state.auth);
   const { totalQuantity } = useSelector((state: RootState) => state.cart);
   const dispatch = useDispatch();
   const navigate = useNavigate();
 
   const handleLogout = () => {
-    dispatch(logout());
+    dispatch(logoutAction());
     navigate('/');
   };
+
+  const handleSearch = (e: React.FormEvent) => {
+    e.preventDefault();
+    if (searchQuery.trim()) {
+      navigate(`/search?q=${encodeURIComponent(searchQuery)}`);
+      setIsMenuOpen(false);
+    }
+  };
+
+  const categories = [
+    { name: 'Chăm sóc da', slug: 'skincare', icon: Sparkles, desc: 'Serum, Kem dưỡng, Đặc trị' },
+    { name: 'Trang điểm', slug: 'makeup', icon: Flower2, desc: 'Son môi, Phấn nền, Mắt' },
+    { name: 'Chăm sóc tóc', slug: 'haircare', icon: Wind, desc: 'Dầu gội, Dưỡng tóc, Tạo kiểu' },
+    { name: 'Chăm sóc cơ thể', slug: 'bodycare', icon: Smile, desc: 'Sữa tắm, Dưỡng thể' },
+    { name: 'Thực phẩm chức năng', slug: 'supplements', icon: Zap, desc: 'Vitamin, Collagen' },
+  ];
 
   const navLinks = [
     { name: 'Chăm sóc da', href: '/category/skincare' },
@@ -40,16 +67,19 @@ const Header = () => {
       <div className="hidden lg:block bg-gray-50 border-b border-gray-100">
         <div className="container mx-auto px-4 py-2 flex justify-between items-center text-xs text-gray-600">
           <div className="flex items-center space-x-4">
-            <span className="flex items-center hover:text-primary-500 cursor-pointer">
+            <span 
+              onClick={() => setIsOrderLookupOpen(true)}
+              className="flex items-center hover:text-primary-500 cursor-pointer transition-colors"
+            >
               <PhoneCall size={14} className="mr-1" /> Tra cứu đơn hàng
             </span>
-            <span className="flex items-center hover:text-primary-500 cursor-pointer">
+            <Link to="/stores" className="flex items-center hover:text-primary-500 cursor-pointer transition-colors">
               <MapPin size={14} className="mr-1" /> Hệ thống cửa hàng
-            </span>
+            </Link>
           </div>
           <div className="flex items-center space-x-4">
-            <span className="hover:text-primary-500 cursor-pointer">Cẩm nang mua sắm</span>
-            <span className="hover:text-primary-500 cursor-pointer">Khuyến mãi</span>
+            <Link to="/beauty-guide" className="hover:text-primary-500 transition-colors">Cẩm nang mua sắm</Link>
+            <span className="hover:text-primary-500 cursor-pointer transition-colors">Khuyến mãi</span>
           </div>
         </div>
       </div>
@@ -66,19 +96,23 @@ const Header = () => {
 
         {/* Logo */}
         <Link to="/" className="flex items-center">
-          <img src="/images/logo.png" alt="Guardian Logo" className="h-10 md:h-12 object-contain" />
+          <div className="text-3xl font-black tracking-tighter text-slate-900">GLOWZY<span className="text-primary-500">.</span></div>
         </Link>
 
         {/* Search Bar - Desktop */}
         <div className="hidden md:flex flex-1 max-w-xl mx-8 relative">
-          <input 
-            type="text" 
-            placeholder="Tìm kiếm sản phẩm, thương hiệu..." 
-            className="w-full pl-4 pr-12 py-2.5 bg-gray-100 border-none rounded-full focus:ring-2 focus:ring-primary-500 transition-all outline-none text-sm"
-          />
-          <button className="absolute right-1 top-1 bottom-1 px-4 bg-primary-500 text-white rounded-full hover:bg-primary-600 transition-colors">
-            <Search size={18} />
-          </button>
+          <form onSubmit={handleSearch} className="w-full relative">
+            <input 
+              type="text" 
+              value={searchQuery}
+              onChange={(e) => setSearchQuery(e.target.value)}
+              placeholder="Tìm kiếm sản phẩm, thương hiệu..." 
+              className="w-full pl-4 pr-12 py-2.5 bg-gray-100 border-none rounded-full focus:ring-2 focus:ring-primary-500 transition-all outline-none text-sm"
+            />
+            <button type="submit" className="absolute right-1 top-1 bottom-1 px-4 bg-primary-500 text-white rounded-full hover:bg-primary-600 transition-colors">
+              <Search size={18} />
+            </button>
+          </form>
         </div>
 
         {/* User Actions */}
@@ -99,6 +133,11 @@ const Header = () => {
                 {/* Dropdown Menu */}
                 <div className="absolute right-0 top-full w-48 bg-white border border-gray-100 rounded-2xl shadow-xl opacity-0 invisible group-hover/user:opacity-100 group-hover/user:visible transition-all duration-300 z-50 overflow-hidden transform translate-y-2 group-hover/user:translate-y-0">
                    <div className="p-2">
+                     {user?.role === 'ADMIN' && (
+                       <Link to="/admin" className="block px-4 py-3 text-sm font-bold text-primary-600 hover:bg-primary-50 rounded-xl transition-colors">
+                          Trang quản trị
+                       </Link>
+                     )}
                      <Link to="/profile" className="block px-4 py-3 text-sm font-bold text-gray-700 hover:bg-gray-50 hover:text-primary-600 rounded-xl transition-colors">
                         Hồ sơ cá nhân
                      </Link>
@@ -133,10 +172,47 @@ const Header = () => {
       <nav className="hidden lg:block border-t border-gray-100">
         <div className="container mx-auto px-4">
           <div className="flex items-center">
-            <button className="flex items-center space-x-2 bg-primary-500 text-white px-6 py-3 font-bold text-sm uppercase tracking-wider">
-              <Menu size={18} />
-              <span>Danh mục sản phẩm</span>
-            </button>
+            <div className="relative group/cat">
+              <button 
+                onMouseEnter={() => setIsCategoryOpen(true)}
+                className="flex items-center space-x-2 bg-primary-500 text-white px-6 py-3 font-bold text-sm uppercase tracking-wider rounded-t-xl"
+              >
+                <Menu size={18} />
+                <span>Danh mục sản phẩm</span>
+                <ChevronDown size={14} className={cn("transition-transform duration-300", isCategoryOpen && "rotate-180")} />
+              </button>
+
+              {/* Mega Menu Dropdown */}
+              <div 
+                onMouseLeave={() => setIsCategoryOpen(false)}
+                className={cn(
+                  "absolute top-full left-0 w-[600px] bg-white shadow-2xl rounded-tr-3xl rounded-b-3xl border border-gray-100 transition-all duration-300 z-50 overflow-hidden",
+                  isCategoryOpen ? "opacity-100 visible translate-y-0" : "opacity-0 invisible -translate-y-2 pointer-events-none"
+                )}
+              >
+                <div className="grid grid-cols-2 p-6 gap-6">
+                  {categories.map((cat) => (
+                    <Link 
+                      key={cat.slug}
+                      to={`/category/${cat.slug}`}
+                      onClick={() => setIsCategoryOpen(false)}
+                      className="flex items-start p-4 hover:bg-primary-50 rounded-2xl transition-all group/item"
+                    >
+                      <div className="p-3 bg-gray-100 group-hover/item:bg-white rounded-xl text-gray-600 group-hover/item:text-primary-500 transition-colors mr-4">
+                        <cat.icon size={24} />
+                      </div>
+                      <div>
+                        <h4 className="font-bold text-slate-900 group-hover/item:text-primary-600 transition-colors">{cat.name}</h4>
+                        <p className="text-xs text-gray-500 mt-1">{cat.desc}</p>
+                      </div>
+                    </Link>
+                  ))}
+                </div>
+                <div className="bg-gray-50 p-4 flex justify-center border-t border-gray-100">
+                  <Link to="/products" className="text-xs font-black text-primary-500 uppercase tracking-widest hover:underline">Xem tất cả sản phẩm</Link>
+                </div>
+              </div>
+            </div>
             <div className="flex items-center space-x-8 ml-8">
               {navLinks.map((link) => (
                 <Link 
@@ -158,7 +234,7 @@ const Header = () => {
         isMenuOpen ? "translate-x-0" : "-translate-x-full"
       )}>
         <div className="p-4 flex justify-between items-center border-b">
-          <div className="text-2xl font-black text-guardian-green">GUARDIAN<span className="text-guardian-orange">.</span></div>
+          <div className="text-2xl font-black text-slate-900">GLOWZY<span className="text-primary-500">.</span></div>
           <button onClick={() => setIsMenuOpen(false)}><X size={28} /></button>
         </div>
         <div className="p-4 space-y-4">
@@ -195,6 +271,11 @@ const Header = () => {
           )}
         </div>
       </div>
+      {/* Order Lookup Modal */}
+      <OrderLookupModal 
+        isOpen={isOrderLookupOpen} 
+        onClose={() => setIsOrderLookupOpen(false)} 
+      />
     </header>
   );
 };

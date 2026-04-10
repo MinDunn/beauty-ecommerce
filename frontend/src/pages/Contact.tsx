@@ -1,13 +1,20 @@
 import { useForm } from 'react-hook-form';
 import { Mail, Phone, MapPin, Send } from 'lucide-react';
+import { contactService } from '../api/contactService';
+import { toast } from 'react-hot-toast';
 
 const Contact = () => {
-  const { register, handleSubmit, formState: { errors, isSubmitting } } = useForm();
+  const { register, handleSubmit, reset, formState: { errors, isSubmitting } } = useForm();
 
   const onSubmit = async (data: any) => {
-    console.log('Contact form data:', data);
-    await new Promise(resolve => setTimeout(resolve, 1000));
-    alert('Cảm ơn bạn đã liên hệ! Chúng tôi sẽ phản hồi sớm nhất.');
+    try {
+      await contactService.createContact(data);
+      toast.success('Cảm ơn bạn đã liên hệ! Chúng tôi sẽ phản hồi sớm nhất.');
+      reset();
+    } catch (error) {
+      console.error('Lỗi khi gửi feedback:', error);
+      toast.error('Có lỗi xảy ra. Vui lòng thử lại sau.');
+    }
   };
 
   return (
@@ -15,8 +22,8 @@ const Contact = () => {
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-16 items-start">
         {/* Contact Info & Form */}
         <div>
-          <h1 className="text-4xl font-black text-gray-900 mb-6 tracking-tight">Liên hệ với <span className="text-guardian-green">Guardian</span></h1>
-          <p className="text-gray-600 mb-10 text-lg">Chúng tôi luôn sẵn sàng lắng nghe và hỗ trợ bạn.</p>
+          <h1 className="text-4xl font-black text-gray-900 mb-6 tracking-tight">Liên hệ với <span className="text-primary-500">Glowzy</span></h1>
+          <p className="text-lg text-gray-600 font-medium">Chúng tôi luôn lắng nghe và hỗ trợ bạn 24/7.</p>
 
           <div className="space-y-6 mb-12">
             <div className="flex items-start space-x-4">
@@ -42,8 +49,8 @@ const Contact = () => {
                 <Mail size={24} />
               </div>
               <div>
-                <h4 className="font-bold text-gray-900">Email</h4>
-                <p className="text-gray-600 text-sm">info@guardian.com.vn</p>
+                <p className="font-bold text-gray-900">Email</p>
+                <p className="text-gray-600 text-sm">info@glowzy.com</p>
               </div>
             </div>
           </div>

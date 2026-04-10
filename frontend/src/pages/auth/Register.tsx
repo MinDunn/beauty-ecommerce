@@ -26,7 +26,7 @@ const Register = () => {
       <div className="max-w-md w-full space-y-8 bg-white p-10 rounded-2xl shadow-xl border border-gray-100">
         <div className="text-center">
           <h2 className="text-3xl font-black text-gray-900 tracking-tight">Đăng ký</h2>
-          <p className="mt-2 text-sm text-gray-600">Tham gia cộng đồng Guardian ngay hôm nay</p>
+          <p className="mt-2 text-sm text-gray-600">Tham gia cộng đồng Glowzy ngay hôm nay</p>
         </div>
         
         <form className="mt-8 space-y-4" onSubmit={handleSubmit(onSubmit)}>

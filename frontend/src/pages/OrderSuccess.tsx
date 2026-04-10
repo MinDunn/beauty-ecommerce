@@ -27,7 +27,7 @@ const OrderSuccess = () => {
              Thanh Toán <span className="text-green-600 italic">Thành Công!</span>
           </h1>
           <p className="text-gray-500 font-medium text-lg leading-relaxed px-8">
-             Cảm ơn bạn đã tin tưởng Guardian. Đơn hàng của bạn đang được chúng tôi chuẩn bị và sẽ sớm giao đến bạn.
+             Cảm ơn bạn đã tin tưởng Glowzy. Đơn hàng của bạn đang được chúng tôi chuẩn bị và sẽ sớm giao đến bạn.
           </p>
         </div>
 

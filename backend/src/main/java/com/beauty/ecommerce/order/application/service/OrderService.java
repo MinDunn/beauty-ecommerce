@@ -90,4 +90,10 @@ public class OrderService implements OrderUseCase {
     public void updateOrderStatus(Long orderId, OrderStatus status) {
         orderPort.updateStatus(orderId, status);
     }
+
+    @Override
+    public Order lookupOrder(Long orderId) {
+        return orderPort.findById(orderId)
+                .orElseThrow(() -> new RuntimeException("Không tìm thấy đơn hàng với mã: " + orderId));
+    }
 }

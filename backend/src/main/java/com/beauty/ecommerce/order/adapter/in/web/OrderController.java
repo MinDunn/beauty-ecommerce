@@ -38,6 +38,12 @@ public class OrderController {
         return ResponseEntity.ok(response);
     }
 
+    @GetMapping("/public/lookup/{orderId}")
+    public ResponseEntity<OrderResponse> lookupOrder(@PathVariable Long orderId) {
+        Order order = orderUseCase.lookupOrder(orderId);
+        return ResponseEntity.ok(mapToResponse(order));
+    }
+
     private OrderResponse mapToResponse(Order order) {
         return OrderResponse.builder()
                 .id(order.getId())

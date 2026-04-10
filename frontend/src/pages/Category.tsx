@@ -80,7 +80,7 @@ const Category = () => {
             <h1 className="text-4xl md:text-5xl font-black text-gray-900 tracking-tighter uppercase mb-2">
               {categoryName}
             </h1>
-            <p className="text-primary-700 font-medium max-w-xl text-sm md:text-base">Khám phá bộ sưu tập hàng trăm sản phẩm chính hãng với mức giá siêu ưu đãi từ Guardian.</p>
+            <p className="text-primary-700 font-medium max-w-xl text-sm md:text-base">Khám phá bộ sưu tập hàng trăm sản phẩm chính hãng với mức giá siêu ưu đãi từ Glowzy.</p>
         </div>
       </div>
 

@@ -6,7 +6,7 @@ export const HeroBanner = () => {
       id: 1,
       image: '/images/banner.png',
       title: 'Đại Tiệc Skincare',
-      subtitle: 'Giảm đến 50% các dòng siêu phẩm chăm sóc da từ Guardian.',
+      subtitle: 'Giảm đến 50% các dòng siêu phẩm chăm sóc da từ Glowzy.',
     },
   ];
 
@@ -23,7 +23,7 @@ export const HeroBanner = () => {
       <div className="absolute inset-0 bg-gradient-to-r from-black/60 via-black/20 to-transparent flex items-center">
         <div className="px-6 md:px-16 w-full max-w-2xl">
           <div className="inline-block px-3 py-1 bg-primary-500 text-white text-xs font-black uppercase rounded-lg mb-4 tracking-widest shadow-lg shadow-primary-500/30">
-            Guardian Độc Quyền
+            Glowzy Độc Quyền
           </div>
           <h2 className="text-4xl md:text-5xl lg:text-7xl font-black text-white leading-tight mb-4 tracking-tighter">
             {banners[0].title} <br/>
@@ -41,3 +41,4 @@ export const HeroBanner = () => {
     </div>
   );
 };
+
