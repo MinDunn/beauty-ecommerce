@@ -23,7 +23,7 @@ export const Table = ({ columns, data }: TableProps) => (
         data.map((row, i) => (
           <tr key={i} className="border-t">
             {columns.map((_, idx) => (
-              <td key={idx} className="p-2">{Object.values(row)[idx]}</td>
+              <td key={idx} className="p-2">{Object.values(row)[idx] as any}</td>
             ))}
           </tr>
         ))

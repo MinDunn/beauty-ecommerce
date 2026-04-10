@@ -1,4 +1,4 @@
-import { ReactNode } from "react";
+import type { ReactNode } from "react";
 
 export const Modal = ({ children, onClose }: { children: ReactNode; onClose: () => void }) => (
   <div className="fixed inset-0 bg-black bg-opacity-30 flex items-center justify-center">

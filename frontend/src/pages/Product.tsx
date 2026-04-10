@@ -1,10 +1,10 @@
 import { useState } from "react";
-import { Product } from "../types";
+import type { Product } from "../types";
 import { Table } from "../components/admin/Table";
 import { Modal } from "../components/admin/Modal";
 
 export const Products = () => {
-  const [products, setProducts] = useState<Product[]>([]);
+  const [products] = useState<Product[]>([]);
   const [showModal, setShowModal] = useState(false);
   const [preview, setPreview] = useState<string | null>(null);
 
