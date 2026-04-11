@@ -19,7 +19,7 @@ interface ProductCardProps {
 
 export const ProductCard = ({ id, name, price, originalPrice, image, badge, brand = "Glowzy" }: ProductCardProps) => {
   const dispatch = useDispatch();
-  const { user } = useSelector((state: RootState) => state.auth);
+  const { user, isAuthenticated } = useSelector((state: RootState) => state.auth);
   const [isWishlisted, setIsWishlisted] = useState(false);
 
   useEffect(() => {
@@ -32,7 +32,7 @@ export const ProductCard = ({ id, name, price, originalPrice, image, badge, bran
       }
     };
 
-    if (user && !isNaN(Number(id))) {
+    if (isAuthenticated && !isNaN(Number(id))) {
       checkStatus();
     }
   }, [id, user]);
@@ -101,6 +101,9 @@ export const ProductCard = ({ id, name, price, originalPrice, image, badge, bran
         <img 
           src={image} 
           alt={name} 
+          onError={(e) => {
+            (e.target as HTMLImageElement).src = 'https://placehold.co/600x600/f8fafc/64748b?text=Glowzy+Beauty';
+          }}
           className="w-full h-full object-contain group-hover:scale-110 transition-transform duration-700 mix-blend-multiply"
         />
         {/* Quick Add Button overlay */}

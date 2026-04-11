@@ -41,8 +41,8 @@ const Checkout = () => {
   
   const [shippingInfo, setShippingInfo] = useState({
     receiverName: user?.fullName || '',
-    receiverPhone: '',
-    shippingAddress: '',
+    receiverPhone: user?.phone || '',
+    shippingAddress: user?.address || '',
     note: ''
   });
   

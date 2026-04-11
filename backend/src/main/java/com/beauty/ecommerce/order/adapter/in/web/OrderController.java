@@ -1,4 +1,4 @@
-`package com.beauty.ecommerce.order.adapter.in.web;
+package com.beauty.ecommerce.order.adapter.in.web;
 
 import com.beauty.ecommerce.order.adapter.in.web.request.OrderRequest;
 import com.beauty.ecommerce.order.adapter.in.web.response.OrderItemResponse;

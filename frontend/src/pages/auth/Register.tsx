@@ -4,21 +4,40 @@ import { Link, useNavigate } from 'react-router-dom';
 import type { RegisterFormValues } from '../../schemas/authSchema';
 import { registerSchema } from '../../schemas/authSchema';
 import { Mail, Lock, User, ArrowRight } from 'lucide-react';
+import axiosInstance from '../../api/axiosInstance';
+import toast from 'react-hot-toast';
+import { useDispatch } from 'react-redux';
+import { setCredentials } from '../../store/slices/authSlice';
 
 const Register = () => {
   const navigate = useNavigate();
+  const dispatch = useDispatch();
   const { register, handleSubmit, formState: { errors, isSubmitting } } = useForm<RegisterFormValues>({
     resolver: zodResolver(registerSchema),
   });
 
   const onSubmit = async (data: RegisterFormValues) => {
-    // Giả lập API call
-    console.log('Register data:', data);
-    await new Promise(resolve => setTimeout(resolve, 1000));
-    
-    // Giả lập kết quả thành công
-    alert(`Đăng ký thành công cho ${data.name}!`);
-    navigate('/login');
+    try {
+      const response = await axiosInstance.post('/auth/register', {
+        email: data.email,
+        password: data.password,
+        fullName: data.name,
+      });
+
+      const authData = response.data.data;
+      const { accessToken, email, fullName, role } = authData;
+
+      dispatch(setCredentials({
+        user: { email, fullName, role },
+        token: accessToken,
+      }));
+
+      toast.success('Đăng ký tài khoản thành công!');
+      navigate('/');
+    } catch (error: any) {
+      const msg = error.response?.data?.message || 'Đăng ký thất bại. Vui lòng thử lại.';
+      toast.error(msg);
+    }
   };
 
   return (

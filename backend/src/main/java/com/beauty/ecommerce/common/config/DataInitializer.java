@@ -77,7 +77,7 @@ public class DataInitializer implements CommandLineRunner {
                         .originalPrice(new BigDecimal("1200000"))
                         .currentPrice(new BigDecimal("950000"))
                         .stockQuantity(50)
-                        .imageUrl("https://images.unsplash.com/photo-1586790170083-2f9ceadc732d")
+                        .imageUrl("https://images.unsplash.com/photo-1586790170083-2f9ceadc732d?auto=format&fit=crop&w=600&q=80")
                         .build(),
                 ProductJpaEntity.builder()
                         .name("Kem Nền Estee Lauder")
@@ -85,7 +85,7 @@ public class DataInitializer implements CommandLineRunner {
                         .originalPrice(new BigDecimal("1500000"))
                         .currentPrice(new BigDecimal("1350000"))
                         .stockQuantity(30)
-                        .imageUrl("https://images.unsplash.com/photo-1599733594230-6b823276abcc")
+                        .imageUrl("https://images.unsplash.com/photo-1599733594230-6b823276abcc?auto=format&fit=crop&w=600&q=80")
                         .build(),
                 ProductJpaEntity.builder()
                         .name("Sữa Rửa Mặt CeraVe")
@@ -93,7 +93,7 @@ public class DataInitializer implements CommandLineRunner {
                         .originalPrice(new BigDecimal("450000"))
                         .currentPrice(new BigDecimal("380000"))
                         .stockQuantity(100)
-                        .imageUrl("https://images.unsplash.com/photo-1556228720-195a672e8a03")
+                        .imageUrl("https://images.unsplash.com/photo-1556228720-195a672e8a03?auto=format&fit=crop&w=600&q=80")
                         .build(),
                 ProductJpaEntity.builder()
                         .name("Nước Hoa Chanel No.5")
@@ -101,7 +101,7 @@ public class DataInitializer implements CommandLineRunner {
                         .originalPrice(new BigDecimal("4500000"))
                         .currentPrice(new BigDecimal("4200000"))
                         .stockQuantity(10)
-                        .imageUrl("https://images.unsplash.com/photo-1541643600914-78b084683601")
+                        .imageUrl("https://images.unsplash.com/photo-1541643600914-78b084683601?auto=format&fit=crop&w=600&q=80")
                         .build(),
                 ProductJpaEntity.builder()
                         .name("Mặt Nạ Laneige")
@@ -109,7 +109,7 @@ public class DataInitializer implements CommandLineRunner {
                         .originalPrice(new BigDecimal("650000"))
                         .currentPrice(new BigDecimal("520000"))
                         .stockQuantity(40)
-                        .imageUrl("https://images.unsplash.com/photo-1596755094514-f87e34085b2c")
+                        .imageUrl("https://images.unsplash.com/photo-1596755094514-f87e34085b2c?auto=format&fit=crop&w=600&q=80")
                         .build()
             );
 

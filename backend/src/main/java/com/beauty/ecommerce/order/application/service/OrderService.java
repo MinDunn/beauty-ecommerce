@@ -66,6 +66,20 @@ public class OrderService implements OrderUseCase {
                         .collect(Collectors.toList()))
                 .build();
 
+        // Update user profile if phone/address are empty
+        boolean userUpdated = false;
+        if (user.getPhone() == null || user.getPhone().trim().isEmpty()) {
+            user.setPhone(receiverPhone);
+            userUpdated = true;
+        }
+        if (user.getAddress() == null || user.getAddress().trim().isEmpty()) {
+            user.setAddress(shippingAddress);
+            userUpdated = true;
+        }
+        if (userUpdated) {
+            userRepository.save(user);
+        }
+
         // 1. Save Order
         Order savedOrder = orderPort.save(order);
 

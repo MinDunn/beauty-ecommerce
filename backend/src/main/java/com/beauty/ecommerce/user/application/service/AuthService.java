@@ -65,6 +65,8 @@ public class AuthService {
                 .refreshToken(refreshToken)
                 .email(user.getEmail())
                 .fullName(user.getFullName())
+                .phone(user.getPhone())
+                .address(user.getAddress())
                 .role(user.getRole())
                 .build();
     }
@@ -87,6 +89,8 @@ public class AuthService {
                 .refreshToken(refreshToken)
                 .email(user.getEmail())
                 .fullName(user.getFullName())
+                .phone(user.getPhone())
+                .address(user.getAddress())
                 .role(user.getRole())
                 .build();
     }
