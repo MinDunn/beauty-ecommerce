@@ -1,0 +1,13 @@
+spring:
+  datasource:
+    url: jdbc:mysql://gateway01.ap-southeast-1.prod.aws.tidbcloud.com:4000/beauty_ecommerce_prod?sslMode=VERIFY_IDENTITY&enabledTLSProtocols=TLSv1.2,TLSv1.3
+    username: er5u1JAS4hp5cbx.root
+    password: YODKvDna5B2aQlze
+    driver-class-name: com.mysql.cj.jdbc.Driver
+  jpa:
+    hibernate:
+      ddl-auto: update
+    show-sql: true
+  flyway:
+    enabled: true
+    baseline-on-migrate: true
