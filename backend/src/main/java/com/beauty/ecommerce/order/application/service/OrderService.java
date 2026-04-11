@@ -7,6 +7,8 @@ import com.beauty.ecommerce.order.application.port.out.OrderPort;
 import com.beauty.ecommerce.order.domain.entity.Order;
 import com.beauty.ecommerce.order.domain.entity.OrderItem;
 import com.beauty.ecommerce.order.domain.entity.OrderStatus;
+import com.beauty.ecommerce.order.domain.entity.PaymentMethod;
+import com.beauty.ecommerce.order.domain.entity.PaymentStatus;
 import com.beauty.ecommerce.product.application.port.out.UpdateProductStockPort;
 import com.beauty.ecommerce.user.adapter.out.persistence.UserJpaEntity;
 import com.beauty.ecommerce.user.adapter.out.persistence.UserRepository;
@@ -30,7 +32,7 @@ public class OrderService implements OrderUseCase {
 
     @Override
     @Transactional
-    public Order placeOrder(String email, String receiverName, String receiverPhone, String shippingAddress) {
+    public Order placeOrder(String email, String receiverName, String receiverPhone, String shippingAddress, PaymentMethod paymentMethod) {
         UserJpaEntity user = userRepository.findByEmail(email)
                 .orElseThrow(() -> new RuntimeException("User not found"));
 
@@ -48,6 +50,8 @@ public class OrderService implements OrderUseCase {
                 .orderDate(LocalDateTime.now())
                 .totalPrice(totalPrice)
                 .status(OrderStatus.PENDING)
+                .paymentMethod(paymentMethod)
+                .paymentStatus(PaymentStatus.UNPAID)
                 .receiverName(receiverName)
                 .receiverPhone(receiverPhone)
                 .shippingAddress(shippingAddress)
@@ -89,6 +93,11 @@ public class OrderService implements OrderUseCase {
     @Override
     public void updateOrderStatus(Long orderId, OrderStatus status) {
         orderPort.updateStatus(orderId, status);
+    }
+
+    @Override
+    public void updatePaymentStatus(Long orderId, PaymentStatus status) {
+        orderPort.updatePaymentStatus(orderId, status);
     }
 
     @Override

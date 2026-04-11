@@ -1,16 +1,15 @@
 package com.beauty.ecommerce.product.adapter.out.persistence;
 
 import jakarta.persistence.*;
-import lombok.AllArgsConstructor;
-import lombok.Builder;
-import lombok.Data;
-import lombok.NoArgsConstructor;
+import lombok.*;
 
+import java.math.BigDecimal;
 import java.time.LocalDateTime;
 
 @Entity
 @Table(name = "coupons")
-@Data
+@Getter
+@Setter
 @Builder
 @NoArgsConstructor
 @AllArgsConstructor
@@ -22,24 +21,29 @@ public class CouponJpaEntity {
     @Column(nullable = false, unique = true)
     private String code;
 
-    @Column(nullable = false)
-    private Double discountValue;
-
-    @Column(nullable = false)
+    @Column(name = "discount_type", nullable = false)
     private String discountType; // PERCENTAGE or FIXED
 
-    private Double minOrderValue;
+    @Column(name = "discount_value", nullable = false)
+    private BigDecimal discountValue;
 
-    private Double maxDiscount;
+    @Column(name = "min_order_amount")
+    private BigDecimal minOrderAmount;
 
+    @Column(name = "expiry_date")
     private LocalDateTime expiryDate;
 
-    @Column(nullable = false)
+    @Column(name = "is_active", nullable = false)
+    @Builder.Default
+    private Boolean isActive = true;
+
+    @Column(name = "created_at")
+    @Builder.Default
+    private LocalDateTime createdAt = LocalDateTime.now();
+
+    // Usage tracking (optional, might need dedicated columns in DB if intended to persist)
+    @Transient
     private Integer usageLimit;
-
-    @Column(nullable = false)
+    @Transient
     private Integer usageCount;
-
-    @Column(nullable = false)
-    private Boolean active;
 }

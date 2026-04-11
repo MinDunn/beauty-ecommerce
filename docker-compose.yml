@@ -3,10 +3,10 @@ services:
     image: mysql:8.0
     restart: always
     environment:
-      MYSQL_DATABASE: ${MYSQL_DATABASE}
-      MYSQL_ROOT_PASSWORD: ${MYSQL_ROOT_PASSWORD}
+      MYSQL_DATABASE: ${MYSQL_DATABASE:-beauty_ecommerce}
+      MYSQL_ROOT_PASSWORD: ${MYSQL_ROOT_PASSWORD:-password}
     ports:
-      - "${MYSQL_PORT}:3306"
+      - "${MYSQL_PORT:-3306}:3306"
     volumes:
       - mysql_data:/var/lib/mysql
 

@@ -6,6 +6,8 @@ import type { LoginFormValues } from '../../schemas/authSchema';
 import { loginSchema } from '../../schemas/authSchema';
 import { setCredentials } from '../../store/slices/authSlice';
 import { Mail, Lock, ArrowRight } from 'lucide-react';
+import axiosInstance from '../../api/axiosInstance';
+import toast from 'react-hot-toast';
 
 const Login = () => {
   const dispatch = useDispatch();
@@ -15,23 +17,31 @@ const Login = () => {
   });
 
   const onSubmit = async (data: LoginFormValues) => {
-    // Giả lập API call
-    console.log('Login data:', data);
-    await new Promise(resolve => setTimeout(resolve, 1000));
-    
-    // Giả lập kết quả thành công
-    const nameFromEmail = data.email.split('@')[0];
-    const role = data.email === 'admin@beauty.com' ? 'ADMIN' : 'USER';
-    
-    dispatch(setCredentials({
-      user: { name: nameFromEmail, email: data.email, role },
-      token: 'demo-token-123',
-    }));
+    try {
+      const response = await axiosInstance.post('/auth/login', {
+        email: data.email,
+        password: data.password,
+      });
+      
+      // Backend trả về ApiResponse { status, message, data: AuthResponse }
+      const authData = response.data.data;
+      const { accessToken, email, fullName, role } = authData;
+      
+      dispatch(setCredentials({
+        user: { email, fullName, role },
+        token: accessToken,
+      }));
 
-    if (role === 'ADMIN') {
-      navigate('/admin');
-    } else {
-      navigate('/');
+      toast.success('Đăng nhập thành công!');
+
+      if (role === 'ADMIN') {
+        navigate('/admin');
+      } else {
+        navigate('/');
+      }
+    } catch (error: any) {
+      const msg = error.response?.data?.message || 'Email hoặc mật khẩu không đúng';
+      toast.error(msg);
     }
   };
 

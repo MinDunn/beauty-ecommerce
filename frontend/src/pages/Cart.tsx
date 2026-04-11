@@ -4,17 +4,24 @@ import { useSelector, useDispatch } from 'react-redux';
 import { removeItem, updateQuantity } from '../store/slices/cartSlice';
 import { cn } from '../utils/cn';
 import type { RootState } from '../store';
+import toast from 'react-hot-toast';
 
 const Cart = () => {
   const dispatch = useDispatch();
   const { items: cartItems, totalAmount: subTotal } = useSelector((state: RootState) => state.cart);
 
-  const handleUpdateQuantity = (id: string, delta: number) => {
+  const handleUpdateQuantity = (id: string, delta: number, name: string) => {
     dispatch(updateQuantity({ id, delta }));
+    if (delta > 0) {
+      toast.success(`Đã tăng số lượng ${name}`);
+    } else {
+      toast.success(`Đã giảm số lượng ${name}`);
+    }
   };
 
-  const handleRemoveItem = (id: string) => {
+  const handleRemoveItem = (id: string, name: string) => {
     dispatch(removeItem(id));
+    toast.success(`Đã xóa ${name} khỏi giỏ hàng`);
   };
 
   const discount = subTotal > 1000000 ? 50000 : 0; // Simple conditional discount
@@ -78,13 +85,13 @@ const Cart = () => {
                          <div className="col-span-1 md:col-span-2 flex items-center justify-between md:justify-center">
                            <div className="md:hidden font-black text-primary-600 text-xl">{item.price.toLocaleString('vi-VN')} đ</div>
                            <div className="flex items-center border-2 border-gray-100 rounded-2xl overflow-hidden bg-white shadow-sm">
-                              <button onClick={() => handleUpdateQuantity(item.id, -1)} className="w-10 h-10 flex items-center justify-center text-gray-400 hover:bg-gray-100 hover:text-primary-600 transition-all">
+                              <button onClick={() => handleUpdateQuantity(item.id, -1, item.name)} className="w-10 h-10 flex items-center justify-center text-gray-400 hover:bg-gray-100 hover:text-primary-600 transition-all">
                                 <Minus size={14} />
                               </button>
                               <div className="w-12 h-10 flex items-center justify-center font-black text-gray-900 text-sm border-x-2 border-gray-100 bg-gray-50/20">
                                 {item.quantity}
                               </div>
-                              <button onClick={() => handleUpdateQuantity(item.id, 1)} className="w-10 h-10 flex items-center justify-center text-gray-400 hover:bg-gray-100 hover:text-primary-600 transition-all">
+                              <button onClick={() => handleUpdateQuantity(item.id, 1, item.name)} className="w-10 h-10 flex items-center justify-center text-gray-400 hover:bg-gray-100 hover:text-primary-600 transition-all">
                                 <Plus size={14} />
                               </button>
                            </div>
@@ -92,7 +99,7 @@ const Cart = () => {
   
                          {/* Delete Button */}
                          <div className="col-span-1 text-right flex justify-end">
-                            <button onClick={() => handleRemoveItem(item.id)} className="w-12 h-12 bg-red-50 text-red-500 rounded-2xl flex items-center justify-center hover:bg-red-600 hover:text-white hover:rotate-12 transition-all shadow-sm">
+                            <button onClick={() => handleRemoveItem(item.id, item.name)} className="w-12 h-12 bg-red-50 text-red-500 rounded-2xl flex items-center justify-center hover:bg-red-600 hover:text-white hover:rotate-12 transition-all shadow-sm">
                                <Trash2 size={20} />
                             </button>
                          </div>

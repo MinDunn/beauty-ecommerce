@@ -15,6 +15,8 @@ public class OrderResponse {
     private LocalDateTime orderDate;
     private BigDecimal totalPrice;
     private OrderStatus status;
+    private String paymentMethod;
+    private String paymentStatus;
     private String receiverName;
     private String receiverPhone;
     private String shippingAddress;

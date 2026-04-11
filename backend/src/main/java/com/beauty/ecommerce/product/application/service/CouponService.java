@@ -9,6 +9,7 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.math.BigDecimal;
 import java.time.LocalDateTime;
 
 @Service
@@ -23,7 +24,7 @@ public class CouponService {
         CouponJpaEntity coupon = couponRepository.findByCode(code)
                 .orElseThrow(() -> new ResourceNotFoundException("Mã giảm giá không tồn tại"));
 
-        if (!coupon.getActive()) {
+        if (!coupon.getIsActive()) {
             throw new BadRequestException("Mã giảm giá đã bị ngưng sử dụng");
         }
 
@@ -35,7 +36,7 @@ public class CouponService {
             throw new BadRequestException("Mã giảm giá đã hết lượt sử dụng");
         }
 
-        if (coupon.getMinOrderValue() != null && orderValue < coupon.getMinOrderValue()) {
+        if (coupon.getMinOrderAmount() != null && BigDecimal.valueOf(orderValue).compareTo(coupon.getMinOrderAmount()) < 0) {
             throw new BadRequestException("Đơn hàng chưa đạt giá trị tối thiểu để áp dụng mã này");
         }
 
@@ -49,7 +50,7 @@ public class CouponService {
         
         coupon.setUsageCount(coupon.getUsageCount() + 1);
         if (coupon.getUsageCount() >= coupon.getUsageLimit()) {
-            coupon.setActive(false);
+            coupon.setIsActive(false);
         }
         couponRepository.save(coupon);
     }

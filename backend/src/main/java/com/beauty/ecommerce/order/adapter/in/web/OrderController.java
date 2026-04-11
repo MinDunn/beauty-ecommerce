@@ -5,6 +5,7 @@ import com.beauty.ecommerce.order.adapter.in.web.response.OrderItemResponse;
 import com.beauty.ecommerce.order.adapter.in.web.response.OrderResponse;
 import com.beauty.ecommerce.order.application.port.in.OrderUseCase;
 import com.beauty.ecommerce.order.domain.entity.Order;
+import com.beauty.ecommerce.order.domain.entity.PaymentMethod;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
@@ -25,7 +26,14 @@ public class OrderController {
     @PostMapping
     public ResponseEntity<OrderResponse> placeOrder(@Valid @RequestBody OrderRequest request) {
         String email = SecurityContextHolder.getContext().getAuthentication().getName();
-        Order order = orderUseCase.placeOrder(email, request.getReceiverName(), request.getReceiverPhone(), request.getShippingAddress());
+        PaymentMethod method = PaymentMethod.valueOf(request.getPaymentMethod().toUpperCase());
+        Order order = orderUseCase.placeOrder(
+            email, 
+            request.getReceiverName(), 
+            request.getReceiverPhone(), 
+            request.getShippingAddress(),
+            method
+        );
         return ResponseEntity.ok(mapToResponse(order));
     }
 
@@ -50,6 +58,8 @@ public class OrderController {
                 .orderDate(order.getOrderDate())
                 .totalPrice(order.getTotalPrice())
                 .status(order.getStatus())
+                .paymentMethod(order.getPaymentMethod() != null ? order.getPaymentMethod().name() : "UNKNOWN")
+                .paymentStatus(order.getPaymentStatus() != null ? order.getPaymentStatus().name() : "PENDING")
                 .receiverName(order.getReceiverName())
                 .receiverPhone(order.getReceiverPhone())
                 .shippingAddress(order.getShippingAddress())

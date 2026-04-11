@@ -1,13 +1,13 @@
 import { useState, useEffect, useCallback } from 'react';
 import { useParams, Link, useNavigate } from 'react-router-dom';
-import { Star, ShoppingCart, Heart, ShieldCheck, Truck, Share2, Facebook, MessageCircle, ChevronRight, Minus, Plus } from 'lucide-react';
+import { Star, ShoppingCart, Heart, ShieldCheck, Truck, Share2, Facebook, MessageCircle, ChevronRight, Minus, Plus, Loader2 } from 'lucide-react';
 import { useDispatch, useSelector } from 'react-redux';
 import { addItem } from '../store/slices/cartSlice';
 import { cn } from '../utils/cn';
 import type { RootState } from '../store';
 import toast from 'react-hot-toast';
 
-import { products } from '../data/products';
+import { productService } from '../api/productService';
 import wishlistService from '../api/wishlistService';
 import reviewService from '../api/reviewService';
 import type { Review } from '../api/reviewService';
@@ -18,6 +18,8 @@ const ProductDetails = () => {
   const dispatch = useDispatch();
   const { user } = useSelector((state: RootState) => state.auth);
   
+  const [product, setProduct] = useState<any>(null);
+  const [loading, setLoading] = useState(true);
   const [quantity, setQuantity] = useState(1);
   const [activeTab, setActiveTab] = useState('description');
   const [isWishlisted, setIsWishlisted] = useState(false);
@@ -25,26 +27,45 @@ const ProductDetails = () => {
   const [isLoadingReviews, setIsLoadingReviews] = useState(false);
   const [isSubmittingReview, setIsSubmittingReview] = useState(false);
   const [newReview, setNewReview] = useState({ rating: 5, comment: '' });
+  const [mainImage, setMainImage] = useState('');
 
-  const realProduct = products.find(p => p.id === id);
-  
-  const product = {
-    id: realProduct?.id || id || '1',
-    name: realProduct?.name || 'Sản phẩm đang cập nhật',
-    price: realProduct?.price || 0,
-    originalPrice: realProduct?.originalPrice,
-    brand: realProduct?.brand || 'Glowzy',
-    rating: realProduct?.rating || 4.8,
-    reviewsCount: realProduct?.reviews || 0,
-    sold: realProduct?.sold || 0,
-    images: [
-      realProduct?.image || 'https://images.unsplash.com/photo-1598440947619-2c35fc9aa908?q=80&w=600&auto=format&fit=crop',
-      'https://images.unsplash.com/photo-1556228578-0d85b1a4d571?q=80&w=600&auto=format&fit=crop',
-      'https://images.unsplash.com/photo-1611078489935-0cb964de46d6?q=80&w=600&auto=format&fit=crop',
-    ],
-  };
-
-  const [mainImage, setMainImage] = useState(product.images[0]);
+  const fetchProduct = useCallback(async () => {
+    if (!id) return;
+    setLoading(true);
+    try {
+      const numericId = Number(id);
+      if (isNaN(numericId)) {
+          // Fallback if ID is string based (mock legacy)
+          navigate('/');
+          return;
+      }
+      const data = await productService.getProductById(numericId);
+      const mappedProduct = {
+        id: data.id.toString(),
+        name: data.name,
+        price: data.currentPrice,
+        originalPrice: data.originalPrice,
+        brand: data.brand || 'Glowzy',
+        rating: data.rating || 4.8,
+        reviewsCount: data.reviewsCount || 0,
+        sold: data.sold || 0,
+        description: data.description,
+        images: [
+          `/images/${data.imageUrl}`,
+          'https://images.unsplash.com/photo-1556228578-0d85b1a4d571?q=80&w=600&auto=format&fit=crop',
+          'https://images.unsplash.com/photo-1611078489935-0cb964de46d6?q=80&w=600&auto=format&fit=crop',
+        ],
+      };
+      setProduct(mappedProduct);
+      setMainImage(mappedProduct.images[0]);
+    } catch (err) {
+      console.error("Failed to fetch product", err);
+      toast.error("Không tìm thấy sản phẩm");
+      navigate('/category/all');
+    } finally {
+      setLoading(false);
+    }
+  }, [id, navigate]);
 
   const checkWishlistStatus = useCallback(async () => {
     try {
@@ -69,10 +90,16 @@ const ProductDetails = () => {
   }, [id]);
 
   useEffect(() => {
-    if (user && id) {
+    fetchProduct();
+  }, [fetchProduct]);
+
+  useEffect(() => {
+    if (user && id && !isNaN(Number(id))) {
       checkWishlistStatus();
     }
-    fetchReviews();
+    if (id && !isNaN(Number(id))) {
+      fetchReviews();
+    }
   }, [id, user, checkWishlistStatus, fetchReviews]);
 
   const handleToggleWishlist = async () => {
@@ -160,6 +187,28 @@ const ProductDetails = () => {
     window.open(shareUrl, '_blank', 'width=600,height=400');
   };
 
+  if (loading) {
+    return (
+        <div className="min-h-screen flex flex-col items-center justify-center gap-6">
+            <Loader2 size={64} className="text-primary-500 animate-spin" />
+            <p className="text-sm font-black uppercase tracking-[0.4em] text-gray-400">Đang tải thông tin sản phẩm...</p>
+        </div>
+    );
+  }
+
+  if (!product) return null;
+
+  if (loading) {
+    return (
+        <div className="min-h-screen flex flex-col items-center justify-center gap-6">
+            <Loader2 size={64} className="text-primary-500 animate-spin" />
+            <p className="text-sm font-black uppercase tracking-[0.4em] text-gray-400">Đang tải thông tin sản phẩm...</p>
+        </div>
+    );
+  }
+
+  if (!product) return null;
+
   return (
     <div className="bg-white min-h-screen pb-20">
       <div className="bg-gray-50 py-4 border-b border-gray-100">
@@ -180,7 +229,7 @@ const ProductDetails = () => {
             </div>
             
             <div className="flex gap-4 overflow-x-auto pb-2 hide-scrollbar">
-               {product.images.map((img, idx) => (
+               {product.images.map((img: string, idx: number) => (
                  <button 
                   key={idx} 
                   onClick={() => setMainImage(img)}

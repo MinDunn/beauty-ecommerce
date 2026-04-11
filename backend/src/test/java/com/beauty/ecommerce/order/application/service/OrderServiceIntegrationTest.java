@@ -5,6 +5,7 @@ import com.beauty.ecommerce.cart.domain.entity.CartItem;
 import com.beauty.ecommerce.order.application.port.in.OrderUseCase;
 import com.beauty.ecommerce.order.domain.entity.Order;
 import com.beauty.ecommerce.order.domain.entity.OrderStatus;
+import com.beauty.ecommerce.order.domain.entity.PaymentMethod;
 import com.beauty.ecommerce.product.adapter.out.persistence.ProductJpaEntity;
 import com.beauty.ecommerce.product.adapter.out.persistence.ProductRepository;
 import com.beauty.ecommerce.user.adapter.out.persistence.UserJpaEntity;
@@ -80,7 +81,7 @@ public class OrderServiceIntegrationTest {
         String shippingAddress = "TP.HCM";
 
         // When
-        Order savedOrder = orderUseCase.placeOrder(email, receiverName, receiverPhone, shippingAddress);
+        Order savedOrder = orderUseCase.placeOrder(email, receiverName, receiverPhone, shippingAddress, PaymentMethod.COD);
 
         // Then: 1. Check Order Details
         assertThat(savedOrder).isNotNull();

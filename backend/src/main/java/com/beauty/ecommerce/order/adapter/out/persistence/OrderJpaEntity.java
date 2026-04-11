@@ -1,6 +1,5 @@
 package com.beauty.ecommerce.order.adapter.out.persistence;
 
-import com.beauty.ecommerce.order.domain.entity.OrderStatus;
 import com.beauty.ecommerce.user.adapter.out.persistence.UserJpaEntity;
 import jakarta.persistence.*;
 import lombok.*;
@@ -26,17 +25,29 @@ public class OrderJpaEntity {
     @JoinColumn(name = "user_id")
     private UserJpaEntity user;
 
-    private LocalDateTime orderDate;
+    @Column(name = "order_date")
+    @Builder.Default
+    private LocalDateTime orderDate = LocalDateTime.now();
 
+    @Column(name = "total_price")
     private BigDecimal totalPrice;
 
-    @Enumerated(EnumType.STRING)
-    private OrderStatus status;
+    @Column(name = "status")
+    private String status;
 
+    @Column(name = "payment_method")
+    private String paymentMethod;
+
+    @Column(name = "payment_status")
+    private String paymentStatus;
+
+    @Column(name = "receiver_name")
     private String receiverName;
 
+    @Column(name = "receiver_phone")
     private String receiverPhone;
 
+    @Column(name = "shipping_address")
     private String shippingAddress;
 
     @OneToMany(mappedBy = "order", cascade = CascadeType.ALL)

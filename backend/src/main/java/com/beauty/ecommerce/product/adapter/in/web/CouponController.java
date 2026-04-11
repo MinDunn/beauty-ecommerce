@@ -28,7 +28,6 @@ public class CouponController {
                 .code(coupon.getCode())
                 .discountValue(coupon.getDiscountValue())
                 .discountType(coupon.getDiscountType())
-                .maxDiscount(coupon.getMaxDiscount())
                 .build();
                 
         return ResponseEntity.ok(ApiResponse.success("Áp dụng mã giảm giá thành công", response));

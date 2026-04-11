@@ -4,6 +4,7 @@ import com.beauty.ecommerce.order.adapter.out.persistence.mapper.OrderMapper;
 import com.beauty.ecommerce.order.application.port.out.OrderPort;
 import com.beauty.ecommerce.order.domain.entity.Order;
 import com.beauty.ecommerce.order.domain.entity.OrderStatus;
+import com.beauty.ecommerce.order.domain.entity.PaymentStatus;
 import com.beauty.ecommerce.product.adapter.out.persistence.ProductJpaEntity;
 import com.beauty.ecommerce.product.adapter.out.persistence.ProductRepository;
 import com.beauty.ecommerce.user.adapter.out.persistence.UserJpaEntity;
@@ -35,7 +36,9 @@ public class OrderPersistenceAdapter implements OrderPort {
                 .user(user)
                 .orderDate(order.getOrderDate())
                 .totalPrice(order.getTotalPrice())
-                .status(order.getStatus())
+                .status(order.getStatus() != null ? order.getStatus().name() : null)
+                .paymentMethod(order.getPaymentMethod() != null ? order.getPaymentMethod().name() : null)
+                .paymentStatus(order.getPaymentStatus() != null ? order.getPaymentStatus().name() : null)
                 .receiverName(order.getReceiverName())
                 .receiverPhone(order.getReceiverPhone())
                 .shippingAddress(order.getShippingAddress())
@@ -83,7 +86,16 @@ public class OrderPersistenceAdapter implements OrderPort {
     public void updateStatus(Long id, OrderStatus status) {
         OrderJpaEntity order = orderRepository.findById(id)
                 .orElseThrow(() -> new RuntimeException("Order not found"));
-        order.setStatus(status);
+        order.setStatus(status != null ? status.name() : null);
+        orderRepository.save(order);
+    }
+
+    @Override
+    @Transactional
+    public void updatePaymentStatus(Long id, PaymentStatus status) {
+        OrderJpaEntity order = orderRepository.findById(id)
+                .orElseThrow(() -> new RuntimeException("Order not found"));
+        order.setPaymentStatus(status != null ? status.name() : null);
         orderRepository.save(order);
     }
 }

@@ -41,7 +41,8 @@ public class SecurityConfig {
                 .authorizeHttpRequests(auth -> auth
                         // Public endpoints
                         .requestMatchers("/api/auth/register", "/api/auth/login", "/api/auth/refresh", 
-                                       "/api/auth/forgot-password", "/api/auth/reset-password").permitAll()
+                                       "/api/auth/forgot-password", "/api/auth/reset-password",
+                                       "/api/payment/momo-ipn").permitAll()
                         .requestMatchers(HttpMethod.GET, "/api/products/**").permitAll()
                         .requestMatchers(HttpMethod.GET, "/api/categories/**").permitAll()
                         .requestMatchers(HttpMethod.GET, "/api/reviews/**").permitAll()
@@ -83,7 +84,7 @@ public class SecurityConfig {
     @Bean
     public CorsConfigurationSource corsConfigurationSource() {
         CorsConfiguration configuration = new CorsConfiguration();
-        configuration.setAllowedOrigins(List.of("http://localhost:5173", "http://localhost:3000"));
+        configuration.setAllowedOrigins(List.of("http://localhost:5173", "http://localhost:5174", "http://localhost:3000"));
         configuration.setAllowedMethods(Arrays.asList("GET", "POST", "PUT", "DELETE", "OPTIONS"));
         configuration.setAllowedHeaders(List.of("*"));
         configuration.setAllowCredentials(true);

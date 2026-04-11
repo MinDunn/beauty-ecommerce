@@ -1,9 +1,26 @@
+import { useState, useEffect } from 'react';
 import { ProductCard } from '../ui/ProductCard';
-import { products } from '../../data/products';
-
-const featuredProducts = products.filter(p => p.isFeatured).slice(0, 5);
+import { productService } from '../../api/productService';
+import { Loader2 } from 'lucide-react';
 
 export const ProductGrid = ({ title = "Sản phẩm nổi bật" }: { title?: string }) => {
+  const [products, setProducts] = useState<any[]>([]);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    const fetchProducts = async () => {
+      try {
+        const res = await productService.searchProducts({ size: 5, sortBy: 'createdAt,desc' });
+        setProducts(res.content);
+      } catch (err) {
+        console.error("Failed to fetch products for grid", err);
+      } finally {
+        setLoading(false);
+      }
+    };
+    fetchProducts();
+  }, []);
+
   return (
     <section className="py-12 bg-gray-50 border-t border-gray-100">
       <div className="container mx-auto px-4 max-w-7xl">
@@ -20,11 +37,27 @@ export const ProductGrid = ({ title = "Sản phẩm nổi bật" }: { title?: st
           </button>
         </div>
         
-        <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-4 md:gap-6">
-          {featuredProducts.map((product) => (
-            <ProductCard key={product.id} {...product} />
-          ))}
-        </div>
+        {loading ? (
+          <div className="flex flex-col items-center justify-center py-12 gap-4">
+             <Loader2 className="text-primary-500 animate-spin" size={32} />
+             <p className="text-[10px] font-black uppercase text-gray-400">Đang tìm hàng...</p>
+          </div>
+        ) : products.length > 0 ? (
+          <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-4 md:gap-6">
+            {products.map((product) => (
+              <ProductCard 
+                key={product.id} 
+                id={product.id.toString()}
+                name={product.name}
+                price={product.currentPrice}
+                originalPrice={product.originalPrice}
+                image={`/images/${product.imageUrl}`}
+              />
+            ))}
+          </div>
+        ) : (
+          <div className="text-center py-12 text-gray-400 font-bold italic">Chưa có sản phẩm nào.</div>
+        )}
         
         <div className="mt-8 text-center md:hidden">
           <button className="w-full px-6 py-3 border border-gray-200 bg-white text-gray-700 font-bold rounded-xl hover:bg-gray-50 transition-colors">

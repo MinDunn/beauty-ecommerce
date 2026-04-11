@@ -4,6 +4,9 @@ import com.beauty.ecommerce.order.adapter.out.persistence.OrderJpaEntity;
 import com.beauty.ecommerce.order.adapter.out.persistence.OrderItemJpaEntity;
 import com.beauty.ecommerce.order.domain.entity.Order;
 import com.beauty.ecommerce.order.domain.entity.OrderItem;
+import com.beauty.ecommerce.order.domain.entity.OrderStatus;
+import com.beauty.ecommerce.order.domain.entity.PaymentMethod;
+import com.beauty.ecommerce.order.domain.entity.PaymentStatus;
 import org.springframework.stereotype.Component;
 
 import java.util.stream.Collectors;
@@ -17,7 +20,9 @@ public class OrderMapper {
                 .userId(jpaEntity.getUser().getId())
                 .orderDate(jpaEntity.getOrderDate())
                 .totalPrice(jpaEntity.getTotalPrice())
-                .status(jpaEntity.getStatus())
+                .status(jpaEntity.getStatus() != null ? OrderStatus.valueOf(jpaEntity.getStatus()) : null)
+                .paymentMethod(jpaEntity.getPaymentMethod() != null ? PaymentMethod.valueOf(jpaEntity.getPaymentMethod()) : null)
+                .paymentStatus(jpaEntity.getPaymentStatus() != null ? PaymentStatus.valueOf(jpaEntity.getPaymentStatus()) : null)
                 .receiverName(jpaEntity.getReceiverName())
                 .receiverPhone(jpaEntity.getReceiverPhone())
                 .shippingAddress(jpaEntity.getShippingAddress())

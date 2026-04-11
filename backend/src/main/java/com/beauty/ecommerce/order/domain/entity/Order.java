@@ -17,6 +17,8 @@ public class Order {
     private LocalDateTime orderDate;
     private BigDecimal totalPrice;
     private OrderStatus status;
+    private PaymentMethod paymentMethod;
+    private PaymentStatus paymentStatus;
     private String receiverName;
     private String receiverPhone;
     private String shippingAddress;

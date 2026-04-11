@@ -13,12 +13,15 @@ import {
   Truck,
   Ticket
 } from 'lucide-react';
-import { useSelector } from 'react-redux';
+import { useSelector, useDispatch } from 'react-redux';
 import type { RootState } from '../store';
 import { cn } from '../utils/cn';
 import toast from 'react-hot-toast';
 import couponService from '../api/couponService';
 import type { CouponData } from '../api/couponService';
+import { clearCart } from '../store/slices/cartSlice';
+import { orderService } from '../api/orderService';
+import { paymentService } from '../api/paymentService';
 
 const STAGES = [
   { id: 1, name: 'Vận chuyển', icon: Truck },
@@ -28,12 +31,20 @@ const STAGES = [
 
 const Checkout = () => {
   const navigate = useNavigate();
+  const dispatch = useDispatch();
   const { items: cartItems, totalAmount: subTotal } = useSelector((state: RootState) => state.cart);
   const { user } = useSelector((state: RootState) => state.auth);
   
   const [currentStep, setCurrentStep] = useState(1);
   const [paymentMethod, setPaymentMethod] = useState('cod');
   const [isProcessing, setIsProcessing] = useState(false);
+  
+  const [shippingInfo, setShippingInfo] = useState({
+    receiverName: user?.fullName || '',
+    receiverPhone: '',
+    shippingAddress: '',
+    note: ''
+  });
   
   // Coupon state
   const [couponCode, setCouponCode] = useState('');
@@ -78,6 +89,12 @@ const Checkout = () => {
   };
 
   const handleNext = () => {
+    if (currentStep === 1) {
+      if (!shippingInfo.receiverName || !shippingInfo.receiverPhone || !shippingInfo.shippingAddress) {
+        toast.error('Vui lòng điền đầy đủ thông tin vận chuyển');
+        return;
+      }
+    }
     if (currentStep < 3) setCurrentStep(currentStep + 1);
   };
 
@@ -86,13 +103,40 @@ const Checkout = () => {
   };
 
   const handlePlaceOrder = async () => {
+    if (!user) {
+      toast.error('Vui lòng đăng nhập để đặt hàng');
+      navigate('/login');
+      return;
+    }
+
     setIsProcessing(true);
-    const loadingToast = toast.loading('Đang xử lý thanh toán...');
-    // Simulate real order processing
-    await new Promise(resolve => setTimeout(resolve, 2500));
-    setIsProcessing(false);
-    toast.success('Thanh toán thành công!', { id: loadingToast });
-    navigate('/order-success');
+    const loadingToast = toast.loading('Đang xử lý đơn hàng của bạn...');
+    try {
+      const resp = await orderService.placeOrder({
+        receiverName: shippingInfo.receiverName,
+        receiverPhone: shippingInfo.receiverPhone,
+        shippingAddress: shippingInfo.shippingAddress,
+        paymentMethod: paymentMethod // 'cod' or 'transfer' (MOMO)
+      });
+      
+      if (paymentMethod === 'momo') {
+        const momoResp = await paymentService.createMomoPayment(resp.id);
+        if (momoResp.payUrl) {
+           toast.success('Đang chuyển sang cổng MoMo...', { id: loadingToast });
+           window.location.href = momoResp.payUrl;
+           return;
+        }
+      }
+      
+      toast.success('Đặt hàng thành công! Cảm ơn bạn đã tin dùng Glowzy.', { id: loadingToast });
+      dispatch(clearCart());
+      navigate('/order-success', { state: { orderId: resp.id } });
+    } catch (error: any) {
+      const errMsg = error.response?.data?.message || 'Có lỗi xảy ra khi xử lý đặt hàng';
+      toast.error(errMsg, { id: loadingToast });
+    } finally {
+      setIsProcessing(false);
+    }
   };
 
   if (cartItems.length === 0) {
@@ -153,28 +197,52 @@ const Checkout = () => {
           <div className="w-full lg:w-2/3 space-y-8">
              {/* Step 1: Shipping */}
              {currentStep === 1 && (
-                 <div className="glowzy-card p-8 md:p-12 animate-in fade-in slide-in-from-bottom-4 shadow-2xl">
-                    <h2 className="text-2xl font-black text-slate-900 mb-8 uppercase flex items-center gap-3">
-                      <MapPin className="text-primary-500" size={24} /> 1. Vận chuyển
-                    </h2>
-                   <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                      <div className="space-y-2">
-                        <label className="text-xs font-black text-slate-400 uppercase tracking-widest ml-1">Họ và tên</label>
-                        <input type="text" defaultValue={user?.name} className="w-full px-6 py-4 bg-gray-50 border-2 border-transparent focus:border-primary-500 focus:bg-white rounded-2xl outline-none transition-all font-bold" placeholder="Tên của bạn..." />
-                      </div>
-                      <div className="space-y-2">
-                        <label className="text-xs font-black text-slate-400 uppercase tracking-widest ml-1">Số điện thoại</label>
-                        <input type="tel" className="w-full px-6 py-4 bg-gray-50 border-2 border-transparent focus:border-primary-500 focus:bg-white rounded-2xl outline-none transition-all font-bold" placeholder="09xxx..." />
-                      </div>
-                      <div className="space-y-2 md:col-span-2">
-                        <label className="text-xs font-black text-slate-400 uppercase tracking-widest ml-1">Địa chỉ cụ thể</label>
-                        <input type="text" className="w-full px-6 py-4 bg-gray-50 border-2 border-transparent focus:border-primary-500 focus:bg-white rounded-2xl outline-none transition-all font-bold" placeholder="Số nhà, tên đường, phường/xã..." />
-                      </div>
-                      <div className="space-y-2 md:col-span-2">
-                         <label className="text-xs font-black text-slate-400 uppercase tracking-widest ml-1">Ghi chú</label>
-                        <textarea rows={3} className="w-full px-6 py-4 bg-gray-50 border-2 border-transparent focus:border-primary-500 focus:bg-white rounded-2xl outline-none transition-all font-bold resize-none" placeholder="Lời nhắn cho shipper..." />
-                      </div>
-                   </div>
+                  <div className="glowzy-card p-8 md:p-12 animate-in fade-in slide-in-from-bottom-4 shadow-2xl">
+                     <h2 className="text-2xl font-black text-slate-900 mb-8 uppercase flex items-center gap-3">
+                       <MapPin className="text-primary-500" size={24} /> 1. Vận chuyển
+                     </h2>
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                       <div className="space-y-2">
+                         <label className="text-xs font-black text-slate-400 uppercase tracking-widest ml-1">Họ và tên người nhận</label>
+                         <input 
+                           type="text" 
+                           value={shippingInfo.receiverName} 
+                           onChange={(e) => setShippingInfo({...shippingInfo, receiverName: e.target.value})}
+                           className="w-full px-6 py-4 bg-gray-50 border-2 border-transparent focus:border-primary-500 focus:bg-white rounded-2xl outline-none transition-all font-bold" 
+                           placeholder="Tên người nhận..." 
+                         />
+                       </div>
+                       <div className="space-y-2">
+                         <label className="text-xs font-black text-slate-400 uppercase tracking-widest ml-1">Số điện thoại</label>
+                         <input 
+                           type="tel" 
+                           value={shippingInfo.receiverPhone}
+                           onChange={(e) => setShippingInfo({...shippingInfo, receiverPhone: e.target.value})}
+                           className="w-full px-6 py-4 bg-gray-50 border-2 border-transparent focus:border-primary-500 focus:bg-white rounded-2xl outline-none transition-all font-bold" 
+                           placeholder="09xxx..." 
+                         />
+                       </div>
+                       <div className="space-y-2 md:col-span-2">
+                         <label className="text-xs font-black text-slate-400 uppercase tracking-widest ml-1">Địa chỉ nhận hàng cụ thể</label>
+                         <input 
+                           type="text" 
+                           value={shippingInfo.shippingAddress}
+                           onChange={(e) => setShippingInfo({...shippingInfo, shippingAddress: e.target.value})}
+                           className="w-full px-6 py-4 bg-gray-50 border-2 border-transparent focus:border-primary-500 focus:bg-white rounded-2xl outline-none transition-all font-bold" 
+                           placeholder="Số nhà, tên đường, phường/xã..." 
+                         />
+                       </div>
+                       <div className="space-y-2 md:col-span-2">
+                          <label className="text-xs font-black text-slate-400 uppercase tracking-widest ml-1">Ghi chú (Không bắt buộc)</label>
+                         <textarea 
+                           rows={3} 
+                           value={shippingInfo.note}
+                           onChange={(e) => setShippingInfo({...shippingInfo, note: e.target.value})}
+                           className="w-full px-6 py-4 bg-gray-50 border-2 border-transparent focus:border-primary-500 focus:bg-white rounded-2xl outline-none transition-all font-bold resize-none" 
+                           placeholder="Lời nhắn cho shipper..." 
+                         />
+                       </div>
+                    </div>
                     <button onClick={handleNext} className="glowzy-btn-primary mt-10 w-full py-6 flex items-center justify-center gap-4">
                        <span>Tiếp tục thanh toán</span>
                        <ArrowRight size={20} />
@@ -184,36 +252,36 @@ const Checkout = () => {
 
              {/* Step 2: Payment */}
              {currentStep === 2 && (
-                 <div className="glowzy-card p-8 md:p-12 animate-in fade-in slide-in-from-bottom-4 shadow-2xl">
-                    <h2 className="text-2xl font-black text-slate-900 mb-8 uppercase flex items-center gap-3">
-                      <CreditCard className="text-primary-500" size={24} /> 2. Thanh toán
-                    </h2>
-                    <div className="space-y-4">
-                      {[
-                        { id: 'cod', name: 'Thanh toán COD', desc: 'Nhận hàng rồi mới trả tiền mặt', icon: Banknote, color: 'text-emerald-500', bg: 'bg-emerald-50' },
-                        { id: 'transfer', name: 'Chuyển khoản / Ví', desc: 'Nhanh chóng & Bảo mật qua MoMo, VNPAY', icon: Wallet, color: 'text-blue-500', bg: 'bg-blue-50' }
-                      ].map((method) => (
-                        <label key={method.id} className={cn(
-                          "flex items-center p-6 rounded-3xl border-2 cursor-pointer transition-all duration-300",
-                          paymentMethod === method.id 
-                            ? "border-primary-500 bg-primary-50/10 shadow-lg shadow-primary-500/5 -translate-y-1" 
-                            : "border-gray-50 hover:border-gray-200"
-                        )}>
-                           <input type="radio" name="pay" value={method.id} checked={paymentMethod === method.id} onChange={() => setPaymentMethod(method.id)} className="w-5 h-5 text-primary-500 focus:ring-primary-500" />
-                           <div className="ml-6 flex-1">
-                              <div className="flex items-center gap-3">
-                                 <div className={cn("p-2.5 rounded-xl transition-colors", method.bg, method.color)}>
-                                   <method.icon size={22} />
-                                 </div>
-                                 <span className="font-black text-gray-900 tracking-tight">{method.name}</span>
-                              </div>
-                              <p className="text-gray-400 text-[10px] font-black uppercase tracking-widest mt-1.5 ml-12 opacity-70">{method.desc}</p>
-                           </div>
-                           {paymentMethod === method.id && <div className="w-6 h-6 bg-primary-500 rounded-full flex items-center justify-center text-white scale-110"><Check size={14} strokeWidth={4} /></div>}
-                        </label>
-                      ))}
-                    </div>
-                                      <div className="mt-12 flex gap-4">
+                  <div className="glowzy-card p-8 md:p-12 animate-in fade-in slide-in-from-bottom-4 shadow-2xl">
+                     <h2 className="text-2xl font-black text-slate-900 mb-8 uppercase flex items-center gap-3">
+                       <CreditCard className="text-primary-500" size={24} /> 2. Thanh toán
+                     </h2>
+                     <div className="space-y-4">
+                       {[
+                         { id: 'cod', name: 'Thanh toán COD', desc: 'Nhận hàng rồi mới trả tiền mặt', icon: Banknote, color: 'text-emerald-500', bg: 'bg-emerald-50' },
+                         { id: 'momo', name: 'Thanh toán MOMO', desc: 'Nhanh chóng & Bảo mật qua ứng dụng MoMo', icon: Wallet, color: 'text-pink-500', bg: 'bg-pink-50' }
+                       ].map((method) => (
+                         <label key={method.id} className={cn(
+                           "flex items-center p-6 rounded-3xl border-2 cursor-pointer transition-all duration-300",
+                           paymentMethod === method.id 
+                             ? "border-primary-500 bg-primary-50/10 shadow-lg shadow-primary-500/5 -translate-y-1" 
+                             : "border-gray-50 hover:border-gray-200"
+                         )}>
+                            <input type="radio" name="pay" value={method.id} checked={paymentMethod === method.id} onChange={() => setPaymentMethod(method.id)} className="w-5 h-5 text-primary-500 focus:ring-primary-500" />
+                            <div className="ml-6 flex-1">
+                               <div className="flex items-center gap-3">
+                                  <div className={cn("p-2.5 rounded-xl transition-colors", method.bg, method.color)}>
+                                    <method.icon size={22} />
+                                  </div>
+                                  <span className="font-black text-gray-900 tracking-tight">{method.name}</span>
+                               </div>
+                               <p className="text-gray-400 text-[10px] font-black uppercase tracking-widest mt-1.5 ml-12 opacity-70">{method.desc}</p>
+                            </div>
+                            {paymentMethod === method.id && <div className="w-6 h-6 bg-primary-500 rounded-full flex items-center justify-center text-white scale-110"><Check size={14} strokeWidth={4} /></div>}
+                         </label>
+                       ))}
+                     </div>
+                                       <div className="mt-12 flex gap-4">
                        <button onClick={handleBack} className="glowzy-btn-secondary flex-1 py-5 flex items-center justify-center gap-3">
                          <ChevronLeft size={20} />
                          <span>Quay lại</span>
@@ -228,54 +296,55 @@ const Checkout = () => {
 
              {/* Step 3: Final Confirm */}
              {currentStep === 3 && (
-                 <div className="glowzy-card p-8 md:p-12 animate-in fade-in slide-in-from-bottom-4 shadow-2xl">
-                    <h2 className="text-2xl font-black text-slate-900 mb-8 uppercase flex items-center gap-3">
-                      <Check className="text-primary-500" size={24} /> 3. Xác nhận đơn
-                    </h2>
-                   
-                   <div className="bg-gray-50 rounded-[2rem] p-8 border border-gray-100 space-y-6">
-                      <div className="flex justify-between items-start border-b border-gray-200 pb-6">
-                         <div>
-                            <p className="text-[10px] font-black uppercase tracking-widest text-slate-400 mb-2">Giao tới</p>
-                            <p className="font-black text-slate-900">Nguyễn Văn Admin</p>
-                            <p className="text-sm text-gray-500 font-medium">123 Đường Glowzy, P. Đẹp, Quận 1, TP. HCM</p>
-                         </div>
-                         <button onClick={() => setCurrentStep(1)} className="text-primary-500 font-black text-xs uppercase tracking-widest hover:underline">Thay đổi</button>
-                      </div>
-                      <div className="flex justify-between items-center">
-                         <div>
-                            <p className="text-[10px] font-black uppercase tracking-widest text-slate-400 mb-2">Thanh toán</p>
-                            <p className="font-black text-slate-900 uppercase">{paymentMethod === 'cod' ? 'Tiền mặt (COD)' : 'Chuyển khoản'}</p>
-                         </div>
-                         <button onClick={() => setCurrentStep(2)} className="text-primary-500 font-black text-xs uppercase tracking-widest hover:underline">Thay đổi</button>
-                      </div>
-                   </div>
-
-                   <p className="mt-8 text-center text-sm text-gray-400 font-medium leading-relaxed italic">
-                     Bằng việc nhấn đặt hàng, bạn đồng ý với các Điều khoản & Chính sách của Glowzy về việc mua bán hàng hóa.
-                   </p>
-
-                   <div className="mt-12 flex gap-4">
-                       <button onClick={handleBack} className="glowzy-btn-secondary flex-1 py-5 flex items-center justify-center gap-3">
-                         <ChevronLeft size={20} />
-                         <span>Quay lại</span>
-                       </button>
-                       <button 
-                         onClick={handlePlaceOrder} 
-                         disabled={isProcessing}
-                         className="glowzy-btn-primary flex-[2] py-5 flex items-center justify-center gap-4"
-                       >
-                          {isProcessing ? (
-                            <div className="w-6 h-6 border-4 border-white/30 border-t-white rounded-full animate-spin" />
-                          ) : (
-                            <>
-                               <span>Hoàn tất đặt hàng</span>
-                               <Check size={20} strokeWidth={3} />
-                            </>
-                          )}
-                       </button>
+                  <div className="glowzy-card p-8 md:p-12 animate-in fade-in slide-in-from-bottom-4 shadow-2xl">
+                     <h2 className="text-2xl font-black text-slate-900 mb-8 uppercase flex items-center gap-3">
+                       <Check className="text-primary-500" size={24} /> 3. Xác nhận đơn
+                     </h2>
+                    
+                    <div className="bg-gray-50 rounded-[2rem] p-8 border border-gray-100 space-y-6">
+                       <div className="flex justify-between items-start border-b border-gray-200 pb-6">
+                          <div>
+                             <p className="text-[10px] font-black uppercase tracking-widest text-slate-400 mb-2">Giao tới</p>
+                             <p className="font-black text-slate-900 uppercase tracking-tight">{shippingInfo.receiverName}</p>
+                             <p className="text-sm text-gray-500 font-medium">{shippingInfo.shippingAddress}</p>
+                             <p className="text-xs text-slate-400 font-bold mt-1 uppercase italic">SĐT: {shippingInfo.receiverPhone}</p>
+                          </div>
+                          <button onClick={() => setCurrentStep(1)} className="text-primary-500 font-black text-xs uppercase tracking-widest hover:underline">Thay đổi</button>
+                       </div>
+                       <div className="flex justify-between items-center">
+                          <div>
+                             <p className="text-[10px] font-black uppercase tracking-widest text-slate-400 mb-2">Thanh toán</p>
+                             <p className="font-black text-slate-900 uppercase">{paymentMethod === 'cod' ? 'Tiền mặt (COD)' : 'MoMo'}</p>
+                          </div>
+                          <button onClick={() => setCurrentStep(2)} className="text-primary-500 font-black text-xs uppercase tracking-widest hover:underline">Thay đổi</button>
+                       </div>
                     </div>
-                </div>
+
+                    <p className="mt-8 text-center text-sm text-gray-400 font-medium leading-relaxed italic">
+                      Bằng việc nhấn đặt hàng, bạn đồng ý với các Điều khoản & Chính sách của Glowzy về việc mua bán hàng hóa.
+                    </p>
+
+                    <div className="mt-12 flex gap-4">
+                        <button onClick={handleBack} className="glowzy-btn-secondary flex-1 py-5 flex items-center justify-center gap-3">
+                          <ChevronLeft size={20} />
+                          <span>Quay lại</span>
+                        </button>
+                        <button 
+                          onClick={handlePlaceOrder} 
+                          disabled={isProcessing}
+                          className="glowzy-btn-primary flex-[2] py-5 flex items-center justify-center gap-4"
+                        >
+                           {isProcessing ? (
+                             <div className="w-6 h-6 border-4 border-white/30 border-t-white rounded-full animate-spin" />
+                           ) : (
+                             <>
+                                <span>Hoàn tất đặt hàng</span>
+                                <Check size={20} strokeWidth={3} />
+                             </>
+                           )}
+                        </button>
+                     </div>
+                 </div>
              )}
           </div>
 

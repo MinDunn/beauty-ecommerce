@@ -1,16 +1,24 @@
 import { useEffect, useState } from 'react';
-import { Link } from 'react-router-dom';
+import { useLocation, Link } from 'react-router-dom';
 import { CheckCircle, ArrowRight, ShoppingBag, Home } from 'lucide-react';
 import { useDispatch } from 'react-redux';
 import { clearCart } from '../store/slices/cartSlice';
 
 const OrderSuccess = () => {
   const dispatch = useDispatch();
-  const [orderId] = useState(() => `#GLZ-${Math.random().toString(36).substring(2, 7).toUpperCase()}`);
+  const location = useLocation();
+  const [orderId, setOrderId] = useState('');
 
   useEffect(() => {
     dispatch(clearCart());
-  }, [dispatch]);
+    
+    // Lấy orderId từ URL (MoMo redirect) hoặc state (COD)
+    const params = new URLSearchParams(location.search);
+    const momoOrderId = params.get('orderId');
+    const stateOrderId = location.state?.orderId;
+    
+    setOrderId(momoOrderId || stateOrderId?.toString() || '000');
+  }, [dispatch, location]);
 
   return (
     <div className="bg-white min-h-screen flex items-center justify-center py-24 px-4 relative overflow-hidden">
