@@ -34,6 +34,7 @@ dist-ssr/
 # Secrets & Config
 .env
 .env.*
+!.env.example
 application-local.yml
 
 # Testing
