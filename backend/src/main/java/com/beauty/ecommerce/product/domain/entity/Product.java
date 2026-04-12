@@ -23,5 +23,7 @@ public class Product {
     private Integer stockQuantity;
     private String imageUrl;
     private Long categoryId;
+    private String instructions;
+    private String ingredients;
     private LocalDateTime createdAt;
 }

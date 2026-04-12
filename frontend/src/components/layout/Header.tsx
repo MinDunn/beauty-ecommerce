@@ -122,11 +122,11 @@ const Header = () => {
               <div className="relative group/user py-2 cursor-pointer">
                 <div className="flex items-center space-x-2">
                    <div className="w-8 h-8 rounded-full bg-primary-100 flex items-center justify-center text-primary-600 font-bold uppercase">
-                    {user?.name?.[0] || 'U'}
+                    {user?.fullName?.[0] || 'U'}
                   </div>
                   <div className="flex flex-col">
                      <span className="text-[10px] text-gray-500 uppercase font-bold">Xin chào</span>
-                     <span className="text-xs font-semibold">{user?.name}</span>
+                     <span className="text-xs font-semibold">{user?.fullName}</span>
                   </div>
                 </div>
                 

@@ -24,4 +24,7 @@ public class AdminProductRequest {
     
     @NotNull(message = "Category ID is required")
     private Long categoryId;
+    
+    private String instructions;
+    private String ingredients;
 }

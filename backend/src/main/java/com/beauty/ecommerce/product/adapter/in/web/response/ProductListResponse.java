@@ -16,7 +16,13 @@ import java.math.BigDecimal;
 public class ProductListResponse {
     private Long id;
     private String name;
+    private String description;
     private BigDecimal currentPrice;
+    private BigDecimal originalPrice;
+    private Integer stockQuantity;
     private String imageUrl;
+    private Long categoryId;
+    private String instructions;
+    private String ingredients;
     private Double averageRating;
 }

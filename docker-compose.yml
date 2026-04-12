@@ -31,6 +31,8 @@ services:
     depends_on:
       db:
         condition: service_healthy
+    volumes:
+      - uploads_data:/app/uploads
 
   frontend:
     build:
@@ -42,6 +44,9 @@ services:
       - "5173:80"
     depends_on:
       - backend
+    volumes:
+      - uploads_data:/usr/share/nginx/html/uploads
 
 volumes:
   mysql_data:
+  uploads_data:

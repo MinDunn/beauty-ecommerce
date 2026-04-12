@@ -102,8 +102,14 @@ public class ProductController {
         return ProductListResponse.builder()
                 .id(product.getId())
                 .name(product.getName())
+                .description(product.getDescription())
                 .currentPrice(product.getCurrentPrice())
+                .originalPrice(product.getOriginalPrice())
+                .stockQuantity(product.getStockQuantity())
                 .imageUrl(product.getImageUrl())
+                .categoryId(product.getCategoryId())
+                .instructions(product.getInstructions())
+                .ingredients(product.getIngredients())
                 .averageRating(avgRating != null ? avgRating : 0.0)
                 .build();
     }
@@ -120,6 +126,8 @@ public class ProductController {
                 .stockQuantity(product.getStockQuantity())
                 .imageUrl(product.getImageUrl())
                 .categoryId(product.getCategoryId())
+                .instructions(product.getInstructions())
+                .ingredients(product.getIngredients())
                 .createdAt(product.getCreatedAt())
                 .averageRating(avgRating)
                 .build();

@@ -23,6 +23,8 @@ public class ProductResponse {
     private Integer stockQuantity;
     private String imageUrl;
     private Long categoryId;
+    private String instructions;
+    private String ingredients;
     private LocalDateTime createdAt;
     private Double averageRating;
 }

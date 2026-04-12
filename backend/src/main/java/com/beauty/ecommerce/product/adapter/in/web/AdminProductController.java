@@ -24,13 +24,18 @@ public class AdminProductController {
             @RequestPart("product") @Valid AdminProductRequest request,
             @RequestPart(value = "image", required = false) MultipartFile image) {
         
+        System.out.println("DEBUG: Create Product Request - Instructions: " + request.getInstructions());
+        System.out.println("DEBUG: Create Product Request - Ingredients: " + request.getIngredients());
+        
         ManageProductUseCase.CreateProductCommand command = ManageProductUseCase.CreateProductCommand.builder()
                 .name(request.getName())
                 .description(request.getDescription())
                 .originalPrice(request.getOriginalPrice())
-                .currentPrice(request.getSalePrice()) // sale_price maps to currentPrice
+                .currentPrice(request.getSalePrice())
                 .stockQuantity(request.getStockQuantity())
                 .categoryId(request.getCategoryId())
+                .instructions(request.getInstructions())
+                .ingredients(request.getIngredients())
                 .build();
                 
         Product product = manageProductUseCase.createProduct(command, image);
@@ -42,6 +47,10 @@ public class AdminProductController {
             @PathVariable Long id,
             @RequestPart("product") @Valid AdminProductRequest request,
             @RequestPart(value = "image", required = false) MultipartFile image) {
+
+        System.out.println("DEBUG: Update Product Request ID: " + id);
+        System.out.println("DEBUG: Update - Instructions: " + request.getInstructions());
+        System.out.println("DEBUG: Update - Ingredients: " + request.getIngredients());
             
         ManageProductUseCase.UpdateProductCommand command = ManageProductUseCase.UpdateProductCommand.builder()
                 .name(request.getName())
@@ -50,6 +59,8 @@ public class AdminProductController {
                 .currentPrice(request.getSalePrice())
                 .stockQuantity(request.getStockQuantity())
                 .categoryId(request.getCategoryId())
+                .instructions(request.getInstructions())
+                .ingredients(request.getIngredients())
                 .build();
                 
         Product product = manageProductUseCase.updateProduct(id, command, image);
@@ -72,6 +83,8 @@ public class AdminProductController {
                 .stockQuantity(product.getStockQuantity())
                 .imageUrl(product.getImageUrl())
                 .categoryId(product.getCategoryId())
+                .instructions(product.getInstructions())
+                .ingredients(product.getIngredients())
                 .createdAt(product.getCreatedAt())
                 .averageRating(0.0) // Return 0.0 for newly created / updated since we don't query reviews here
                 .build();

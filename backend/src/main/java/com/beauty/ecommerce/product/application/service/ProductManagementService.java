@@ -37,6 +37,8 @@ public class ProductManagementService implements ManageProductUseCase {
                 .currentPrice(command.getCurrentPrice())
                 .stockQuantity(command.getStockQuantity())
                 .categoryId(command.getCategoryId())
+                .instructions(command.getInstructions())
+                .ingredients(command.getIngredients())
                 .imageUrl(imageUrl)
                 .createdAt(LocalDateTime.now())
                 .build();
@@ -56,6 +58,8 @@ public class ProductManagementService implements ManageProductUseCase {
         product.setCurrentPrice(command.getCurrentPrice());
         product.setStockQuantity(command.getStockQuantity());
         product.setCategoryId(command.getCategoryId());
+        product.setInstructions(command.getInstructions());
+        product.setIngredients(command.getIngredients());
 
         if (image != null && !image.isEmpty()) {
             String newImageUrl = uploadImagePort.uploadFile(image);

@@ -10,9 +10,9 @@ interface TableProps {
 
 export const Table = ({ columns, data }: TableProps) => (
   <div className="overflow-hidden rounded-2xl border border-slate-800 bg-slate-900 shadow-xl">
-    <table className="w-full text-left border-collapse">
-      <thead>
-        <tr className="bg-slate-800/50">
+    <table className="w-full text-left border-separate border-spacing-0">
+      <thead className="sticky top-0 z-10 bg-slate-900">
+        <tr>
           {columns.map((col) => (
             <th key={col.key} className="px-6 py-4 text-xs font-black text-slate-400 uppercase tracking-widest border-b border-slate-800">
               {col.header}

@@ -42,6 +42,12 @@ public class ProductJpaEntity {
     @jakarta.persistence.Column(name = "category_id")
     private Long categoryId;
 
+    @jakarta.persistence.Column(columnDefinition = "TEXT")
+    private String instructions;
+
+    @jakarta.persistence.Column(columnDefinition = "TEXT")
+    private String ingredients;
+
     @jakarta.persistence.Column(name = "created_at")
     @Builder.Default
     private LocalDateTime createdAt = LocalDateTime.now();

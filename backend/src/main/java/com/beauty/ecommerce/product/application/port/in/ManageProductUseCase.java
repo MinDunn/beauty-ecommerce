@@ -24,6 +24,8 @@ public interface ManageProductUseCase {
         private BigDecimal currentPrice;
         private Integer stockQuantity;
         private Long categoryId;
+        private String instructions;
+        private String ingredients;
     }
 
     @Getter
@@ -35,5 +37,7 @@ public interface ManageProductUseCase {
         private BigDecimal currentPrice;
         private Integer stockQuantity;
         private Long categoryId;
+        private String instructions;
+        private String ingredients;
     }
 }

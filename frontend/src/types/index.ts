@@ -8,6 +8,8 @@ export type Product = {
   imageUrl?: string;
   categoryId?: number;
   categoryName?: string;
+  instructions?: string;
+  ingredients?: string;
   createdAt?: string;
 };
 

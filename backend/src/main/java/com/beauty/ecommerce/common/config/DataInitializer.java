@@ -1,5 +1,7 @@
 package com.beauty.ecommerce.common.config;
 
+import com.beauty.ecommerce.category.adapter.out.persistence.CategoryJpaEntity;
+import com.beauty.ecommerce.category.adapter.out.persistence.CategoryRepository;
 import com.beauty.ecommerce.product.adapter.out.persistence.ProductJpaEntity;
 import com.beauty.ecommerce.product.adapter.out.persistence.ProductRepository;
 import com.beauty.ecommerce.user.adapter.out.persistence.UserJpaEntity;
@@ -21,12 +23,19 @@ public class DataInitializer implements CommandLineRunner {
 
     private final UserRepository userRepository;
     private final ProductRepository productRepository;
+    private final CategoryRepository categoryRepository;
     private final PasswordEncoder passwordEncoder;
 
     @Override
     public void run(String... args) {
-        initializeUsers();
-        initializeProducts();
+        try {
+            log.info("Bắt đầu khởi tạo dữ liệu mẫu...");
+            initializeUsers();
+            initializeCategoriesAndProducts();
+            log.info("Hoàn tất khởi tạo dữ liệu mẫu.");
+        } catch (Exception e) {
+            log.error("Lỗi khi khởi tạo dữ liệu mẫu: {}. Ứng dụng vẫn sẽ tiếp tục chạy.", e.getMessage());
+        }
     }
 
     private void initializeUsers() {
@@ -66,7 +75,17 @@ public class DataInitializer implements CommandLineRunner {
         }
     }
 
-    private void initializeProducts() {
+    private void initializeCategoriesAndProducts() {
+        // Ensure categories exist
+        CategoryJpaEntity makeup = categoryRepository.findByName("Trang điểm")
+                .orElseGet(() -> categoryRepository.save(CategoryJpaEntity.builder().name("Trang điểm").description("Các sản phẩm làm đẹp, kem nền, son môi...").build()));
+        
+        CategoryJpaEntity skincare = categoryRepository.findByName("Chăm sóc da")
+                .orElseGet(() -> categoryRepository.save(CategoryJpaEntity.builder().name("Chăm sóc da").description("Kem dưỡng, sữa rửa mặt, mặt nạ...").build()));
+        
+        CategoryJpaEntity perfume = categoryRepository.findByName("Nước hoa")
+                .orElseGet(() -> categoryRepository.save(CategoryJpaEntity.builder().name("Nước hoa").description("Nước hoa cao cấp chính hãng...").build()));
+
         if (productRepository.count() == 0) {
             log.info("Khởi tạo dữ liệu sản phẩm mẫu...");
 
@@ -78,6 +97,7 @@ public class DataInitializer implements CommandLineRunner {
                         .currentPrice(new BigDecimal("950000"))
                         .stockQuantity(50)
                         .imageUrl("https://images.unsplash.com/photo-1586790170083-2f9ceadc732d?auto=format&fit=crop&w=600&q=80")
+                        .categoryId(makeup.getId())
                         .build(),
                 ProductJpaEntity.builder()
                         .name("Kem Nền Estee Lauder")
@@ -86,6 +106,7 @@ public class DataInitializer implements CommandLineRunner {
                         .currentPrice(new BigDecimal("1350000"))
                         .stockQuantity(30)
                         .imageUrl("https://images.unsplash.com/photo-1599733594230-6b823276abcc?auto=format&fit=crop&w=600&q=80")
+                        .categoryId(makeup.getId())
                         .build(),
                 ProductJpaEntity.builder()
                         .name("Sữa Rửa Mặt CeraVe")
@@ -94,6 +115,7 @@ public class DataInitializer implements CommandLineRunner {
                         .currentPrice(new BigDecimal("380000"))
                         .stockQuantity(100)
                         .imageUrl("https://images.unsplash.com/photo-1556228720-195a672e8a03?auto=format&fit=crop&w=600&q=80")
+                        .categoryId(skincare.getId())
                         .build(),
                 ProductJpaEntity.builder()
                         .name("Nước Hoa Chanel No.5")
@@ -102,6 +124,7 @@ public class DataInitializer implements CommandLineRunner {
                         .currentPrice(new BigDecimal("4200000"))
                         .stockQuantity(10)
                         .imageUrl("https://images.unsplash.com/photo-1541643600914-78b084683601?auto=format&fit=crop&w=600&q=80")
+                        .categoryId(perfume.getId())
                         .build(),
                 ProductJpaEntity.builder()
                         .name("Mặt Nạ Laneige")
@@ -110,11 +133,12 @@ public class DataInitializer implements CommandLineRunner {
                         .currentPrice(new BigDecimal("520000"))
                         .stockQuantity(40)
                         .imageUrl("https://images.unsplash.com/photo-1596755094514-f87e34085b2c?auto=format&fit=crop&w=600&q=80")
+                        .categoryId(skincare.getId())
                         .build()
             );
 
             productRepository.saveAll(products);
-            log.info("Đã tạo 5 sản phẩm mẫu thành công.");
+            log.info("Đã tạo 5 sản phẩm mẫu và gán danh mục thành công.");
         }
     }
 }

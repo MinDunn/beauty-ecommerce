@@ -61,7 +61,7 @@ const Profile = () => {
     try {
       const resp = await authService.updateProfile(formData);
       setProfile(resp.data.data);
-      dispatch(updateUser({ name: resp.data.data.fullName }));
+      dispatch(updateUser({ fullName: resp.data.data.fullName }));
       toast.success('Cập nhật thông tin thành công!');
     } catch (error: unknown) {
       const errMsg = error instanceof Error ? (error as any).response?.data?.message || error.message : 'Cập nhật thất bại';
@@ -223,7 +223,7 @@ const Profile = () => {
             <div className="bg-white rounded-[2rem] p-6 shadow-sm border border-gray-100 text-center relative overflow-hidden">
               <div className="relative inline-block mb-4">
                 <div className="w-24 h-24 rounded-full bg-primary-100 flex items-center justify-center text-primary-600 text-3xl font-black border-4 border-white shadow-md overflow-hidden bg-cover bg-center" style={{ backgroundImage: profile?.avatarUrl ? `url(${profile.avatarUrl})` : 'none' }}>
-                   {!profile?.avatarUrl && (profile?.fullName?.[0] || user?.name?.[0] || 'U')}
+                    {profile?.avatarUrl ? '' : (profile?.fullName?.[0] || user?.fullName?.[0] || 'U')}
                 </div>
                 <button 
                   onClick={handleAvatarClick}
@@ -240,7 +240,7 @@ const Profile = () => {
                   accept="image/*"
                 />
               </div>
-              <h3 className="text-xl font-black text-gray-900 line-clamp-1">{profile?.fullName || user?.name}</h3>
+              <h3 className="text-xl font-black text-gray-900 line-clamp-1">{profile?.fullName || user?.fullName}</h3>
               <p className="text-[10px] text-gray-400 font-bold uppercase tracking-widest mt-1 mb-4">{profile?.email || user?.email}</p>
               
               <button 
