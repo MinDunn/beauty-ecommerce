@@ -4,7 +4,7 @@ import { FilterSidebar } from '../components/category/FilterSidebar';
 import { ProductCard } from '../components/ui/ProductCard';
 import { Filter, ChevronDown, Loader2 } from 'lucide-react';
 import { productService } from '../api/productService';
-import categoryService from '../api/categoryService';
+import { categoryService } from '../api/categoryService';
 import { cn } from '../utils/cn';
 
 

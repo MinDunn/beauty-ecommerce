@@ -1,5 +1,10 @@
+interface Column {
+  header: string;
+  key: string;
+}
+
 interface TableProps {
-  columns: string[];
+  columns: Column[];
   data: any[];
 }
 
@@ -9,8 +14,8 @@ export const Table = ({ columns, data }: TableProps) => (
       <thead>
         <tr className="bg-slate-800/50">
           {columns.map((col) => (
-            <th key={col} className="px-6 py-4 text-xs font-black text-slate-400 uppercase tracking-widest border-b border-slate-800">
-              {col}
+            <th key={col.key} className="px-6 py-4 text-xs font-black text-slate-400 uppercase tracking-widest border-b border-slate-800">
+              {col.header}
             </th>
           ))}
         </tr>
@@ -28,9 +33,9 @@ export const Table = ({ columns, data }: TableProps) => (
         ) : (
           data.map((row, i) => (
             <tr key={i} className="hover:bg-slate-800/30 transition-colors group">
-              {columns.map((_, idx) => (
-                <td key={idx} className="px-6 py-4 text-sm text-slate-300 font-medium group-hover:text-white transition-colors">
-                  {Object.values(row)[idx] as any}
+              {columns.map((col) => (
+                <td key={col.key} className="px-6 py-4 text-sm text-slate-300 font-medium group-hover:text-white transition-colors">
+                  {row[col.key]}
                 </td>
               ))}
             </tr>

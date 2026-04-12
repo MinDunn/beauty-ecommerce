@@ -9,6 +9,7 @@ import com.beauty.ecommerce.order.domain.entity.OrderItem;
 import com.beauty.ecommerce.order.domain.entity.OrderStatus;
 import com.beauty.ecommerce.order.domain.entity.PaymentMethod;
 import com.beauty.ecommerce.order.domain.entity.PaymentStatus;
+import com.beauty.ecommerce.common.application.service.ActivityLogService;
 import com.beauty.ecommerce.product.application.port.out.UpdateProductStockPort;
 import com.beauty.ecommerce.user.adapter.out.persistence.UserJpaEntity;
 import com.beauty.ecommerce.user.adapter.out.persistence.UserRepository;
@@ -29,6 +30,7 @@ public class OrderService implements OrderUseCase {
     private final CartPort cartPort;
     private final UpdateProductStockPort updateProductStockPort;
     private final UserRepository userRepository;
+    private final ActivityLogService activityLogService;
 
     @Override
     @Transactional
@@ -91,6 +93,8 @@ public class OrderService implements OrderUseCase {
         // 3. Clear Cart
         cartPort.clearCart(email);
 
+        activityLogService.logActivity(user.getId(), email, "PLACE_ORDER", "Đặt đơn hàng mới #" + savedOrder.getId() + " (Tổng tiền: " + totalPrice + "đ)");
+
         return savedOrder;
     }
 
@@ -107,6 +111,7 @@ public class OrderService implements OrderUseCase {
     @Override
     public void updateOrderStatus(Long orderId, OrderStatus status) {
         orderPort.updateStatus(orderId, status);
+        activityLogService.logActivity(null, "ADMIN", "UPDATE_ORDER_STATUS", "Cập nhật trạng thái đơn hàng #" + orderId + " thành " + status);
     }
 
     @Override

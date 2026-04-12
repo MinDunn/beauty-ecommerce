@@ -51,7 +51,7 @@ public class SecurityConfig {
                         .requestMatchers(HttpMethod.POST, "/api/contacts").permitAll()
                         .requestMatchers(HttpMethod.GET, "/api/orders/public/lookup/**").permitAll()
                         // Admin endpoints
-                        .requestMatchers("/api/admin/**").hasRole("ADMIN")
+                        .requestMatchers("/api/admin/**").hasAuthority("ROLE_ADMIN")
                         // All other requests require authentication (including /api/auth/logout and /api/users/**)
                         .anyRequest().authenticated()
                 )

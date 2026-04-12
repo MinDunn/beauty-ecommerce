@@ -6,7 +6,7 @@ import lombok.*;
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
 
-@Entity
+@Entity(name = "ProductCoupon")
 @Table(name = "coupons")
 @Getter
 @Setter

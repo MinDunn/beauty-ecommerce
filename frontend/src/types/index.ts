@@ -1,25 +1,47 @@
 export type Product = {
   id: number;
   name: string;
+  description?: string;
+  originalPrice: number;
+  currentPrice: number;
+  stockQuantity: number;
+  imageUrl?: string;
+  categoryId?: number;
+  categoryName?: string;
+  createdAt?: string;
+};
+
+export type Category = {
+  id: number;
+  name: string;
+  description?: string;
+};
+
+export type OrderItem = {
+  productId: number;
+  productName: string;
+  productImageUrl?: string;
+  quantity: number;
   price: number;
-  category: string;
-  stock: number;
-  image?: string;
+  subTotal: number;
 };
 
 export type Order = {
   id: number;
-  customer: string;
-  total: number;
+  orderDate: string;
+  totalPrice: number;
   status: string;
-  date: string;
+  receiverName: string;
+  receiverPhone: string;
+  shippingAddress: string;
+  items: OrderItem[];
 };
 
 export type Feedback = {
   id: number;
   name: string;
   email: string;
+  phone?: string;
   message: string;
-  date: string;
-  read?: boolean;
+  createdAt: string;
 };

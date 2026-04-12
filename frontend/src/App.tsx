@@ -27,6 +27,7 @@ import { Products } from './pages/Product';
 import { Orders } from './pages/Orders';
 import { FeedbackPage } from './pages/Feedback';
 import { AdminDashboard } from './pages/admin/AdminDashboard';
+import { Activities } from './pages/Activities';
 import { useAuth } from './hooks/useAuth';
 
 function AdminLayout({ logout }: { logout: () => void }) {
@@ -41,6 +42,7 @@ function AdminLayout({ logout }: { logout: () => void }) {
             <Route path="products" element={<Products />} />
             <Route path="orders" element={<Orders />} />
             <Route path="feedback" element={<FeedbackPage />} />
+            <Route path="activities" element={<Activities />} />
           </Routes>
         </main>
       </div>

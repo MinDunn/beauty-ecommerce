@@ -4,7 +4,8 @@ import {
   ShoppingBag, 
   ClipboardList, 
   MessageSquare,
-  Sparkles
+  Sparkles,
+  Bell
 } from "lucide-react";
 import { clsx } from "clsx";
 
@@ -16,6 +17,7 @@ export const Sidebar = () => {
     { path: "/admin/products", name: "Sản phẩm", icon: ShoppingBag },
     { path: "/admin/orders", name: "Đơn hàng", icon: ClipboardList },
     { path: "/admin/feedback", name: "Phản hồi", icon: MessageSquare },
+    { path: "/admin/activities", name: "Hoạt động", icon: Bell },
   ];
 
   return (
