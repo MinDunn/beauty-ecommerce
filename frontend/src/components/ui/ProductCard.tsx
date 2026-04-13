@@ -17,6 +17,14 @@ interface ProductCardProps {
   brand?: string;
 }
 
+const resolveProductImage = (image?: string) => {
+  if (!image) return 'https://placehold.co/600x600/f8fafc/64748b?text=Glowzy+Beauty';
+  if (image.startsWith('/images/http')) return image.replace('/images/', '');
+  if (image.startsWith('/images//uploads/')) return image.replace('/images/', '');
+  if (image.startsWith('http') || image.startsWith('/uploads/') || image.startsWith('/images/')) return image;
+  return `/images/${image.replace(/^\/+/, '')}`;
+};
+
 export const ProductCard = ({ id, name, price, originalPrice, image, badge, brand = "Glowzy" }: ProductCardProps) => {
   const dispatch = useDispatch();
   const { user, isAuthenticated } = useSelector((state: RootState) => state.auth);
@@ -83,7 +91,7 @@ export const ProductCard = ({ id, name, price, originalPrice, image, badge, bran
 
   return (
     <Link to={`/product/${id}`} className="glowzy-card block group overflow-hidden">
-      <div className="relative aspect-square overflow-hidden bg-white p-6 flex items-center justify-center">
+      <div className="relative aspect-square overflow-hidden bg-white">
         {badge && (
           <span className="absolute top-4 left-4 bg-red-500 text-white text-[10px] font-black uppercase px-2.5 py-1.5 rounded-lg z-10 shadow-lg shadow-red-500/20">
             {badge}
@@ -99,12 +107,12 @@ export const ProductCard = ({ id, name, price, originalPrice, image, badge, bran
         </button>
 
         <img 
-          src={image} 
+          src={resolveProductImage(image)} 
           alt={name} 
           onError={(e) => {
             (e.target as HTMLImageElement).src = 'https://placehold.co/600x600/f8fafc/64748b?text=Glowzy+Beauty';
           }}
-          className="w-full h-full object-contain group-hover:scale-110 transition-transform duration-700 mix-blend-multiply"
+          className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-700"
         />
         {/* Quick Add Button overlay */}
         <button 

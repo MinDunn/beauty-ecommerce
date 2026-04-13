@@ -4,12 +4,12 @@ import { useSelector, useDispatch } from 'react-redux';
 import { 
   Search, 
   ShoppingCart, 
-  User, 
   Menu, 
   X, 
   PhoneCall, 
   MapPin,
   ChevronDown,
+  User,
   Sparkles,
   Flower2,
   Wind,
@@ -21,7 +21,7 @@ import { logout as logoutAction } from '../../store/slices/authSlice';
 import { cn } from '../../utils/cn';
 import { OrderLookupModal } from '../modals/OrderLookupModal';
 
-const Header = () => {
+export const Header = () => {
   const [isMenuOpen, setIsMenuOpen] = useState(false);
   const [isCategoryOpen, setIsCategoryOpen] = useState(false);
   const [isOrderLookupOpen, setIsOrderLookupOpen] = useState(false);
@@ -105,7 +105,7 @@ const Header = () => {
             <input 
               type="text" 
               value={searchQuery}
-              onChange={(e) => setSearchQuery(e.target.value)}
+              onChange={(e: any) => setSearchQuery(e.target.value)}
               placeholder="Tìm kiếm sản phẩm, thương hiệu..." 
               className="w-full pl-4 pr-12 py-2.5 bg-gray-100 border-none rounded-full focus:ring-2 focus:ring-primary-500 transition-all outline-none text-sm"
             />
@@ -117,7 +117,22 @@ const Header = () => {
 
         {/* User Actions */}
         <div className="flex items-center space-x-2 md:space-x-6">
-          <div className="hidden md:flex flex-col items-center">
+          <div className="hidden md:flex items-center gap-6">
+            {user?.role === 'ADMIN' && (
+              <Link to="/admin" className="flex items-center group" title="Trang quản trị">
+                <span className="px-3 py-1.5 rounded-xl border border-slate-300 text-[11px] font-black uppercase tracking-widest text-slate-700 group-hover:text-primary-500 group-hover:border-primary-500 transition-colors">
+                  Trang quản trị
+                </span>
+              </Link>
+            )}
+
+            {!isAuthenticated && (
+              <Link to="/login" className="flex items-center gap-2 text-slate-700 hover:text-primary-500 transition-colors">
+                <User size={18} />
+                <span className="text-xs font-bold uppercase tracking-wider">Đăng nhập</span>
+              </Link>
+            )}
+
             {isAuthenticated ? (
               <div className="relative group/user py-2 cursor-pointer">
                 <div className="flex items-center space-x-2">
@@ -133,11 +148,16 @@ const Header = () => {
                 {/* Dropdown Menu */}
                 <div className="absolute right-0 top-full w-48 bg-white border border-gray-100 rounded-2xl shadow-xl opacity-0 invisible group-hover/user:opacity-100 group-hover/user:visible transition-all duration-300 z-50 overflow-hidden transform translate-y-2 group-hover/user:translate-y-0">
                    <div className="p-2">
-                     {user?.role === 'ADMIN' && (
-                       <Link to="/admin" className="block px-4 py-3 text-sm font-bold text-primary-600 hover:bg-primary-50 rounded-xl transition-colors">
-                          Trang quản trị
-                       </Link>
-                     )}
+                      {user?.role === 'ADMIN' && (
+                        <>
+                          <Link to="/admin" className="block px-4 py-3 text-sm font-bold text-primary-600 hover:bg-primary-50 rounded-xl transition-colors">
+                             Trang quản trị
+                          </Link>
+                          <Link to="/admin/inventory-receipts" className="block px-4 py-3 text-sm font-bold text-slate-700 hover:bg-gray-50 hover:text-primary-600 rounded-xl transition-colors">
+                             HĐ nhập hàng
+                          </Link>
+                        </>
+                      )}
                      <Link to="/profile" className="block px-4 py-3 text-sm font-bold text-gray-700 hover:bg-gray-50 hover:text-primary-600 rounded-xl transition-colors">
                         Hồ sơ cá nhân
                      </Link>
@@ -147,13 +167,7 @@ const Header = () => {
                    </div>
                 </div>
               </div>
-            ) : (
-
-              <Link to="/login" className="flex flex-col items-center group">
-                <User size={24} className="text-gray-700 group-hover:text-primary-500 transition-colors" />
-                <span className="text-[10px] mt-1 font-bold text-gray-500 uppercase tracking-widest group-hover:text-primary-500">Đăng nhập</span>
-              </Link>
-            )}
+            ) : null}
           </div>
 
           <Link to="/cart" className="relative flex flex-col items-center group">
@@ -262,11 +276,11 @@ const Header = () => {
           </div>
           {!isAuthenticated && (
             <Link 
-              to="/login" 
-              className="block w-full text-center py-3 bg-primary-500 text-white font-bold rounded-lg"
+              to="/admin" 
+              className="block w-full text-center py-3 bg-slate-900 border border-slate-700 text-white font-bold rounded-lg flex items-center justify-center gap-2"
               onClick={() => setIsMenuOpen(false)}
             >
-              Đăng nhập / Đăng ký
+              <span>Giao diện Quản trị</span>
             </Link>
           )}
         </div>

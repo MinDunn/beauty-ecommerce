@@ -47,3 +47,12 @@ export type Feedback = {
   message: string;
   createdAt: string;
 };
+
+export type InventoryReceipt = {
+  id: number;
+  productId: number;
+  productName?: string;
+  costPrice: number;
+  quantity: number;
+  receivedAt: string;
+};

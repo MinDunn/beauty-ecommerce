@@ -1,26 +1,102 @@
-import { useState, useEffect } from "react";
-import { LogOut, Bell, Search, X, Loader2 } from "lucide-react";
+import { useState, useEffect, useRef } from "react";
+import { LogOut, Bell, Search, X, Loader2, ChevronDown } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
+import { useNavigate } from "react-router-dom";
 import { adminService } from "../../api/adminService";
+import { orderService } from "../../api/orderService";
+import { feedbackService } from "../../api/feedbackService";
+import { productService } from "../../api/productService";
+
+type AdminNotification = {
+  id: string;
+  title: string;
+  type: "ĐƠN MỚI" | "FEEDBACK" | "TỒN KHO" | "NHẬP KHO";
+  time: string;
+  read: boolean;
+  route: string;
+};
 
 export const Header = ({ logout }: { logout: () => void }) => {
   const [showNotifications, setShowNotifications] = useState(false);
+  const [showUserMenu, setShowUserMenu] = useState(false);
   const [searchQuery, setSearchQuery] = useState("");
-  const [notifications, setNotifications] = useState<any[]>([]);
+  const [notifications, setNotifications] = useState<AdminNotification[]>([]);
   const [loading, setLoading] = useState(false);
+  const userMenuRef = useRef<HTMLDivElement | null>(null);
+  const navigate = useNavigate();
 
   const fetchNotifications = async () => {
     setLoading(true);
     try {
-      const data = await adminService.getRecentActivities();
-      // Lấy 10 hoạt động mới nhất
-      const formatted = data.slice(0, 10).map((act: any) => ({
-        id: act.id,
-        title: act.description,
-        type: act.actionType,
-        time: formatRelativeTime(act.createdAt),
-        read: false
-      }));
+      const [orders, feedbacks, productsPage, receipts] = await Promise.all([
+        orderService.adminGetAllOrders(),
+        feedbackService.getAllFeedbacks(),
+        productService.searchProducts({ size: 200 }),
+        adminService.getInventoryReceipts()
+      ]);
+
+      const now = new Date();
+      const within48Hours = (dateString?: string) => {
+        if (!dateString) return false;
+        const diff = now.getTime() - new Date(dateString).getTime();
+        return diff >= 0 && diff <= 48 * 60 * 60 * 1000;
+      };
+
+      const newOrders = (orders || []).filter((order: any) => within48Hours(order.orderDate));
+      const newFeedbacks = (feedbacks || []).filter((feedback: any) => within48Hours(feedback.createdAt));
+      const lowStockProducts = (productsPage?.content || []).filter((product: any) => Number(product.stockQuantity) > 0 && Number(product.stockQuantity) < 10);
+      const recentReceipts = (receipts || []).filter((receipt: any) => within48Hours(receipt.receivedAt));
+
+      const generated: AdminNotification[] = [];
+
+      if (newOrders.length > 0) {
+        const latestOrder = [...newOrders].sort((a, b) => new Date(b.orderDate).getTime() - new Date(a.orderDate).getTime())[0];
+        generated.push({
+          id: `order-${latestOrder.id}`,
+          title: `Có ${newOrders.length} đơn hàng mới cần xử lý`,
+          type: "ĐƠN MỚI",
+          time: formatRelativeTime(latestOrder.orderDate),
+          read: false,
+          route: "/admin/orders"
+        });
+      }
+
+      if (newFeedbacks.length > 0) {
+        const latestFeedback = [...newFeedbacks].sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime())[0];
+        generated.push({
+          id: `feedback-${latestFeedback.id}`,
+          title: `Có ${newFeedbacks.length} phản hồi mới từ khách hàng`,
+          type: "FEEDBACK",
+          time: formatRelativeTime(latestFeedback.createdAt),
+          read: false,
+          route: "/admin/feedback"
+        });
+      }
+
+      if (lowStockProducts.length > 0) {
+        generated.push({
+          id: "low-stock-alert",
+          title: `${lowStockProducts.length} sản phẩm sắp hết hàng (dưới 10 đơn vị)`,
+          type: "TỒN KHO",
+          time: "Cập nhật gần nhất",
+          read: false,
+          route: "/admin/products"
+        });
+      }
+
+      if (recentReceipts.length > 0) {
+        const latestReceipt = [...recentReceipts].sort((a, b) => new Date(b.receivedAt).getTime() - new Date(a.receivedAt).getTime())[0];
+        generated.push({
+          id: `receipt-${latestReceipt.id}`,
+          title: `Có ${recentReceipts.length} phiếu nhập kho mới trong 48 giờ qua`,
+          type: "NHẬP KHO",
+          time: formatRelativeTime(latestReceipt.receivedAt),
+          read: false,
+          route: "/admin/inventory-receipts"
+        });
+      }
+
+      const formatted = generated.slice(0, 10);
       setNotifications(formatted);
     } catch (error) {
       console.error("Failed to fetch notifications");
@@ -42,7 +118,25 @@ export const Header = ({ logout }: { logout: () => void }) => {
 
   useEffect(() => {
     fetchNotifications();
+    const interval = setInterval(fetchNotifications, 15000);
+    return () => clearInterval(interval);
   }, []);
+
+  useEffect(() => {
+    const handleOutsideClick = (event: MouseEvent) => {
+      if (userMenuRef.current && !userMenuRef.current.contains(event.target as Node)) {
+        setShowUserMenu(false);
+      }
+    };
+
+    document.addEventListener("mousedown", handleOutsideClick);
+    return () => document.removeEventListener("mousedown", handleOutsideClick);
+  }, []);
+
+  const handleOpenNotification = (notification: AdminNotification) => {
+    setShowNotifications(false);
+    navigate(notification.route);
+  };
 
   return (
     <header className="h-20 bg-[#0f172a] border-b border-slate-800 flex items-center justify-between px-8 sticky top-0 z-50">
@@ -66,7 +160,9 @@ export const Header = ({ logout }: { logout: () => void }) => {
             className="relative text-slate-400 hover:text-white transition-colors p-2 rounded-lg hover:bg-slate-800"
           >
             <Bell className="w-5 h-5" />
-            <span className="absolute top-2 right-2 w-2 h-2 bg-primary-500 rounded-full border-2 border-[#0f172a]"></span>
+            {notifications.length > 0 && (
+              <span className="absolute top-2 right-2 w-2 h-2 bg-primary-500 rounded-full border-2 border-[#0f172a]"></span>
+            )}
           </button>
 
           <AnimatePresence>
@@ -93,7 +189,11 @@ export const Header = ({ logout }: { logout: () => void }) => {
                     </div>
                   ) : (
                     notifications.map((n) => (
-                      <div key={n.id} className="p-4 border-b border-slate-800/50 hover:bg-slate-800/50 transition-colors cursor-pointer group">
+                      <button
+                        key={n.id}
+                        onClick={() => handleOpenNotification(n)}
+                        className="w-full text-left p-4 border-b border-slate-800/50 hover:bg-slate-800/50 transition-colors cursor-pointer group"
+                      >
                         <div className="flex justify-between items-start mb-1">
                           <p className={`text-xs font-bold line-clamp-2 pr-3 ${n.read ? "text-slate-400" : "text-white"}`}>{n.title}</p>
                           {!n.read && <div className="w-1.5 h-1.5 bg-primary-500 rounded-full mt-1 shrink-0"></div>}
@@ -102,12 +202,20 @@ export const Header = ({ logout }: { logout: () => void }) => {
                           <span className="text-[8px] font-black px-1.5 py-0.5 rounded bg-slate-800 text-slate-500 uppercase tracking-tighter group-hover:bg-primary-500/20 group-hover:text-primary-500 transition-colors">{n.type}</span>
                           <p className="text-[10px] text-slate-500 font-medium">{n.time}</p>
                         </div>
-                      </div>
+                      </button>
                     ))
                   )}
                 </div>
                 <div className="p-3 text-center bg-slate-800/30">
-                  <button className="text-[10px] font-black text-primary-500 uppercase tracking-widest hover:text-primary-400">Xem tất cả</button>
+                  <button
+                    onClick={() => {
+                      setShowNotifications(false);
+                      navigate("/admin/activities");
+                    }}
+                    className="text-[10px] font-black text-primary-500 uppercase tracking-widest hover:text-primary-400"
+                  >
+                    Xem tất cả
+                  </button>
                 </div>
               </motion.div>
             )}
@@ -116,21 +224,42 @@ export const Header = ({ logout }: { logout: () => void }) => {
         
         <div className="h-8 w-px bg-slate-800 mx-2"></div>
 
-        <div className="flex items-center gap-4">
+        <div className="flex items-center gap-4" ref={userMenuRef}>
           <div className="flex flex-col items-end hidden sm:flex">
             <span className="text-sm font-bold text-white uppercase tracking-tight">Glowzy Admin</span>
             <span className="text-[10px] text-primary-500 font-black uppercase tracking-widest">Quản trị viên</span>
           </div>
-          <div className="w-10 h-10 rounded-xl bg-primary-500/10 border border-primary-500/20 flex items-center justify-center text-primary-500 font-bold shadow-inner">
-            GA
+          <div className="relative">
+            <button
+              onClick={() => setShowUserMenu((prev) => !prev)}
+              className="group flex items-center gap-2 bg-slate-800 hover:bg-slate-700 text-slate-200 px-3 py-2 rounded-xl transition-all duration-200 border border-slate-700"
+              title="Tài khoản quản trị"
+            >
+              <div className="w-9 h-9 rounded-lg bg-primary-500/10 border border-primary-500/20 flex items-center justify-center text-primary-500 font-bold shadow-inner">
+                GA
+              </div>
+              <ChevronDown className={`w-4 h-4 text-slate-400 transition-transform ${showUserMenu ? "rotate-180" : ""}`} />
+            </button>
+
+            <AnimatePresence>
+              {showUserMenu && (
+                <motion.div
+                  initial={{ opacity: 0, y: 8, scale: 0.96 }}
+                  animate={{ opacity: 1, y: 0, scale: 1 }}
+                  exit={{ opacity: 0, y: 8, scale: 0.96 }}
+                  className="absolute right-0 mt-2 w-44 bg-slate-900 border border-slate-800 rounded-xl shadow-2xl p-2 z-50"
+                >
+                  <button
+                    onClick={logout}
+                    className="w-full flex items-center gap-2 px-3 py-2.5 rounded-lg text-sm font-medium text-slate-200 hover:text-red-400 hover:bg-red-500/10 transition-colors"
+                  >
+                    <LogOut className="w-4 h-4" />
+                    Đăng xuất
+                  </button>
+                </motion.div>
+              )}
+            </AnimatePresence>
           </div>
-          <button 
-            onClick={logout} 
-            className="flex items-center gap-2 bg-slate-800 hover:bg-red-500/10 text-slate-400 hover:text-red-500 px-4 py-2 rounded-xl transition-all duration-200 border border-slate-700 hover:border-red-500/30"
-          >
-            <LogOut className="w-4 h-4" />
-            <span className="text-sm font-medium">Đăng xuất</span>
-          </button>
         </div>
       </div>
     </header>

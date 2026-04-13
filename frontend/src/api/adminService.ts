@@ -14,6 +14,10 @@ export const adminService = {
       responseType: 'blob'
     });
     return response.data;
+  },
+  getInventoryReceipts: async () => {
+    const response = await axiosInstance.get('/admin/inventory/receipts');
+    return response.data; // List<InventoryReceiptJpaEntity>
   }
 };
 

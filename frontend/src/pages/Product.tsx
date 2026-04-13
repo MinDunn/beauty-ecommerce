@@ -8,6 +8,14 @@ import { inventoryService } from "../api/inventoryService";
 import { toast } from "react-hot-toast";
 import { Plus, Save, Package, DollarSign, Tag, Image as ImageIcon, Loader2, Edit2, Trash2, Search, Warehouse, X } from "lucide-react";
 
+const getNowLocalDatetime = () => {
+  const now = new Date();
+  const timezoneOffset = now.getTimezoneOffset() * 60000;
+  return new Date(now.getTime() - timezoneOffset).toISOString().slice(0, 16);
+};
+
+const sanitizeCurrencyInput = (value: string) => value.replace(/[^\d]/g, "");
+
 export const Products = () => {
   const [products, setProducts] = useState<Product[]>([]);
   const [isLoading, setIsLoading] = useState(true);
@@ -38,7 +46,8 @@ export const Products = () => {
     productId: 0,
     productName: "",
     costPrice: "",
-    quantity: ""
+    quantity: "",
+    receivedAt: getNowLocalDatetime()
   });
   const [preview, setPreview] = useState<string | null>(null);
   const [selectedImage, setSelectedImage] = useState<File | null>(null);
@@ -58,7 +67,18 @@ export const Products = () => {
   const fetchCategories = async () => {
     try {
       const data = await categoryService.getAllCategories();
-      setCategories(data);
+      const homeCategoryOrder = [
+        "Chăm sóc da",
+        "Trang điểm",
+        "Chăm sóc tóc",
+        "Chăm sóc cơ thể",
+        "Thực phẩm chức năng"
+      ];
+      const categoryByName = new Map(data.map((category: Category) => [category.name, category]));
+      const orderedCategories = homeCategoryOrder
+        .map((name) => categoryByName.get(name))
+        .filter((category): category is Category => Boolean(category));
+      setCategories(orderedCategories);
     } catch (error) {
       console.error("Failed to fetch categories");
     }
@@ -111,8 +131,8 @@ export const Products = () => {
       const productDto = {
         name: formData.name,
         description: formData.description,
-        originalPrice: parseFloat(formData.originalPrice),
-        salePrice: parseFloat(formData.salePrice),
+        originalPrice: Number(sanitizeCurrencyInput(formData.originalPrice || "0")),
+        salePrice: Number(sanitizeCurrencyInput(formData.salePrice || "0")),
         stockQuantity: editingProduct ? parseInt(formData.stockQuantity) : 0,
         categoryId: parseInt(formData.categoryId),
         instructions: formData.instructions,
@@ -205,7 +225,8 @@ export const Products = () => {
       await inventoryService.createReceipt({
         productId: restockData.productId,
         costPrice: parseFloat(restockData.costPrice),
-        quantity: parseInt(restockData.quantity)
+        quantity: parseInt(restockData.quantity),
+        receivedAt: restockData.receivedAt
       });
       toast.success(`Đã nhập thêm ${restockData.quantity} sản phẩm cho ${restockData.productName}`);
       setShowRestockModal(false);
@@ -287,7 +308,8 @@ export const Products = () => {
               productId: p.id,
               productName: p.name,
               costPrice: "",
-              quantity: ""
+              quantity: "",
+              receivedAt: getNowLocalDatetime()
             });
             setShowRestockModal(true);
           }} 
@@ -428,11 +450,12 @@ export const Products = () => {
                 <div className="relative group">
                   <DollarSign className="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-500 group-focus-within:text-primary-500 transition-colors" />
                   <input 
-                    type="number"
+                    type="text"
+                    inputMode="numeric"
                     placeholder="0" 
                     className="bg-slate-800/50 border border-slate-700 w-full pl-11 pr-4 py-3.5 rounded-2xl text-white outline-none focus:border-primary-500/50 transition-all font-medium" 
                     value={formData.originalPrice}
-                    onChange={e => setFormData({...formData, originalPrice: e.target.value})}
+                    onChange={e => setFormData({...formData, originalPrice: sanitizeCurrencyInput(e.target.value)})}
                   />
                 </div>
               </div>
@@ -443,14 +466,25 @@ export const Products = () => {
                 <div className="relative group">
                   <DollarSign className="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-500 group-focus-within:text-primary-500 transition-colors" />
                   <input 
-                    type="number"
+                    type="text"
+                    inputMode="numeric"
                     placeholder="0" 
                     className="bg-slate-800/50 border border-slate-700 w-full pl-11 pr-4 py-3.5 rounded-2xl text-white outline-none focus:border-primary-500/50 transition-all font-medium" 
                     value={formData.salePrice}
-                    onChange={e => setFormData({...formData, salePrice: e.target.value})}
+                    onChange={e => setFormData({...formData, salePrice: sanitizeCurrencyInput(e.target.value)})}
                   />
                 </div>
               </div>
+            </div>
+            <div className="space-y-2">
+              <label className="text-[10px] font-black text-slate-500 uppercase tracking-widest ml-1">Ngày giờ nhập</label>
+              <input
+                type="datetime-local"
+                required
+                className="bg-slate-800/50 border border-slate-700 w-full px-4 py-3.5 rounded-2xl text-white outline-none focus:border-emerald-500/50 focus:ring-4 focus:ring-emerald-500/10 transition-all font-medium"
+                value={restockData.receivedAt}
+                onChange={e => setRestockData({ ...restockData, receivedAt: e.target.value })}
+              />
             </div>
 
             {/* Description */}

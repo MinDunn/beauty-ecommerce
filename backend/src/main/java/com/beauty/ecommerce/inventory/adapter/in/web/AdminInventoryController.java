@@ -11,6 +11,8 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
 import java.math.BigDecimal;
+import java.time.LocalDateTime;
+import java.util.List;
 
 @RestController
 @RequestMapping("/api/admin/inventory")
@@ -24,15 +26,21 @@ public class AdminInventoryController {
         InventoryReceiptJpaEntity receipt = inventoryService.addStock(
                 request.getProductId(),
                 request.getCostPrice(),
-                request.getQuantity()
+                request.getQuantity(),
+                request.getReceivedAt()
         );
         return ResponseEntity.ok(receipt);
     }
 
     @PostMapping("/receipts/bulk")
-    public ResponseEntity<Void> createBulkReceipts(@RequestBody java.util.List<InventoryReceiptRequest> requests) {
+    public ResponseEntity<Void> createBulkReceipts(@RequestBody List<InventoryReceiptRequest> requests) {
         inventoryService.addStockBulk(requests);
         return ResponseEntity.ok().build();
+    }
+
+    @org.springframework.web.bind.annotation.GetMapping("/receipts")
+    public ResponseEntity<List<InventoryService.InventoryReceiptResponse>> getAllReceipts() {
+        return ResponseEntity.ok(inventoryService.getAllReceipts());
     }
 
     @Data
@@ -40,5 +48,6 @@ public class AdminInventoryController {
         private Long productId;
         private BigDecimal costPrice;
         private Integer quantity;
+        private LocalDateTime receivedAt;
     }
 }

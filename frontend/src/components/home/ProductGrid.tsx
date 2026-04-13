@@ -3,6 +3,19 @@ import { ProductCard } from '../ui/ProductCard';
 import { productService } from '../../api/productService';
 import { Loader2 } from 'lucide-react';
 
+const resolveProductImage = (imageUrl?: string) => {
+  if (!imageUrl) {
+    return 'https://placehold.co/600x600/f8fafc/64748b?text=Glowzy+Beauty';
+  }
+  if (imageUrl.startsWith('http')) {
+    return imageUrl;
+  }
+  if (imageUrl.startsWith('/uploads/')) {
+    return imageUrl;
+  }
+  return `/images/${imageUrl}`;
+};
+
 export const ProductGrid = ({ title = "Sản phẩm nổi bật" }: { title?: string }) => {
   const [products, setProducts] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
@@ -51,7 +64,7 @@ export const ProductGrid = ({ title = "Sản phẩm nổi bật" }: { title?: st
                 name={product.name}
                 price={product.currentPrice}
                 originalPrice={product.originalPrice}
-                image={`/images/${product.imageUrl}`}
+                image={resolveProductImage(product.imageUrl)}
               />
             ))}
           </div>

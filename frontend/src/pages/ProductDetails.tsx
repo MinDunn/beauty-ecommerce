@@ -12,6 +12,12 @@ import wishlistService from '../api/wishlistService';
 import reviewService from '../api/reviewService';
 import type { Review } from '../api/reviewService';
 
+const resolveProductImage = (image?: string) => {
+  if (!image) return 'https://placehold.co/600x600/f8fafc/64748b?text=Glowzy+Beauty';
+  if (image.startsWith('http') || image.startsWith('/uploads/') || image.startsWith('/images/')) return image;
+  return `/images/${image.replace(/^\/+/, '')}`;
+};
+
 const ProductDetails = () => {
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
@@ -51,7 +57,7 @@ const ProductDetails = () => {
         sold: data.sold || 0,
         description: data.description,
         images: [
-          `/images/${data.imageUrl}`,
+          resolveProductImage(data.imageUrl),
           'https://images.unsplash.com/photo-1556228578-0d85b1a4d571?q=80&w=600&auto=format&fit=crop',
           'https://images.unsplash.com/photo-1611078489935-0cb964de46d6?q=80&w=600&auto=format&fit=crop',
         ],

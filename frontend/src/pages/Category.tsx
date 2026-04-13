@@ -225,7 +225,7 @@ const Category = () => {
                     name={product.name}
                     price={product.currentPrice}
                     originalPrice={product.originalPrice}
-                    image={`/images/${product.imageUrl}`}
+                    image={product.imageUrl}
                   />
                 ))}
               </div>

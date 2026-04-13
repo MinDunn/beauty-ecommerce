@@ -82,9 +82,15 @@ public class DataInitializer implements CommandLineRunner {
         
         CategoryJpaEntity skincare = categoryRepository.findByName("Chăm sóc da")
                 .orElseGet(() -> categoryRepository.save(CategoryJpaEntity.builder().name("Chăm sóc da").description("Kem dưỡng, sữa rửa mặt, mặt nạ...").build()));
-        
-        CategoryJpaEntity perfume = categoryRepository.findByName("Nước hoa")
-                .orElseGet(() -> categoryRepository.save(CategoryJpaEntity.builder().name("Nước hoa").description("Nước hoa cao cấp chính hãng...").build()));
+
+        CategoryJpaEntity haircare = categoryRepository.findByName("Chăm sóc tóc")
+                .orElseGet(() -> categoryRepository.save(CategoryJpaEntity.builder().name("Chăm sóc tóc").description("Dầu gội, dầu xả, tinh dầu dưỡng tóc...").build()));
+
+        CategoryJpaEntity bodycare = categoryRepository.findByName("Chăm sóc cơ thể")
+                .orElseGet(() -> categoryRepository.save(CategoryJpaEntity.builder().name("Chăm sóc cơ thể").description("Sữa tắm, dưỡng thể, tẩy tế bào chết...").build()));
+
+        CategoryJpaEntity supplements = categoryRepository.findByName("Thực phẩm chức năng")
+                .orElseGet(() -> categoryRepository.save(CategoryJpaEntity.builder().name("Thực phẩm chức năng").description("Vitamin, collagen, sản phẩm hỗ trợ sức khỏe sắc đẹp...").build()));
 
         if (productRepository.count() == 0) {
             log.info("Khởi tạo dữ liệu sản phẩm mẫu...");
@@ -124,7 +130,7 @@ public class DataInitializer implements CommandLineRunner {
                         .currentPrice(new BigDecimal("4200000"))
                         .stockQuantity(10)
                         .imageUrl("https://images.unsplash.com/photo-1541643600914-78b084683601?auto=format&fit=crop&w=600&q=80")
-                        .categoryId(perfume.getId())
+                        .categoryId(bodycare.getId())
                         .build(),
                 ProductJpaEntity.builder()
                         .name("Mặt Nạ Laneige")
@@ -134,11 +140,29 @@ public class DataInitializer implements CommandLineRunner {
                         .stockQuantity(40)
                         .imageUrl("https://images.unsplash.com/photo-1596755094514-f87e34085b2c?auto=format&fit=crop&w=600&q=80")
                         .categoryId(skincare.getId())
+                        .build(),
+                ProductJpaEntity.builder()
+                        .name("Viên Uống Collagen Glow")
+                        .description("Hỗ trợ da sáng khỏe và đàn hồi.")
+                        .originalPrice(new BigDecimal("890000"))
+                        .currentPrice(new BigDecimal("690000"))
+                        .stockQuantity(60)
+                        .imageUrl("https://images.unsplash.com/photo-1579165466741-7f35e4755660?auto=format&fit=crop&w=600&q=80")
+                        .categoryId(supplements.getId())
+                        .build(),
+                ProductJpaEntity.builder()
+                        .name("Dầu Gội Phục Hồi Tóc Hư Tổn")
+                        .description("Làm sạch dịu nhẹ, phục hồi tóc khô xơ.")
+                        .originalPrice(new BigDecimal("320000"))
+                        .currentPrice(new BigDecimal("255000"))
+                        .stockQuantity(70)
+                        .imageUrl("https://images.unsplash.com/photo-1527799820374-dcf8d9d4a388?auto=format&fit=crop&w=600&q=80")
+                        .categoryId(haircare.getId())
                         .build()
             );
 
             productRepository.saveAll(products);
-            log.info("Đã tạo 5 sản phẩm mẫu và gán danh mục thành công.");
+            log.info("Đã tạo sản phẩm mẫu và gán danh mục thành công.");
         }
     }
 }
