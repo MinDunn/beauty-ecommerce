@@ -21,6 +21,8 @@ public class ProductListResponse {
     private BigDecimal originalPrice;
     private Integer stockQuantity;
     private String imageUrl;
+    private java.util.List<String> images;
+    private java.util.List<ProductResponse.ProductVariantResponse> variants;
     private Long categoryId;
     private String instructions;
     private String ingredients;

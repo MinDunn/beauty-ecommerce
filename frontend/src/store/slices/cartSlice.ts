@@ -7,6 +7,7 @@ export interface CartItem {
   image: string;
   brand?: string;
   quantity: number;
+  variantName?: string | null;
 }
 
 interface CartState {
@@ -36,7 +37,9 @@ const cartSlice = createSlice({
   reducers: {
     addItem(state, action: PayloadAction<CartItem>) {
       const newItem = action.payload;
-      const existingItem = state.items.find((item) => item.id === newItem.id);
+      const existingItem = state.items.find(
+        (item) => item.id === newItem.id && item.variantName === newItem.variantName
+      );
       
       state.totalQuantity += newItem.quantity;
       state.totalAmount += newItem.price * newItem.quantity;
@@ -52,14 +55,18 @@ const cartSlice = createSlice({
       localStorage.setItem('totalAmount', JSON.stringify(state.totalAmount));
     },
     
-    removeItem(state, action: PayloadAction<string>) {
-      const id = action.payload;
-      const existingItem = state.items.find((item) => item.id === id);
+    removeItem(state, action: PayloadAction<{ id: string; variantName?: string | null }>) {
+      const { id, variantName } = action.payload;
+      const existingItem = state.items.find(
+        (item) => item.id === id && item.variantName === variantName
+      );
 
       if (existingItem) {
         state.totalQuantity -= existingItem.quantity;
         state.totalAmount -= existingItem.price * existingItem.quantity;
-        state.items = state.items.filter((item) => item.id !== id);
+        state.items = state.items.filter(
+          (item) => !(item.id === id && item.variantName === variantName)
+        );
       }
 
       localStorage.setItem('cartItems', JSON.stringify(state.items));
@@ -67,9 +74,11 @@ const cartSlice = createSlice({
       localStorage.setItem('totalAmount', JSON.stringify(state.totalAmount));
     },
 
-    updateQuantity(state, action: PayloadAction<{ id: string; delta: number }>) {
-      const { id, delta } = action.payload;
-      const item = state.items.find((item) => item.id === id);
+    updateQuantity(state, action: PayloadAction<{ id: string; variantName?: string | null; delta: number }>) {
+      const { id, variantName, delta } = action.payload;
+      const item = state.items.find(
+        (item) => item.id === id && item.variantName === variantName
+      );
 
       if (item) {
         if (item.quantity + delta > 0) {

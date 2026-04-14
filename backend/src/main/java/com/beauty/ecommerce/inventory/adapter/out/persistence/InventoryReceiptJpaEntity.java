@@ -37,6 +37,9 @@ public class InventoryReceiptJpaEntity {
     @Column(name = "quantity", nullable = false)
     private Integer quantity;
     
+    @Column(name = "variant_name")
+    private String variantName;
+    
     @Column(name = "received_at")
     @Builder.Default
     private LocalDateTime receivedAt = LocalDateTime.now();

@@ -21,14 +21,16 @@ export const Products = () => {
   const [isLoading, setIsLoading] = useState(true);
   const [showModal, setShowModal] = useState(false);
   const [isSaving, setIsSaving] = useState(false);
+  const [showRestockModal, setShowRestockModal] = useState(false);
   const [categories, setCategories] = useState<Category[]>([]);
   const [editingProduct, setEditingProduct] = useState<Product | null>(null);
   const [searchQuery, setSearchQuery] = useState("");
-  
+
   // Bulk restock state
   const [showBulkRestockModal, setShowBulkRestockModal] = useState(false);
   const [bulkRestockItems, setBulkRestockItems] = useState<any[]>([]);
   const [selectedProductForBulk, setSelectedProductForBulk] = useState<string>("");
+  const [bulkTotalPriceManual, setBulkTotalPriceManual] = useState<string | null>(null);
 
   // Form state
   const [formData, setFormData] = useState({
@@ -39,18 +41,18 @@ export const Products = () => {
     stockQuantity: "",
     categoryId: "",
     instructions: "",
-    ingredients: ""
+    ingredients: "",
+    variants: [] as { variantName: string, price: string, imageUrl: string, file?: File }[]
   });
-  const [showRestockModal, setShowRestockModal] = useState(false);
   const [restockData, setRestockData] = useState({
     productId: 0,
     productName: "",
-    costPrice: "",
-    quantity: "",
-    receivedAt: getNowLocalDatetime()
+    receivedAt: getNowLocalDatetime(),
+    totalPriceManual: "" as string | null,
+    items: [] as { variantName: string, quantity: string, costPrice: string }[]
   });
-  const [preview, setPreview] = useState<string | null>(null);
-  const [selectedImage, setSelectedImage] = useState<File | null>(null);
+  const [previews, setPreviews] = useState<string[]>([]);
+  const [selectedImages, setSelectedImages] = useState<File[]>([]);
 
   const fetchProducts = async () => {
     setIsLoading(true);
@@ -100,22 +102,29 @@ export const Products = () => {
         stockQuantity: (product.stockQuantity ?? 0).toString(),
         categoryId: product.categoryId?.toString() || "",
         instructions: product.instructions || "",
-        ingredients: product.ingredients || ""
+        ingredients: product.ingredients || "",
+        variants: product.variants?.map((v: any) => ({
+          variantName: v.variantName,
+          price: (v.price ?? 0).toString(),
+          imageUrl: v.imageUrl || "",
+          file: undefined
+        })) || []
       });
-      setPreview(product.imageUrl || null);
+      setPreviews(product.images && product.images.length > 0 ? product.images : (product.imageUrl ? [product.imageUrl] : []));
     } else {
       setEditingProduct(null);
       resetForm();
     }
-    setSelectedImage(null);
+    setSelectedImages([]);
     setShowModal(true);
   };
 
-  const handleImage = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0];
-    if (file) {
-      setSelectedImage(file);
-      setPreview(URL.createObjectURL(file));
+  const handleImages = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const files = e.target.files;
+    if (files && files[0]) {
+      const file = files[0];
+      setSelectedImages([file]);
+      setPreviews([URL.createObjectURL(file)]);
     }
   };
 
@@ -128,27 +137,62 @@ export const Products = () => {
 
     setIsSaving(true);
     try {
+      const allFiles: File[] = [];
+
+      // Collect ALL selected main gallery images
+      selectedImages.forEach(file => {
+        if (file) allFiles.push(file);
+      });
+
+      // Track existing images (URLs that are not Blobs)
+      const existingImageUrls = previews.filter(url => !url.startsWith('blob:'));
+
+      const variantsWithIndex = formData.variants.map(v => {
+        let imageIndex = undefined;
+        let finalImageUrl = v.imageUrl;
+
+        // If a specific file is chosen for this variant
+        if (v.file) {
+          allFiles.push(v.file);
+          imageIndex = allFiles.length - 1;
+        }
+        // If no image is set for variant, try to use the product's main image
+        else if (!finalImageUrl && previews.length > 0) {
+          finalImageUrl = previews[0];
+        }
+
+        return {
+          variantName: v.variantName,
+          price: Number(sanitizeCurrencyInput(v.price || "0")),
+          imageUrl: finalImageUrl,
+          imageIndex: imageIndex
+        };
+      });
+
       const productDto = {
         name: formData.name,
         description: formData.description,
         originalPrice: Number(sanitizeCurrencyInput(formData.originalPrice || "0")),
         salePrice: Number(sanitizeCurrencyInput(formData.salePrice || "0")),
-        stockQuantity: editingProduct ? parseInt(formData.stockQuantity) : 0,
+        stockQuantity: editingProduct ? (parseInt(formData.stockQuantity) || 0) : 0,
         categoryId: parseInt(formData.categoryId),
         instructions: formData.instructions,
-        ingredients: formData.ingredients
+        ingredients: formData.ingredients,
+        existingImages: existingImageUrls,
+        variants: variantsWithIndex
       };
 
       console.log("DEBUG: Sending Product DTO:", productDto);
+      console.log("DEBUG: Total files being uploaded:", allFiles.length);
 
       if (editingProduct) {
-        await productService.adminUpdateProduct(editingProduct.id, productDto, selectedImage);
+        await productService.adminUpdateProduct(editingProduct.id, productDto, allFiles);
         toast.success("Cập nhật sản phẩm thành công!");
       } else {
-        await productService.adminCreateProduct(productDto, selectedImage);
+        await productService.adminCreateProduct(productDto, allFiles);
         toast.success("Đã thêm sản phẩm thành công!");
       }
-      
+
       setShowModal(false);
       resetForm();
       fetchProducts();
@@ -178,9 +222,11 @@ export const Products = () => {
       setBulkRestockItems([...bulkRestockItems, {
         productId: prod.id,
         name: prod.name,
-        quantity: 1,
-        costPrice: prod.currentPrice || 0
+        items: prod.variants && prod.variants.length > 0 
+          ? prod.variants.map((v: any) => ({ variantName: v.variantName, quantity: "", costPrice: (prod.currentPrice || 0).toString() }))
+          : [{ variantName: "", quantity: "", costPrice: (prod.currentPrice || 0).toString() }]
       }]);
+      setBulkTotalPriceManual(null);
     }
     setSelectedProductForBulk("");
   };
@@ -191,17 +237,31 @@ export const Products = () => {
       toast.error("Vui lòng chọn ít nhất một sản phẩm");
       return;
     }
-    
+
     setIsSaving(true);
     try {
-      await inventoryService.bulkCreateReceipts(bulkRestockItems.map(item => ({
-        productId: item.productId,
-        quantity: parseInt(item.quantity.toString()),
-        costPrice: parseFloat(item.costPrice.toString())
-      })));
-      toast.success(`Đã nhập hàng cho ${bulkRestockItems.length} sản phẩm thành công!`);
+      const flattenedItems = bulkRestockItems.flatMap(productItem => 
+        productItem.items
+          .filter((item: any) => parseInt(item.quantity) > 0)
+          .map((item: any) => ({
+            productId: productItem.productId,
+            quantity: parseInt(item.quantity),
+            costPrice: parseFloat(item.costPrice) || 0,
+            variantName: item.variantName,
+            receivedAt: getNowLocalDatetime()
+          }))
+      );
+
+      if (flattenedItems.length === 0) {
+        toast.error("Vui lòng nhập số lượng cho ít nhất một biến thể");
+        return;
+      }
+
+      await inventoryService.bulkCreateReceipts(flattenedItems);
+      toast.success(`Đã nhập hàng cho ${flattenedItems.length} đầu mục thành công!`);
       setShowBulkRestockModal(false);
       setBulkRestockItems([]);
+      setBulkTotalPriceManual(null);
       fetchProducts();
     } catch (error) {
       toast.error("Lỗi khi nhập hàng hàng loạt");
@@ -210,25 +270,33 @@ export const Products = () => {
     }
   };
 
-  const bulkTotalQuantity = bulkRestockItems.reduce((sum, item) => sum + (parseInt(item.quantity) || 0), 0);
-  const bulkTotalCost = bulkRestockItems.reduce((sum, item) => sum + ((parseInt(item.quantity) || 0) * (parseFloat(item.costPrice) || 0)), 0);
+  const bulkTotalQuantity = bulkRestockItems.reduce((total, productItem) => 
+    total + productItem.items.reduce((sum: number, item: any) => sum + (parseInt(item.quantity) || 0), 0)
+  , 0);
+
+  const bulkTotalCostCalculated = bulkRestockItems.reduce((total, productItem) => 
+    total + productItem.items.reduce((sum: number, item: any) => sum + ((parseInt(item.quantity) || 0) * (parseFloat(item.costPrice) || 0)), 0)
+  , 0);
 
   const handleRestock = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!restockData.costPrice || !restockData.quantity) {
-      toast.error("Vui lòng nhập giá nhập và số lượng");
+    const itemsToSubmit = restockData.items.filter(item => parseInt(item.quantity) > 0);
+    
+    if (itemsToSubmit.length === 0) {
+      toast.error("Vui lòng nhập số lượng cho ít nhất một biến thể");
       return;
     }
 
     setIsSaving(true);
     try {
-      await inventoryService.createReceipt({
+      await inventoryService.bulkCreateReceipts(itemsToSubmit.map(item => ({
         productId: restockData.productId,
-        costPrice: parseFloat(restockData.costPrice),
-        quantity: parseInt(restockData.quantity),
+        costPrice: parseFloat(item.costPrice) || 0,
+        quantity: parseInt(item.quantity),
+        variantName: item.variantName,
         receivedAt: restockData.receivedAt
-      });
-      toast.success(`Đã nhập thêm ${restockData.quantity} sản phẩm cho ${restockData.productName}`);
+      })));
+      toast.success(`Đã nhập hàng thành công cho ${itemsToSubmit.length} biến thể`);
       setShowRestockModal(false);
       fetchProducts();
     } catch (error) {
@@ -247,13 +315,14 @@ export const Products = () => {
       stockQuantity: "",
       categoryId: categories[0]?.id?.toString() || "",
       instructions: "",
-      ingredients: ""
+      ingredients: "",
+      variants: []
     });
-    setSelectedImage(null);
-    setPreview(null);
+    setSelectedImages([]);
+    setPreviews([]);
   };
 
-  const filteredProducts = products.filter(p => 
+  const filteredProducts = products.filter(p =>
     p.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
     (p.categoryName || "").toLowerCase().includes(searchQuery.toLowerCase())
   );
@@ -262,10 +331,10 @@ export const Products = () => {
     name: (
       <div className="flex items-center gap-3">
         {p.imageUrl && (
-          <img 
-            src={p.imageUrl.startsWith("http") ? p.imageUrl : 
-                 p.imageUrl.startsWith("/uploads/") ? p.imageUrl : 
-                 `/images/${p.imageUrl}`} 
+          <img
+            src={p.imageUrl.startsWith("http") ? p.imageUrl :
+              p.imageUrl.startsWith("/uploads/") ? p.imageUrl :
+                `/images/${p.imageUrl}`}
             className="w-10 h-10 rounded-xl object-cover shadow-sm border border-slate-800"
             onError={(e) => {
               (e.target as HTMLImageElement).src = "https://images.unsplash.com/photo-1540555700478-4be289fbecee?auto=format&fit=crop&w=600&q=80";
@@ -285,42 +354,43 @@ export const Products = () => {
     ),
     category: categories.find(c => String(c.id) === String(p.categoryId))?.name || "Đang tải...",
     stock: (
-      <span className={`px-3 py-1 rounded-full text-[10px] font-black uppercase tracking-tight ${
-        p.stockQuantity < 10 ? "bg-rose-500/10 text-rose-500" : "bg-emerald-500/10 text-emerald-500"
-      }`}>
+      <span className={`px-3 py-1 rounded-full text-[10px] font-black uppercase tracking-tight ${p.stockQuantity < 10 ? "bg-rose-500/10 text-rose-500" : "bg-emerald-500/10 text-emerald-500"
+        }`}>
         {p.stockQuantity} đơn vị
       </span>
     ),
     actions: (
       <div className="flex items-center gap-2">
-        <button 
+        <button
           type="button"
-          onClick={(e) => { e.stopPropagation(); handleOpenModal(p); }} 
+          onClick={(e) => { e.stopPropagation(); handleOpenModal(p); }}
           className="p-2.5 hover:bg-slate-800 rounded-xl text-primary-500 transition-all active:scale-90"
         >
           <Edit2 size={16} />
         </button>
-        <button 
+        <button
           type="button"
-          onClick={(e) => { 
-            e.stopPropagation(); 
+          onClick={(e) => {
+            e.stopPropagation();
             setRestockData({
               productId: p.id,
               productName: p.name,
-              costPrice: "",
-              quantity: "",
-              receivedAt: getNowLocalDatetime()
+              receivedAt: getNowLocalDatetime(),
+              totalPriceManual: null,
+              items: p.variants && p.variants.length > 0 
+                ? p.variants.map((v: any) => ({ variantName: v.variantName, quantity: "", costPrice: (p.currentPrice || 0).toString() }))
+                : [{ variantName: "", quantity: "", costPrice: (p.currentPrice || 0).toString() }]
             });
             setShowRestockModal(true);
-          }} 
+          }}
           className="p-2.5 hover:bg-slate-800 rounded-xl text-emerald-500 transition-all active:scale-90"
           title="Nhập hàng"
         >
           <Plus size={16} />
         </button>
-        <button 
+        <button
           type="button"
-          onClick={(e) => { e.stopPropagation(); handleDelete(p.id); }} 
+          onClick={(e) => { e.stopPropagation(); handleDelete(p.id); }}
           className="p-2.5 hover:bg-slate-800 rounded-xl text-rose-500 transition-all active:scale-90"
         >
           <Trash2 size={16} />
@@ -336,11 +406,11 @@ export const Products = () => {
           <h1 className="text-2xl font-black text-white tracking-tight uppercase">Quản lý sản phẩm</h1>
           <p className="text-slate-500 text-sm font-medium mt-1">Danh sách tất cả sản phẩm trong cửa hàng của bạn</p>
         </div>
-        
+
         <div className="flex items-center gap-3 w-full md:w-auto">
           <div className="relative flex-1 md:w-80 group">
             <Search className="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-500 group-focus-within:text-primary-500 transition-colors" />
-            <input 
+            <input
               type="text"
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
@@ -349,16 +419,16 @@ export const Products = () => {
             />
           </div>
 
-          <button 
-            onClick={() => setShowBulkRestockModal(true)} 
+          <button
+            onClick={() => setShowBulkRestockModal(true)}
             className="bg-emerald-500/10 hover:bg-emerald-500/20 text-emerald-500 px-6 py-3 rounded-2xl font-black text-xs uppercase tracking-widest flex items-center gap-2 transition-all border border-emerald-500/20 active:scale-95 shrink-0"
           >
             <Warehouse size={18} />
             <span className="hidden sm:inline">Nhập hàng</span>
           </button>
 
-          <button 
-            onClick={() => handleOpenModal()} 
+          <button
+            onClick={() => handleOpenModal()}
             className="bg-primary-500 hover:bg-primary-600 text-white px-6 py-3 rounded-2xl font-black text-xs uppercase tracking-widest flex items-center gap-2 transition-all shadow-lg shadow-primary-500/20 active:scale-95 shrink-0"
           >
             <Plus size={18} />
@@ -384,15 +454,15 @@ export const Products = () => {
           </div>
         ) : (
           <div className="max-h-[410px] overflow-y-auto scrollbar-thin scrollbar-track-slate-900 scrollbar-thumb-slate-800">
-            <Table 
+            <Table
               columns={[
                 { header: "Tên sản phẩm", key: "name" },
                 { header: "Giá hiện tại", key: "price" },
                 { header: "Danh mục", key: "category" },
                 { header: "Số lượng", key: "stock" },
                 { header: "Thao tác", key: "actions" }
-              ]} 
-              data={tableData} 
+              ]}
+              data={tableData}
             />
           </div>
         )}
@@ -415,12 +485,12 @@ export const Products = () => {
               <label className="text-[10px] font-black text-slate-500 uppercase tracking-widest ml-1">Tên sản phẩm *</label>
               <div className="relative group">
                 <Tag className="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-500 group-focus-within:text-primary-500 transition-colors" />
-                <input 
+                <input
                   required
-                  placeholder="Nhập tên sản phẩm..." 
-                  className="bg-slate-800/50 border border-slate-700 w-full pl-11 pr-4 py-3.5 rounded-2xl text-white placeholder:text-slate-600 outline-none focus:border-primary-500/50 focus:ring-4 focus:ring-primary-500/10 transition-all font-medium" 
+                  placeholder="Nhập tên sản phẩm..."
+                  className="bg-slate-800/50 border border-slate-700 w-full pl-11 pr-4 py-3.5 rounded-2xl text-white placeholder:text-slate-600 outline-none focus:border-primary-500/50 focus:ring-4 focus:ring-primary-500/10 transition-all font-medium"
                   value={formData.name}
-                  onChange={e => setFormData({...formData, name: e.target.value})}
+                  onChange={e => setFormData({ ...formData, name: e.target.value })}
                 />
               </div>
             </div>
@@ -429,11 +499,11 @@ export const Products = () => {
               {/* Category */}
               <div className="space-y-2">
                 <label className="text-[10px] font-black text-slate-500 uppercase tracking-widest ml-1">Danh mục *</label>
-                <select 
+                <select
                   required
                   className="bg-slate-800/50 border border-slate-700 w-full px-4 py-3.5 rounded-2xl text-white outline-none focus:border-primary-500/50 transition-all font-medium appearance-none"
                   value={formData.categoryId}
-                  onChange={e => setFormData({...formData, categoryId: e.target.value})}
+                  onChange={e => setFormData({ ...formData, categoryId: e.target.value })}
                 >
                   <option value="" disabled>Chọn danh mục</option>
                   {categories.map(c => (
@@ -449,13 +519,13 @@ export const Products = () => {
                 <label className="text-[10px] font-black text-slate-500 uppercase tracking-widest ml-1">Giá gốc</label>
                 <div className="relative group">
                   <DollarSign className="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-500 group-focus-within:text-primary-500 transition-colors" />
-                  <input 
+                  <input
                     type="text"
                     inputMode="numeric"
-                    placeholder="0" 
-                    className="bg-slate-800/50 border border-slate-700 w-full pl-11 pr-4 py-3.5 rounded-2xl text-white outline-none focus:border-primary-500/50 transition-all font-medium" 
+                    placeholder="0"
+                    className="bg-slate-800/50 border border-slate-700 w-full pl-11 pr-4 py-3.5 rounded-2xl text-white outline-none focus:border-primary-500/50 transition-all font-medium"
                     value={formData.originalPrice}
-                    onChange={e => setFormData({...formData, originalPrice: sanitizeCurrencyInput(e.target.value)})}
+                    onChange={e => setFormData({ ...formData, originalPrice: sanitizeCurrencyInput(e.target.value) })}
                   />
                 </div>
               </div>
@@ -465,13 +535,13 @@ export const Products = () => {
                 <label className="text-[10px] font-black text-slate-500 uppercase tracking-widest ml-1">Giá khuyến mãi</label>
                 <div className="relative group">
                   <DollarSign className="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-500 group-focus-within:text-primary-500 transition-colors" />
-                  <input 
+                  <input
                     type="text"
                     inputMode="numeric"
-                    placeholder="0" 
-                    className="bg-slate-800/50 border border-slate-700 w-full pl-11 pr-4 py-3.5 rounded-2xl text-white outline-none focus:border-primary-500/50 transition-all font-medium" 
+                    placeholder="0"
+                    className="bg-slate-800/50 border border-slate-700 w-full pl-11 pr-4 py-3.5 rounded-2xl text-white outline-none focus:border-primary-500/50 transition-all font-medium"
                     value={formData.salePrice}
-                    onChange={e => setFormData({...formData, salePrice: sanitizeCurrencyInput(e.target.value)})}
+                    onChange={e => setFormData({ ...formData, salePrice: sanitizeCurrencyInput(e.target.value) })}
                   />
                 </div>
               </div>
@@ -487,80 +557,223 @@ export const Products = () => {
               />
             </div>
 
-            {/* Description */}
-            <div className="space-y-2">
-              <label className="text-[10px] font-black text-slate-500 uppercase tracking-widest ml-1">Mô tả sản phẩm</label>
-              <textarea 
-                rows={3}
-                value={formData.description}
-                onChange={e => setFormData({...formData, description: e.target.value})}
-                className="bg-slate-800/50 border border-slate-700 w-full px-4 py-3 rounded-2xl text-white outline-none focus:border-primary-500/50 transition-all font-medium resize-none" 
-              />
-            </div>
-
+            {/* Instructions & Ingredients */}
             <div className="grid grid-cols-2 gap-4">
-              {/* Instructions */}
               <div className="space-y-2">
                 <label className="text-[10px] font-black text-slate-500 uppercase tracking-widest ml-1">Hướng dẫn sử dụng</label>
-                <textarea 
+                <textarea
                   rows={3}
                   value={formData.instructions}
-                  onChange={e => setFormData({...formData, instructions: e.target.value})}
-                  className="bg-slate-800/50 border border-slate-700 w-full px-4 py-3 rounded-2xl text-white outline-none focus:border-primary-500/50 transition-all font-medium resize-none" 
+                  onChange={e => setFormData({ ...formData, instructions: e.target.value })}
+                  className="bg-slate-800/50 border border-slate-700 w-full px-4 py-3 rounded-2xl text-white outline-none focus:border-primary-500/50 transition-all font-medium resize-none"
                   placeholder="Cách dùng sản phẩm..."
                 />
               </div>
-
-              {/* Ingredients */}
               <div className="space-y-2">
                 <label className="text-[10px] font-black text-slate-500 uppercase tracking-widest ml-1">Thành phần</label>
-                <textarea 
+                <textarea
                   rows={3}
                   value={formData.ingredients}
-                  onChange={e => setFormData({...formData, ingredients: e.target.value})}
-                  className="bg-slate-800/50 border border-slate-700 w-full px-4 py-3 rounded-2xl text-white outline-none focus:border-primary-500/50 transition-all font-medium resize-none" 
-                  placeholder="Bảng thành phần..."
+                  onChange={e => setFormData({ ...formData, ingredients: e.target.value })}
+                  className="bg-slate-800/50 border border-slate-700 w-full px-4 py-3 rounded-2xl text-white outline-none focus:border-primary-500/50 transition-all font-medium resize-none"
+                  placeholder="Danh sách thành phần..."
                 />
               </div>
+            </div>
+
+            {/* Description */}
+            <div className="space-y-2">
+              <label className="text-[10px] font-black text-slate-500 uppercase tracking-widest ml-1">Mô tả sản phẩm</label>
+              <textarea
+                rows={3}
+                value={formData.description}
+                onChange={e => setFormData({ ...formData, description: e.target.value })}
+                className="bg-slate-800/50 border border-slate-700 w-full px-4 py-3 rounded-2xl text-white outline-none focus:border-primary-500/50 transition-all font-medium resize-none"
+              />
+            </div>
+
+            {/* Variants Section */}
+            <div className="space-y-4 border-t border-slate-700/50 pt-4">
+              <div className="flex justify-between items-center">
+                <label className="text-[10px] font-black text-slate-500 uppercase tracking-widest ml-1">Biến thể (Màu sắc, vị...)</label>
+                <button
+                  type="button"
+                  onClick={() => setFormData({
+                    ...formData,
+                    variants: [...formData.variants, { variantName: "", price: formData.salePrice || "0", imageUrl: "" }]
+                  })}
+                  className="text-[10px] font-black text-primary-500 uppercase tracking-widest hover:text-primary-400 transition-colors"
+                >
+                  + Thêm biến thể
+                </button>
+              </div>
+
+              {formData.variants.map((variant, index) => {
+                const totalPrice = (Number(sanitizeCurrencyInput(formData.salePrice || "0")) + Number(variant.price || "0")).toLocaleString();
+
+                return (
+                  <div key={index} className="bg-slate-900/50 border border-slate-700/50 p-5 rounded-[2rem] space-y-4 relative group/variant animate-in fade-in slide-in-from-top-2 duration-300">
+                    <button
+                      type="button"
+                      onClick={() => setFormData({
+                        ...formData,
+                        variants: formData.variants.filter((_, i) => i !== index)
+                      })}
+                      className="absolute -top-2 -right-2 w-8 h-8 bg-rose-500 text-white rounded-full flex items-center justify-center shadow-lg opacity-0 group-hover/variant:opacity-100 transition-all hover:bg-rose-600 active:scale-95 z-10"
+                    >
+                      <Trash2 size={14} />
+                    </button>
+
+                    <div className="grid grid-cols-2 gap-4">
+                      {/* Variant Name */}
+                      <div className="space-y-1.5">
+                        <label className="text-[10px] font-black text-slate-500 uppercase tracking-widest ml-1">Tên biến thể</label>
+                        <input
+                          placeholder="Màu đỏ, 100ml..."
+                          className="w-full bg-slate-800 border border-slate-700 rounded-2xl px-4 py-3 text-white text-sm outline-none focus:border-primary-500/50 focus:ring-4 focus:ring-primary-500/5 transition-all"
+                          value={variant.variantName}
+                          onChange={e => {
+                            const newVariants = [...formData.variants];
+                            newVariants[index].variantName = e.target.value;
+                            setFormData({ ...formData, variants: newVariants });
+                          }}
+                        />
+                      </div>
+
+                      {/* Price Difference */}
+                      <div className="space-y-1.5">
+                        <label className="text-[10px] font-black text-slate-500 uppercase tracking-widest ml-1">Giá chênh lệch (đ)</label>
+                        <input
+                          type="text"
+                          inputMode="numeric"
+                          placeholder="0"
+                          className="w-full bg-slate-800 border border-slate-700 rounded-2xl px-4 py-3 text-white text-sm outline-none focus:border-primary-500/50 focus:ring-4 focus:ring-primary-500/5 transition-all font-black"
+                          value={variant.price}
+                          onChange={e => {
+                            const newVariants = [...formData.variants];
+                            newVariants[index].price = sanitizeCurrencyInput(e.target.value);
+                            setFormData({ ...formData, variants: newVariants });
+                          }}
+                        />
+                      </div>
+                    </div>
+
+                    <div className="flex items-center justify-between gap-4 pt-2">
+                      {/* Image Selector Box */}
+                      <div className="flex-1">
+                        <label className="text-[10px] font-black text-slate-500 uppercase tracking-widest ml-1 mb-1.5 block">Hình gắn với biến thể</label>
+                        <div className="flex items-center gap-3">
+                          <label className="cursor-pointer group/upload">
+                            <div className="w-16 h-16 rounded-2xl border-2 border-dashed border-slate-700 bg-slate-800 flex items-center justify-center group-hover/upload:border-primary-500/50 group-hover/upload:bg-slate-700 transition-all overflow-hidden relative">
+                              {variant.file || variant.imageUrl ? (
+                                <img
+                                  src={variant.file ? URL.createObjectURL(variant.file) : variant.imageUrl}
+                                  className="w-full h-full object-cover"
+                                  alt="variant"
+                                />
+                              ) : (
+                                <Plus className="text-slate-600 group-hover/upload:text-primary-500 transition-colors" />
+                              )}
+                            </div>
+                            <input
+                              type="file"
+                              className="hidden"
+                              accept="image/*"
+                              onChange={e => {
+                                const file = e.target.files?.[0];
+                                if (file) {
+                                  const newVariants = [...formData.variants];
+                                  newVariants[index].file = file;
+                                  newVariants[index].imageUrl = "";
+                                  setFormData({ ...formData, variants: newVariants });
+                                }
+                              }}
+                            />
+                          </label>
+                          <div className="flex flex-col">
+                            <span className="text-[10px] text-slate-400 font-bold max-w-[120px] truncate">
+                              {variant.file ? variant.file.name : (variant.imageUrl ? "Ảnh hiện tại" : "Chưa chọn ảnh")}
+                            </span>
+                            {(variant.file || variant.imageUrl) && (
+                              <button
+                                type="button"
+                                onClick={() => {
+                                  const newVariants = [...formData.variants];
+                                  newVariants[index].file = undefined;
+                                  newVariants[index].imageUrl = "";
+                                  setFormData({ ...formData, variants: newVariants });
+                                }}
+                                className="text-[9px] font-black text-rose-500 uppercase tracking-tighter hover:text-rose-400 mt-1 flex items-center gap-1"
+                              >
+                                <X size={10} /> Gỡ ảnh
+                              </button>
+                            )}
+                          </div>
+                        </div>
+                      </div>
+
+                      {/* Total Price Display */}
+                      <div className="bg-primary-500/5 border border-primary-500/10 p-3 rounded-2xl text-right min-w-[140px]">
+                        <p className="text-[8px] font-black text-primary-500 uppercase tracking-widest mb-1">Giá bán tổng cộng</p>
+                        <p className="text-lg font-black text-white">{totalPrice}đ</p>
+                      </div>
+                    </div>
+                  </div>
+                );
+              })}
             </div>
 
             {/* Image Upload */}
             <div className="space-y-2">
-              <label className="text-[10px] font-black text-slate-500 uppercase tracking-widest ml-1">Hình ảnh sản phẩm</label>
-              <div className="relative group">
-                 <input 
-                    type="file" 
-                    id="image-upload"
-                    className="hidden" 
-                    onChange={handleImage}
-                    accept="image/*"
-                  />
-                  <label 
-                    htmlFor="image-upload" 
-                    className="flex flex-col items-center justify-center border-2 border-dashed border-slate-700 bg-slate-800/30 rounded-2xl p-6 cursor-pointer hover:border-primary-500/50 hover:bg-slate-800/50 transition-all group"
-                  >
-                    {preview ? (
-                      <div className="relative w-full aspect-video rounded-xl overflow-hidden shadow-xl border border-slate-700 text-center">
-                        <img src={preview} className="w-full h-full object-cover" alt="Preview" />
-                        <div className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center">
-                           <span className="text-white text-xs font-black uppercase tracking-widest">Thay đổi ảnh</span>
-                        </div>
+              <label className="text-[10px] font-black text-slate-500 uppercase tracking-widest ml-1">Hình ảnh chính (Tối đa 1 ảnh)</label>
+              <div className="space-y-3">
+                <input
+                  type="file"
+                  id="image-upload"
+                  className="hidden"
+                  onChange={handleImages}
+                  accept="image/*"
+                />
+                <label
+                  htmlFor="image-upload"
+                  className="flex flex-col items-center justify-center border-2 border-dashed border-slate-700 bg-slate-800/30 rounded-2xl p-6 cursor-pointer hover:border-primary-500/50 hover:bg-slate-800/50 transition-all group"
+                >
+                  <div className="w-12 h-12 rounded-2xl bg-slate-800 flex items-center justify-center mb-3 group-hover:bg-primary-500 group-hover:scale-110 transition-all">
+                    <ImageIcon className="text-slate-400 group-hover:text-white" />
+                  </div>
+                  <span className="text-sm font-bold text-slate-400 group-hover:text-white transition-colors">Chọn ảnh từ máy tính</span>
+                  <span className="text-[10px] text-slate-600 mt-1 uppercase font-black tracking-widest">Chỉ chọn 1 ảnh chính cho sản phẩm</span>
+                </label>
+
+                {previews.length > 0 && (
+                  <div className="grid grid-cols-4 gap-2">
+                    {previews.map((url, i) => (
+                      <div key={i} className="relative aspect-square rounded-xl overflow-hidden border border-slate-700 group/img">
+                        <img src={url} className="w-full h-full object-cover" alt={`Preview ${i}`} />
+                        {i === 0 && (
+                          <div className="absolute top-1 left-1 bg-primary-500 text-white text-[8px] font-black uppercase px-1.5 py-0.5 rounded-md shadow-lg">
+                            Ảnh chính
+                          </div>
+                        )}
+                        <button
+                          type="button"
+                          onClick={() => {
+                            setSelectedImages(selectedImages.filter((_, idx) => idx !== i));
+                            setPreviews(previews.filter((_, idx) => idx !== i));
+                          }}
+                          className="absolute top-1 right-1 p-1 bg-rose-500 text-white rounded-md opacity-0 group-hover/img:opacity-100 transition-opacity"
+                        >
+                          <X size={10} />
+                        </button>
                       </div>
-                    ) : (
-                      <>
-                        <div className="w-12 h-12 rounded-2xl bg-slate-800 flex items-center justify-center mb-3 group-hover:bg-primary-500 group-hover:scale-110 transition-all">
-                          <ImageIcon className="text-slate-400 group-hover:text-white" />
-                        </div>
-                        <span className="text-sm font-bold text-slate-400 group-hover:text-white transition-colors">Chọn ảnh từ máy tính</span>
-                        <span className="text-[10px] text-slate-600 mt-1 uppercase font-black">JPG, PNG, WEBP max 2MB</span>
-                      </>
-                    )}
-                  </label>
+                    ))}
+                  </div>
+                )}
               </div>
             </div>
 
             <div className="pt-4 flex gap-3">
-              <button 
+              <button
                 type="button"
                 disabled={isSaving}
                 onClick={() => setShowModal(false)}
@@ -568,7 +781,7 @@ export const Products = () => {
               >
                 Hủy
               </button>
-              <button 
+              <button
                 type="submit"
                 disabled={isSaving}
                 className="flex-1 bg-primary-500 text-white py-4 rounded-2xl font-black text-xs uppercase tracking-widest flex items-center justify-center gap-2 shadow-lg shadow-primary-500/20 hover:bg-primary-600 transition-all active:scale-95 disabled:opacity-50"
@@ -593,45 +806,126 @@ export const Products = () => {
               Nhập hàng vào kho
             </h2>
             <p className="text-slate-500 text-xs font-medium mt-1">
-              Sản phẩm: <span className="text-white font-bold">{restockData.productName}</span>
+              Lập phiếu nhập hàng cho sản phẩm trong cửa hàng
             </p>
           </div>
 
-          <form onSubmit={handleRestock} className="space-y-5">
-            <div className="grid grid-cols-2 gap-4">
-              <div className="space-y-2">
-                <label className="text-[10px] font-black text-slate-500 uppercase tracking-widest ml-1">Giá nhập mỗi đơn vị ($)</label>
-                <div className="relative group">
-                  <DollarSign className="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-500 group-focus-within:text-emerald-500 transition-colors" />
-                  <input 
-                    type="number"
-                    step="0.01"
-                    required
-                    placeholder="0.00" 
-                    className="bg-slate-800/50 border border-slate-700 w-full pl-11 pr-4 py-3.5 rounded-2xl text-white outline-none focus:border-emerald-500/50 focus:ring-4 focus:ring-emerald-500/10 transition-all font-medium" 
-                    value={restockData.costPrice}
-                    onChange={e => setRestockData({...restockData, costPrice: e.target.value})}
-                  />
-                </div>
-              </div>
-
-              <div className="space-y-2">
-                <label className="text-[10px] font-black text-slate-500 uppercase tracking-widest ml-1">Số lượng nhập</label>
-                <div className="relative group">
-                  <Plus className="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-500 group-focus-within:text-emerald-500 transition-colors" />
-                  <input 
-                    type="number"
-                    required
-                    placeholder="0" 
-                    className="bg-slate-800/50 border border-slate-700 w-full pl-11 pr-4 py-3.5 rounded-2xl text-white outline-none focus:border-emerald-500/50 focus:ring-4 focus:ring-emerald-500/10 transition-all font-medium" 
-                    value={restockData.quantity}
-                    onChange={e => setRestockData({...restockData, quantity: e.target.value})}
-                  />
-                </div>
-              </div>
+          <form onSubmit={handleRestock} className="space-y-6">
+            {/* Step 1: Select Product */}
+            <div className="space-y-2">
+              <label className="text-[10px] font-black text-slate-500 uppercase tracking-widest ml-1">BƯỚC 1: CHỌN SẢN PHẨM *</label>
+              <select 
+                className="bg-slate-800/50 border border-slate-700 w-full px-4 py-3.5 rounded-2xl text-white outline-none focus:border-emerald-500/50 transition-all font-bold appearance-none cursor-pointer"
+                value={restockData.productId}
+                onChange={e => {
+                   const pid = parseInt(e.target.value);
+                   const p = products.find(prod => prod.id === pid);
+                   if (p) {
+                     setRestockData({
+                       ...restockData,
+                       productId: pid,
+                       productName: p.name,
+                       totalPriceManual: null,
+                       items: p.variants && p.variants.length > 0 
+                         ? p.variants.map((v: any) => ({ variantName: v.variantName, quantity: "", costPrice: (p.currentPrice || 0).toString() }))
+                         : [{ variantName: "", quantity: "", costPrice: (p.currentPrice || 0).toString() }]
+                     });
+                   }
+                }}
+              >
+                <option value={0}>-- Chọn sản phẩm --</option>
+                {products.map(p => (
+                  <option key={p.id} value={p.id}>{p.name}</option>
+                ))}
+              </select>
             </div>
 
-            <div className="flex justify-end gap-3 pt-4 border-t border-slate-800">
+            {/* Step 2: Variant Table */}
+            {restockData.productId > 0 && (
+              <div className="space-y-4 animate-in fade-in duration-500">
+                <label className="text-[10px] font-black text-slate-500 uppercase tracking-widest ml-1">BƯỚC 2: NHẬP SỐ LƯỢNG & GIÁ CHO TỪNG BIẾN THỂ</label>
+                <div className="bg-slate-800/30 rounded-3xl border border-slate-700/50 overflow-hidden">
+                  <table className="w-full text-left border-collapse">
+                    <thead className="bg-slate-800/50">
+                      <tr>
+                        <th className="px-4 py-3 text-[10px] font-black text-slate-500 uppercase">Biến thể</th>
+                        <th className="px-4 py-3 text-[10px] font-black text-slate-500 uppercase w-24">Số lượng</th>
+                        <th className="px-4 py-3 text-[10px] font-black text-slate-500 uppercase">Giá nhập ($)</th>
+                        <th className="px-4 py-3 text-[10px] font-black text-slate-500 uppercase text-right">Thành tiền</th>
+                      </tr>
+                    </thead>
+                    <tbody className="divide-y divide-slate-700/30">
+                      {restockData.items.map((item, idx) => {
+                        const subtotal = (parseInt(item.quantity) || 0) * (parseFloat(item.costPrice) || 0);
+                        return (
+                          <tr key={idx} className="hover:bg-slate-700/20 transition-colors">
+                            <td className="px-4 py-3 text-xs font-bold text-slate-300">
+                              {item.variantName || "Mặc định"}
+                            </td>
+                            <td className="px-4 py-3">
+                              <input 
+                                type="number"
+                                className="w-full bg-slate-900 border border-slate-700 rounded-xl px-2 py-1.5 text-white text-xs outline-none focus:border-emerald-500/50"
+                                value={item.quantity}
+                                onChange={e => {
+                                  const newItems = [...restockData.items];
+                                  newItems[idx].quantity = e.target.value;
+                                  setRestockData({...restockData, items: newItems, totalPriceManual: null});
+                                }}
+                              />
+                            </td>
+                            <td className="px-4 py-3">
+                              <input 
+                                type="number"
+                                step="0.01"
+                                className="w-full bg-slate-900 border border-slate-700 rounded-xl px-2 py-1.5 text-white text-xs outline-none focus:border-emerald-500/50"
+                                value={item.costPrice}
+                                onChange={e => {
+                                  const newItems = [...restockData.items];
+                                  newItems[idx].costPrice = e.target.value;
+                                  setRestockData({...restockData, items: newItems, totalPriceManual: null});
+                                }}
+                              />
+                            </td>
+                            <td className="px-4 py-3 text-right text-xs font-black text-white">
+                              {subtotal.toLocaleString()}$
+                            </td>
+                          </tr>
+                        );
+                      })}
+                    </tbody>
+                  </table>
+                </div>
+
+                {/* Calculation Summary */}
+                <div className="bg-slate-900/50 p-6 rounded-[2rem] border border-slate-700/50 space-y-4">
+                  <div className="flex justify-between items-center text-xs">
+                    <span className="text-slate-500 font-bold uppercase tracking-widest">Tổng số lượng nhập:</span>
+                    <span className="text-white font-black text-lg">
+                      {restockData.items.reduce((sum, item) => sum + (parseInt(item.quantity) || 0), 0)}
+                    </span>
+                  </div>
+                  <div className="flex justify-between items-center pt-4 border-t border-slate-800">
+                    <span className="text-slate-500 font-bold uppercase tracking-widest">Tổng giá trị đơn hàng ($):</span>
+                    <div className="flex flex-col items-end gap-1">
+                      <input 
+                        type="number"
+                        step="0.01"
+                        placeholder="Tính toán tự động..."
+                        className="bg-slate-800 border border-emerald-500/30 rounded-xl px-4 py-1.5 text-right text-emerald-500 text-xl font-black outline-none focus:border-emerald-500 transition-all w-48"
+                        value={restockData.totalPriceManual !== null 
+                          ? restockData.totalPriceManual 
+                          : restockData.items.reduce((sum, item) => sum + ((parseInt(item.quantity) || 0) * (parseFloat(item.costPrice) || 0)), 0)}
+                        onChange={e => setRestockData({...restockData, totalPriceManual: e.target.value})}
+                      />
+                      <p className="text-[9px] text-slate-600 font-medium italic">Bạn có thể sửa tay tổng tiền nếu có phí phát sinh</p>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            )}
+
+            <div className="flex justify-end gap-3 pt-4 border-t border-slate-800/50">
               <button 
                 type="button"
                 disabled={isSaving}
@@ -642,15 +936,14 @@ export const Products = () => {
               </button>
               <button 
                 type="submit"
-                disabled={isSaving}
-                className="px-8 py-3 bg-emerald-500 hover:bg-emerald-600 disabled:bg-emerald-500/50 text-white rounded-2xl font-black uppercase text-[10px] tracking-widest shadow-lg shadow-emerald-500/20 transition-all flex items-center gap-2 group active:scale-95"
+                disabled={isSaving || restockData.productId === 0}
+                className="px-8 py-3 bg-emerald-500 hover:bg-emerald-600 disabled:bg-emerald-500/20 disabled:text-slate-500 text-white rounded-2xl font-black uppercase text-[10px] tracking-widest shadow-lg shadow-emerald-500/20 transition-all flex items-center gap-2 active:scale-95"
               >
                 {isSaving ? (
                   <Loader2 className="animate-spin w-4 h-4" />
                 ) : (
-                  <Save className="w-4 h-4 group-hover:scale-110 transition-transform" />
+                  <span>Xác nhận nhập kho</span>
                 )}
-                Xác nhận nhập hàng
               </button>
             </div>
           </form>
@@ -673,7 +966,7 @@ export const Products = () => {
           <div className="space-y-4">
             {/* Product Selector */}
             <div className="flex gap-2 items-center">
-              <select 
+              <select
                 className="flex-1 bg-slate-800 border border-slate-700 rounded-xl px-4 py-2.5 text-white outline-none focus:border-primary-500/50 min-w-0"
                 value={selectedProductForBulk}
                 onChange={(e) => setSelectedProductForBulk(e.target.value)}
@@ -686,7 +979,7 @@ export const Products = () => {
                   ))
                 }
               </select>
-              <button 
+              <button
                 type="button"
                 onClick={handleAddProductToBulk}
                 disabled={!selectedProductForBulk}
@@ -697,52 +990,76 @@ export const Products = () => {
             </div>
 
             {/* Selected Items List */}
-            <div className="max-h-[300px] overflow-y-auto space-y-3 pr-2 scrollbar-thin scrollbar-thumb-slate-700">
+            <div className="max-h-[400px] overflow-y-auto space-y-4 pr-2 scrollbar-thin scrollbar-thumb-slate-700">
               {bulkRestockItems.length === 0 ? (
                 <div className="py-12 text-center bg-slate-800/20 rounded-2xl border-2 border-dashed border-slate-800">
                   <p className="text-slate-500 text-sm italic">Chưa chọn sản phẩm nào để nhập hàng</p>
                 </div>
               ) : (
-                bulkRestockItems.map((item, index) => (
-                  <div key={item.productId} className="bg-slate-800/40 p-4 rounded-2xl border border-slate-700/50 group animate-in slide-in-from-right-4 duration-300">
-                    <div className="flex justify-between items-start mb-3">
-                      <span className="font-bold text-white text-sm">{item.name}</span>
-                      <button 
+                bulkRestockItems.map((productItem, productIdx) => (
+                  <div key={productItem.productId} className="bg-slate-800/40 rounded-3xl border border-slate-700/50 overflow-hidden animate-in slide-in-from-right-4 duration-300">
+                    <div className="bg-slate-800/60 p-4 flex justify-between items-center border-b border-slate-700/50">
+                      <div className="flex items-center gap-2 text-primary-500">
+                        <Package size={16} />
+                        <span className="font-bold text-white text-sm">{productItem.name}</span>
+                      </div>
+                      <button
                         type="button"
-                        onClick={() => setBulkRestockItems(bulkRestockItems.filter((_, i) => i !== index))}
-                        className="text-slate-500 hover:text-rose-500 transition-colors"
+                        onClick={() => {
+                          setBulkRestockItems(bulkRestockItems.filter((_, i) => i !== productIdx));
+                          setBulkTotalPriceManual(null);
+                        }}
+                        className="p-1 hover:bg-rose-500/20 text-slate-500 hover:text-rose-500 rounded-lg transition-all"
                       >
                         <X size={16} />
                       </button>
                     </div>
-                    <div className="grid grid-cols-2 gap-3">
-                      <div className="space-y-1">
-                        <label className="text-[10px] font-black text-slate-500 uppercase tracking-widest ml-1">Số lượng</label>
-                        <input 
-                          type="number"
-                          min="1"
-                          className="w-full bg-slate-900 border border-slate-700 rounded-xl px-3 py-2 text-white outline-none focus:border-primary-500/50"
-                          value={item.quantity}
-                          onChange={(e) => {
-                            const newItems = [...bulkRestockItems];
-                            newItems[index].quantity = parseInt(e.target.value) || 0;
-                            setBulkRestockItems(newItems);
-                          }}
-                        />
-                      </div>
-                      <div className="space-y-1">
-                        <label className="text-[10px] font-black text-slate-500 uppercase tracking-widest ml-1">Đơn giá nhập</label>
-                        <input 
-                          type="number"
-                          className="w-full bg-slate-900 border border-slate-700 rounded-xl px-3 py-2 text-white outline-none focus:border-primary-500/50"
-                          value={item.costPrice}
-                          onChange={(e) => {
-                            const newItems = [...bulkRestockItems];
-                            newItems[index].costPrice = parseFloat(e.target.value) || 0;
-                            setBulkRestockItems(newItems);
-                          }}
-                        />
-                      </div>
+                    
+                    <div className="p-0">
+                      <table className="w-full text-left border-collapse">
+                        <thead className="bg-slate-900/40">
+                          <tr>
+                            <th className="px-4 py-2 text-[9px] font-black text-slate-500 uppercase tracking-widest">Biến thể</th>
+                            <th className="px-4 py-2 text-[9px] font-black text-slate-500 uppercase tracking-widest w-20">Số lượng</th>
+                            <th className="px-4 py-2 text-[9px] font-black text-slate-500 uppercase tracking-widest">Giá nhập ($)</th>
+                          </tr>
+                        </thead>
+                        <tbody className="divide-y divide-slate-700/30">
+                          {productItem.items.map((vItem: any, vIdx: number) => (
+                            <tr key={vIdx} className="hover:bg-slate-800/30 transition-colors">
+                              <td className="px-4 py-2.5 text-xs text-slate-300 font-medium italic">
+                                {vItem.variantName || "Mặc định"}
+                              </td>
+                              <td className="px-4 py-2.5">
+                                <input
+                                  type="number"
+                                  className="w-full bg-slate-900 border border-slate-700 rounded-lg px-2 py-1 text-white text-xs outline-none focus:border-primary-500/50"
+                                  value={vItem.quantity}
+                                  onChange={(e) => {
+                                    const newBulk = [...bulkRestockItems];
+                                    newBulk[productIdx].items[vIdx].quantity = e.target.value;
+                                    setBulkRestockItems(newBulk);
+                                    setBulkTotalPriceManual(null);
+                                  }}
+                                />
+                              </td>
+                              <td className="px-4 py-2.5">
+                                <input
+                                  type="number"
+                                  className="w-full bg-slate-900 border border-slate-700 rounded-lg px-2 py-1 text-white text-xs outline-none focus:border-primary-500/50"
+                                  value={vItem.costPrice}
+                                  onChange={(e) => {
+                                    const newBulk = [...bulkRestockItems];
+                                    newBulk[productIdx].items[vIdx].costPrice = e.target.value;
+                                    setBulkRestockItems(newBulk);
+                                    setBulkTotalPriceManual(null);
+                                  }}
+                                />
+                              </td>
+                            </tr>
+                          ))}
+                        </tbody>
+                      </table>
                     </div>
                   </div>
                 ))
@@ -752,22 +1069,33 @@ export const Products = () => {
             {/* Calculation Summary & Action */}
             {bulkRestockItems.length > 0 && (
               <div className="mt-8 pt-6 border-t border-slate-800 space-y-4">
-                <div className="flex justify-between items-center text-sm">
-                  <span className="text-slate-400 font-medium">Tổng số lượng:</span>
-                  <span className="text-white font-black">{bulkTotalQuantity.toLocaleString()} đơn vị</span>
+                <div className="bg-slate-900/50 p-6 rounded-[2rem] border border-slate-700/50 space-y-4">
+                  <div className="flex justify-between items-center text-xs">
+                    <span className="text-slate-500 font-bold uppercase tracking-widest">Tổng số lượng (đơn vị):</span>
+                    <span className="text-white font-black text-lg">{bulkTotalQuantity.toLocaleString()}</span>
+                  </div>
+                  <div className="flex justify-between items-center pt-4 border-t border-slate-800">
+                    <span className="text-slate-500 font-bold uppercase tracking-widest">Tổng giá trị đơn hàng ($):</span>
+                    <div className="flex flex-col items-end gap-1">
+                      <input 
+                        type="number"
+                        step="0.01"
+                        className="bg-slate-800 border border-emerald-500/30 rounded-xl px-4 py-1.5 text-right text-emerald-500 text-xl font-black outline-none focus:border-emerald-500 transition-all w-48"
+                        value={bulkTotalPriceManual !== null ? bulkTotalPriceManual : bulkTotalCostCalculated}
+                        onChange={e => setBulkTotalPriceManual(e.target.value)}
+                      />
+                      <p className="text-[9px] text-slate-600 font-medium italic">Cho phép sửa tay tổng tiền</p>
+                    </div>
+                  </div>
                 </div>
-                <div className="flex justify-between items-center">
-                  <span className="text-slate-400 font-medium">Tổng giá trị đơn nhập:</span>
-                  <span className="text-emerald-500 text-xl font-black">{bulkTotalCost.toLocaleString()}đ</span>
-                </div>
-                
-                <button 
+
+                <button
                   onClick={handleBulkRestockSubmit}
                   disabled={isSaving}
                   className="w-full bg-emerald-500 hover:bg-emerald-600 text-white py-4 rounded-2xl font-black uppercase tracking-widest flex items-center justify-center gap-2 shadow-lg shadow-emerald-500/20 transition-all active:scale-95 disabled:opacity-50 mt-4"
                 >
                   {isSaving ? <Loader2 className="animate-spin" /> : <Save size={20} />}
-                  Xác nhận nhập hàng
+                  Xác nhận nhập hàng hàng loạt
                 </button>
               </div>
             )}

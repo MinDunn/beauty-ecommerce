@@ -26,4 +26,18 @@ public class Product {
     private String instructions;
     private String ingredients;
     private LocalDateTime createdAt;
+    private java.util.List<String> images;
+    private java.util.List<ProductVariant> variants;
+
+    @Getter
+    @Setter
+    @AllArgsConstructor
+    @NoArgsConstructor
+    @Builder
+    public static class ProductVariant {
+        private Long id;
+        private String variantName;
+        private java.math.BigDecimal price;
+        private String imageUrl;
+    }
 }

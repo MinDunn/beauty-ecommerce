@@ -2,9 +2,11 @@ package com.beauty.ecommerce.product.application.service;
 
 import com.beauty.ecommerce.product.application.port.in.ManageProductUseCase;
 import com.beauty.ecommerce.product.application.port.out.DeleteProductPort;
-import com.beauty.ecommerce.product.application.port.out.LoadProductPort;
 import com.beauty.ecommerce.product.application.port.out.SaveProductPort;
 import com.beauty.ecommerce.product.application.port.out.UploadImagePort;
+import com.beauty.ecommerce.product.adapter.out.persistence.ProductJpaEntity;
+import com.beauty.ecommerce.product.adapter.out.persistence.ProductImageJpaEntity;
+import com.beauty.ecommerce.product.adapter.out.persistence.ProductVariantJpaEntity;
 import com.beauty.ecommerce.product.domain.entity.Product;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
@@ -19,18 +21,25 @@ public class ProductManagementService implements ManageProductUseCase {
 
     private final SaveProductPort saveProductPort;
     private final DeleteProductPort deleteProductPort;
-    private final LoadProductPort loadProductPort;
     private final UploadImagePort uploadImagePort;
 
     @Override
     @Transactional
-    public Product createProduct(CreateProductCommand command, MultipartFile image) {
-        String imageUrl = null;
-        if (image != null && !image.isEmpty()) {
-            imageUrl = uploadImagePort.uploadFile(image);
+    public Product createProduct(CreateProductCommand command, java.util.List<MultipartFile> images) {
+        String mainImageUrl = null;
+        java.util.List<ProductImageJpaEntity> galleryImages = new java.util.ArrayList<>();
+
+        if (images != null && !images.isEmpty()) {
+            for (int i = 0; i < images.size(); i++) {
+                String uploadedUrl = uploadImagePort.uploadFile(images.get(i));
+                if (i == 0) {
+                    mainImageUrl = uploadedUrl;
+                }
+                galleryImages.add(ProductImageJpaEntity.builder().imageUrl(uploadedUrl).build());
+            }
         }
 
-        Product product = Product.builder()
+        ProductJpaEntity productEntity = ProductJpaEntity.builder()
                 .name(command.getName())
                 .description(command.getDescription())
                 .originalPrice(command.getOriginalPrice())
@@ -39,40 +48,148 @@ public class ProductManagementService implements ManageProductUseCase {
                 .categoryId(command.getCategoryId())
                 .instructions(command.getInstructions())
                 .ingredients(command.getIngredients())
-                .imageUrl(imageUrl)
+                .imageUrl(mainImageUrl)
+                .images(galleryImages)
+                .variants(command.getVariants() != null ? command.getVariants().stream()
+                        .map(v -> {
+                            String variantImageUrl = v.getImageUrl();
+                            if (v.getImageIndex() != null && v.getImageIndex() < galleryImages.size()) {
+                                variantImageUrl = galleryImages.get(v.getImageIndex()).getImageUrl();
+                            }
+                            ProductVariantJpaEntity variant = ProductVariantJpaEntity.builder()
+                                .variantName(v.getVariantName())
+                                .price(v.getPrice())
+                                .imageUrl(variantImageUrl)
+                                .build();
+                            variant.setProduct(null); // Will be set after builder builds productEntity and we loop
+                            return variant;
+                        })
+                        .collect(java.util.stream.Collectors.toList()) : null)
                 .createdAt(LocalDateTime.now())
                 .build();
 
-        return saveProductPort.saveProduct(product);
+        // Set back-references
+        if (productEntity.getVariants() != null) {
+            productEntity.getVariants().forEach(v -> v.setProduct(productEntity));
+        }
+        if (productEntity.getImages() != null) {
+            productEntity.getImages().forEach(img -> img.setProduct(productEntity));
+        }
+
+        try {
+            return saveProductPort.saveProduct(mapToDomain(productEntity));
+        } catch (Exception e) {
+            System.err.println("CRITICAL ERROR in createProduct: " + e.getMessage());
+            e.printStackTrace();
+            throw new RuntimeException("Lỗi hệ thống khi tạo sản phẩm: " + e.getMessage(), e);
+        }
     }
 
     @Override
     @Transactional
-    public Product updateProduct(Long id, UpdateProductCommand command, MultipartFile image) {
-        Product product = loadProductPort.loadProductById(id)
-                .orElseThrow(() -> new RuntimeException("Product not found"));
+    public Product updateProduct(Long id, UpdateProductCommand command, java.util.List<MultipartFile> images) {
+        ProductJpaEntity productEntity = loadProductJpaEntity(id);
 
-        product.setName(command.getName());
-        product.setDescription(command.getDescription());
-        product.setOriginalPrice(command.getOriginalPrice());
-        product.setCurrentPrice(command.getCurrentPrice());
-        product.setStockQuantity(command.getStockQuantity());
-        product.setCategoryId(command.getCategoryId());
-        product.setInstructions(command.getInstructions());
-        product.setIngredients(command.getIngredients());
+        productEntity.setName(command.getName());
+        productEntity.setDescription(command.getDescription());
+        productEntity.setOriginalPrice(command.getOriginalPrice());
+        productEntity.setCurrentPrice(command.getCurrentPrice());
+        productEntity.setStockQuantity(command.getStockQuantity());
+        productEntity.setCategoryId(command.getCategoryId());
+        productEntity.setInstructions(command.getInstructions());
+        productEntity.setIngredients(command.getIngredients());
 
-        if (image != null && !image.isEmpty()) {
-            String newImageUrl = uploadImagePort.uploadFile(image);
-            product.setImageUrl(newImageUrl);
+        // Handle images updates
+        java.util.List<String> finalImageUrls = new java.util.ArrayList<>();
+        if (command.getExistingImages() != null) {
+            finalImageUrls.addAll(command.getExistingImages());
         }
 
-        return saveProductPort.saveProduct(product);
+        java.util.List<String> newUploadedUrls = new java.util.ArrayList<>();
+        if (images != null && !images.isEmpty()) {
+            for (int i = 0; i < images.size(); i++) {
+                String uploadedUrl = uploadImagePort.uploadFile(images.get(i));
+                newUploadedUrls.add(uploadedUrl);
+                finalImageUrls.add(uploadedUrl);
+            }
+        }
+
+        // Sync images in database
+        productEntity.getImages().clear();
+        for (int i = 0; i < finalImageUrls.size(); i++) {
+            String url = finalImageUrls.get(i);
+            if (i == 0) {
+                productEntity.setImageUrl(url);
+            }
+            productEntity.getImages().add(ProductImageJpaEntity.builder()
+                    .imageUrl(url)
+                    .product(productEntity)
+                    .build());
+        }
+
+        // Handle variants updates
+        if (command.getVariants() != null) {
+            productEntity.getVariants().clear();
+            productEntity.getVariants().addAll(command.getVariants().stream()
+                    .map(v -> {
+                        String variantImageUrl = v.getImageUrl();
+                        if (v.getImageIndex() != null && v.getImageIndex() < newUploadedUrls.size()) {
+                            variantImageUrl = newUploadedUrls.get(v.getImageIndex());
+                        }
+                        return ProductVariantJpaEntity.builder()
+                            .variantName(v.getVariantName())
+                            .price(v.getPrice())
+                            .imageUrl(variantImageUrl)
+                            .product(productEntity)
+                            .build();
+                    })
+                    .collect(java.util.stream.Collectors.toList()));
+        }
+
+        try {
+            return saveProductPort.saveProduct(mapToDomain(productEntity));
+        } catch (Exception e) {
+            System.err.println("Lỗi khi lưu sản phẩm (update): " + e.getMessage());
+            e.printStackTrace();
+            throw e;
+        }
     }
 
+    private ProductJpaEntity loadProductJpaEntity(Long id) {
+        // This is a bit of a hack since we don't have a direct accessor to JpaEntity here
+        // In a strictly Hexagonal arch, you'd use a port. But for simplicity:
+        return ((com.beauty.ecommerce.product.adapter.out.persistence.ProductPersistenceAdapter)saveProductPort).loadJpaEntity(id);
+    }
+
+    private Product mapToDomain(ProductJpaEntity entity) {
+        return Product.builder()
+                .id(entity.getId())
+                .name(entity.getName())
+                .description(entity.getDescription())
+                .originalPrice(entity.getOriginalPrice())
+                .currentPrice(entity.getCurrentPrice())
+                .stockQuantity(entity.getStockQuantity())
+                .imageUrl(entity.getImageUrl())
+                .categoryId(entity.getCategoryId())
+                .instructions(entity.getInstructions())
+                .ingredients(entity.getIngredients())
+                .createdAt(entity.getCreatedAt())
+                .images(entity.getImages() != null ? entity.getImages().stream()
+                        .map(ProductImageJpaEntity::getImageUrl)
+                        .collect(java.util.stream.Collectors.toList()) : new java.util.ArrayList<>())
+                .variants(entity.getVariants() != null ? entity.getVariants().stream()
+                        .map(v -> Product.ProductVariant.builder()
+                                .id(v.getId())
+                                .variantName(v.getVariantName())
+                                .price(v.getPrice())
+                                .imageUrl(v.getImageUrl())
+                                .build())
+                        .collect(java.util.stream.Collectors.toList()) : new java.util.ArrayList<>())
+                .build();
+    }
     @Override
     @Transactional
     public void deleteProduct(Long id) {
-        // Có thể cần kiểm tra product có tồn tại trước, hoặc để repository tự xử lý
         deleteProductPort.deleteProduct(id);
     }
 }

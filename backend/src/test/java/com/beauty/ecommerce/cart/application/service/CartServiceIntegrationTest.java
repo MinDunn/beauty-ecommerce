@@ -56,7 +56,7 @@ public class CartServiceIntegrationTest {
     @Test
     void whenAddToCart_thenItemIsPresent() {
         // When
-        cartUseCase.addToCart(testUser.getEmail(), product.getId(), 2);
+        cartUseCase.addToCart(testUser.getEmail(), product.getId(), 2, null);
 
         // Then
         List<CartItem> cart = cartUseCase.getCart(testUser.getEmail());
@@ -68,10 +68,10 @@ public class CartServiceIntegrationTest {
     @Test
     void whenAddExistingItem_thenQuantityIncrements() {
         // Given
-        cartUseCase.addToCart(testUser.getEmail(), product.getId(), 2);
+        cartUseCase.addToCart(testUser.getEmail(), product.getId(), 2, null);
 
         // When
-        cartUseCase.addToCart(testUser.getEmail(), product.getId(), 3);
+        cartUseCase.addToCart(testUser.getEmail(), product.getId(), 3, null);
 
         // Then
         List<CartItem> cart = cartUseCase.getCart(testUser.getEmail());
@@ -82,10 +82,10 @@ public class CartServiceIntegrationTest {
     @Test
     void whenUpdateQuantity_thenQuantityIsModified() {
         // Given
-        cartUseCase.addToCart(testUser.getEmail(), product.getId(), 2);
+        cartUseCase.addToCart(testUser.getEmail(), product.getId(), 2, null);
 
         // When
-        cartUseCase.updateQuantity(testUser.getEmail(), product.getId(), 10);
+        cartUseCase.updateQuantity(testUser.getEmail(), product.getId(), 10, null);
 
         // Then
         List<CartItem> cart = cartUseCase.getCart(testUser.getEmail());
@@ -95,10 +95,10 @@ public class CartServiceIntegrationTest {
     @Test
     void whenRemoveFromCart_thenItemIsDeleted() {
         // Given
-        cartUseCase.addToCart(testUser.getEmail(), product.getId(), 2);
+        cartUseCase.addToCart(testUser.getEmail(), product.getId(), 2, null);
 
         // When
-        cartUseCase.removeFromCart(testUser.getEmail(), product.getId());
+        cartUseCase.removeFromCart(testUser.getEmail(), product.getId(), null);
 
         // Then
         List<CartItem> cart = cartUseCase.getCart(testUser.getEmail());

@@ -6,22 +6,50 @@ import { cn } from '../utils/cn';
 import type { RootState } from '../store';
 import toast from 'react-hot-toast';
 
+import { cartService } from '../api/cartService';
+
 const Cart = () => {
   const dispatch = useDispatch();
   const { items: cartItems, totalAmount: subTotal } = useSelector((state: RootState) => state.cart);
+  const { user } = useSelector((state: RootState) => state.auth);
 
-  const handleUpdateQuantity = (id: string, delta: number, name: string) => {
-    dispatch(updateQuantity({ id, delta }));
+  const handleUpdateQuantity = async (id: string, variantName: string | null | undefined, delta: number, name: string) => {
+    const item = cartItems.find(i => i.id === id && i.variantName === variantName);
+    if (!item) return;
+
+    dispatch(updateQuantity({ id, variantName, delta }));
+
+    if (user) {
+      try {
+        await cartService.updateQuantity({
+          productId: Number(id),
+          quantity: item.quantity + delta,
+          variantName: variantName || null
+        });
+      } catch (error) {
+        console.error("Failed to sync quantity with backend", error);
+      }
+    }
+
     if (delta > 0) {
-      toast.success(`Đã tăng số lượng ${name}`);
+      toast.success(`Đã tăng số lượng ${name}${variantName ? ` (${variantName})` : ''}`);
     } else {
-      toast.success(`Đã giảm số lượng ${name}`);
+      toast.success(`Đã giảm số lượng ${name}${variantName ? ` (${variantName})` : ''}`);
     }
   };
 
-  const handleRemoveItem = (id: string, name: string) => {
-    dispatch(removeItem(id));
-    toast.success(`Đã xóa ${name} khỏi giỏ hàng`);
+  const handleRemoveItem = async (id: string, variantName: string | null | undefined, name: string) => {
+    dispatch(removeItem({ id, variantName }));
+
+    if (user) {
+      try {
+        await cartService.removeFromCart(Number(id), variantName || null);
+      } catch (error) {
+        console.error("Failed to remove item from backend", error);
+      }
+    }
+
+    toast.success(`Đã xóa ${name}${variantName ? ` (${variantName})` : ''} khỏi giỏ hàng`);
   };
 
   const discount = subTotal > 1000000 ? 50000 : 0; // Simple conditional discount
@@ -62,47 +90,52 @@ const Cart = () => {
 
                   <div className="glowzy-card overflow-hidden">
                     {cartItems.map((item, index) => (
-                      <div key={item.id} className={`grid grid-cols-1 md:grid-cols-12 gap-6 items-center p-8 group ${index !== cartItems.length - 1 ? 'border-b border-gray-100' : ''}`}>
+                      <div key={`${item.id}-${item.variantName || 'none'}`} className={`grid grid-cols-1 md:grid-cols-12 gap-6 items-center p-8 group ${index !== cartItems.length - 1 ? 'border-b border-gray-100' : ''}`}>
                          {/* Product Image & Info */}
-                         <div className="col-span-1 md:col-span-6 flex items-start gap-6">
-                            <div className="w-28 h-28 bg-gray-50 rounded-2xl flex-shrink-0 p-3 overflow-hidden border border-gray-100 transition-all group-hover:border-primary-200">
-                               <img src={item.image} alt={item.name} className="w-full h-full object-contain mix-blend-multiply group-hover:scale-110 transition-transform duration-500" />
-                            </div>
-                            <div className="flex flex-col pt-2 overflow-hidden">
-                               <span className="text-[10px] font-black text-primary-500 uppercase tracking-widest mb-1.5 opacity-70 italic">{item.brand}</span>
-                               <Link to={`/product/${item.id}`} className="font-black text-gray-800 text-sm md:text-base leading-snug line-clamp-2 hover:text-primary-600 transition-colors">
-                                  {item.name}
-                               </Link>
-                            </div>
-                         </div>
+                          <div className="col-span-1 md:col-span-6 flex items-start gap-6">
+                             <div className="w-28 h-28 bg-gray-50 rounded-2xl flex-shrink-0 p-3 overflow-hidden border border-gray-100 transition-all group-hover:border-primary-200">
+                                <img src={item.image} alt={item.name} className="w-full h-full object-contain mix-blend-multiply group-hover:scale-110 transition-transform duration-500" />
+                             </div>
+                             <div className="flex flex-col pt-2 overflow-hidden">
+                                <span className="text-[10px] font-black text-primary-500 uppercase tracking-widest mb-1.5 opacity-70 italic">{item.brand}</span>
+                                <Link to={`/product/${item.id}`} className="font-black text-gray-800 text-sm md:text-base leading-snug line-clamp-2 hover:text-primary-600 transition-colors">
+                                   {item.name}
+                                </Link>
+                                {item.variantName && (
+                                   <div className="mt-2 text-[10px] font-black text-gray-400 uppercase tracking-widest bg-gray-100 px-3 py-1.5 rounded-lg w-fit italic">
+                                      Loại: {item.variantName}
+                                   </div>
+                                )}
+                             </div>
+                          </div>
   
                          {/* Price (Desktop) */}
                          <div className="hidden md:block col-span-3 text-center">
                             <span className="font-black text-gray-900 text-lg tracking-tight">{item.price.toLocaleString('vi-VN')} đ</span>
                          </div>
   
-                         {/* Controls */}
-                         <div className="col-span-1 md:col-span-2 flex items-center justify-between md:justify-center">
-                           <div className="md:hidden font-black text-primary-600 text-xl">{item.price.toLocaleString('vi-VN')} đ</div>
-                           <div className="flex items-center border-2 border-gray-100 rounded-2xl overflow-hidden bg-white shadow-sm">
-                              <button onClick={() => handleUpdateQuantity(item.id, -1, item.name)} className="w-10 h-10 flex items-center justify-center text-gray-400 hover:bg-gray-100 hover:text-primary-600 transition-all">
-                                <Minus size={14} />
-                              </button>
-                              <div className="w-12 h-10 flex items-center justify-center font-black text-gray-900 text-sm border-x-2 border-gray-100 bg-gray-50/20">
-                                {item.quantity}
-                              </div>
-                              <button onClick={() => handleUpdateQuantity(item.id, 1, item.name)} className="w-10 h-10 flex items-center justify-center text-gray-400 hover:bg-gray-100 hover:text-primary-600 transition-all">
-                                <Plus size={14} />
-                              </button>
-                           </div>
-                         </div>
-  
-                         {/* Delete Button */}
-                         <div className="col-span-1 text-right flex justify-end">
-                            <button onClick={() => handleRemoveItem(item.id, item.name)} className="w-12 h-12 bg-red-50 text-red-500 rounded-2xl flex items-center justify-center hover:bg-red-600 hover:text-white hover:rotate-12 transition-all shadow-sm">
-                               <Trash2 size={20} />
-                            </button>
-                         </div>
+                          {/* Controls */}
+                          <div className="col-span-1 md:col-span-2 flex items-center justify-between md:justify-center">
+                            <div className="md:hidden font-black text-primary-600 text-xl">{item.price.toLocaleString('vi-VN')} đ</div>
+                            <div className="flex items-center border-2 border-gray-100 rounded-2xl overflow-hidden bg-white shadow-sm">
+                               <button onClick={() => handleUpdateQuantity(item.id, item.variantName, -1, item.name)} className="w-10 h-10 flex items-center justify-center text-gray-400 hover:bg-gray-100 hover:text-primary-600 transition-all">
+                                 <Minus size={14} />
+                               </button>
+                               <div className="w-12 h-10 flex items-center justify-center font-black text-gray-900 text-sm border-x-2 border-gray-100 bg-gray-50/20">
+                                 {item.quantity}
+                               </div>
+                               <button onClick={() => handleUpdateQuantity(item.id, item.variantName, 1, item.name)} className="w-10 h-10 flex items-center justify-center text-gray-400 hover:bg-gray-100 hover:text-primary-600 transition-all">
+                                 <Plus size={14} />
+                               </button>
+                            </div>
+                          </div>
+   
+                          {/* Delete Button */}
+                          <div className="col-span-1 text-right flex justify-end">
+                             <button onClick={() => handleRemoveItem(item.id, item.variantName, item.name)} className="w-12 h-12 bg-red-50 text-red-500 rounded-2xl flex items-center justify-center hover:bg-red-600 hover:text-white hover:rotate-12 transition-all shadow-sm">
+                                <Trash2 size={20} />
+                             </button>
+                          </div>
                       </div>
                     ))}
                   </div>

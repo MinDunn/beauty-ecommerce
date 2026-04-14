@@ -27,7 +27,8 @@ public class AdminInventoryController {
                 request.getProductId(),
                 request.getCostPrice(),
                 request.getQuantity(),
-                request.getReceivedAt()
+                request.getReceivedAt(),
+                request.getVariantName()
         );
         return ResponseEntity.ok(receipt);
     }
@@ -39,8 +40,8 @@ public class AdminInventoryController {
     }
 
     @org.springframework.web.bind.annotation.GetMapping("/receipts")
-    public ResponseEntity<List<InventoryService.InventoryReceiptResponse>> getAllReceipts() {
-        return ResponseEntity.ok(inventoryService.getAllReceipts());
+    public ResponseEntity<com.beauty.ecommerce.common.dto.ApiResponse<List<InventoryService.InventoryReceiptResponse>>> getAllReceipts() {
+        return ResponseEntity.ok(com.beauty.ecommerce.common.dto.ApiResponse.success(inventoryService.getAllReceipts()));
     }
 
     @Data
@@ -48,6 +49,7 @@ public class AdminInventoryController {
         private Long productId;
         private BigDecimal costPrice;
         private Integer quantity;
+        private String variantName;
         private LocalDateTime receivedAt;
     }
 }

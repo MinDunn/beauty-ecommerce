@@ -30,4 +30,5 @@ public class OrderItemJpaEntity {
     private Integer quantity;
 
     private BigDecimal price;
+    private String variantName;
 }

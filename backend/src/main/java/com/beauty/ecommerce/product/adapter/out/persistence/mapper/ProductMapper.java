@@ -20,11 +20,22 @@ public class ProductMapper {
                 .instructions(jpaEntity.getInstructions())
                 .ingredients(jpaEntity.getIngredients())
                 .createdAt(jpaEntity.getCreatedAt())
+                .images(jpaEntity.getImages() != null ? jpaEntity.getImages().stream()
+                        .map(com.beauty.ecommerce.product.adapter.out.persistence.ProductImageJpaEntity::getImageUrl)
+                        .collect(java.util.stream.Collectors.toList()) : new java.util.ArrayList<>())
+                .variants(jpaEntity.getVariants() != null ? jpaEntity.getVariants().stream()
+                        .map(v -> Product.ProductVariant.builder()
+                                .id(v.getId())
+                                .variantName(v.getVariantName())
+                                .price(v.getPrice())
+                                .imageUrl(v.getImageUrl())
+                                .build())
+                        .collect(java.util.stream.Collectors.toList()) : new java.util.ArrayList<>())
                 .build();
     }
 
-    public ProductJpaEntity mapToJpaEntity(Product domainEntity) {
-        return ProductJpaEntity.builder()
+    public com.beauty.ecommerce.product.adapter.out.persistence.ProductJpaEntity mapToJpaEntity(com.beauty.ecommerce.product.domain.entity.Product domainEntity) {
+        com.beauty.ecommerce.product.adapter.out.persistence.ProductJpaEntity jpaEntity = com.beauty.ecommerce.product.adapter.out.persistence.ProductJpaEntity.builder()
                 .id(domainEntity.getId())
                 .name(domainEntity.getName())
                 .description(domainEntity.getDescription())
@@ -37,5 +48,32 @@ public class ProductMapper {
                 .ingredients(domainEntity.getIngredients())
                 .createdAt(domainEntity.getCreatedAt())
                 .build();
+
+        if (domainEntity.getImages() != null) {
+            jpaEntity.setImages(domainEntity.getImages().stream()
+                    .map(url -> com.beauty.ecommerce.product.adapter.out.persistence.ProductImageJpaEntity.builder()
+                            .imageUrl(url)
+                            .product(jpaEntity)
+                            .build())
+                    .collect(java.util.stream.Collectors.toList()));
+        } else {
+            jpaEntity.setImages(new java.util.ArrayList<>());
+        }
+
+        if (domainEntity.getVariants() != null) {
+            jpaEntity.setVariants(domainEntity.getVariants().stream()
+                    .map(v -> com.beauty.ecommerce.product.adapter.out.persistence.ProductVariantJpaEntity.builder()
+                            .id(v.getId())
+                            .variantName(v.getVariantName())
+                            .price(v.getPrice())
+                            .imageUrl(v.getImageUrl())
+                            .product(jpaEntity)
+                            .build())
+                    .collect(java.util.stream.Collectors.toList()));
+        } else {
+            jpaEntity.setVariants(new java.util.ArrayList<>());
+        }
+
+        return jpaEntity;
     }
 }

@@ -18,5 +18,6 @@ public class CartItemResponse {
     private String productImageUrl;
     private BigDecimal price;
     private Integer quantity;
+    private String variantName;
     private BigDecimal subTotal;
 }

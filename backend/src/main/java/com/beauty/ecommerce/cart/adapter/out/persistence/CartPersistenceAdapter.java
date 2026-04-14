@@ -32,13 +32,13 @@ public class CartPersistenceAdapter implements CartPort {
 
     @Override
     @Transactional
-    public void save(String email, Long productId, Integer quantity) {
+    public void save(String email, Long productId, Integer quantity, String variantName) {
         UserJpaEntity user = userRepository.findByEmail(email)
                 .orElseThrow(() -> new RuntimeException("User not found"));
         ProductJpaEntity product = productRepository.findById(productId)
                 .orElseThrow(() -> new RuntimeException("Product not found"));
 
-        CartItemJpaEntity cartItem = cartRepository.findByUserEmailAndProductId(email, productId)
+        CartItemJpaEntity cartItem = cartRepository.findByUserEmailAndProductIdAndVariantName(email, productId, variantName)
                 .map(item -> {
                     item.setQuantity(item.getQuantity() + quantity);
                     return item;
@@ -47,6 +47,7 @@ public class CartPersistenceAdapter implements CartPort {
                         .user(user)
                         .product(product)
                         .quantity(quantity)
+                        .variantName(variantName)
                         .build());
 
         cartRepository.save(cartItem);
@@ -54,8 +55,8 @@ public class CartPersistenceAdapter implements CartPort {
 
     @Override
     @Transactional
-    public void updateQuantity(String email, Long productId, Integer quantity) {
-        CartItemJpaEntity cartItem = cartRepository.findByUserEmailAndProductId(email, productId)
+    public void updateQuantity(String email, Long productId, Integer quantity, String variantName) {
+        CartItemJpaEntity cartItem = cartRepository.findByUserEmailAndProductIdAndVariantName(email, productId, variantName)
                 .orElseThrow(() -> new RuntimeException("Cart item not found"));
         cartItem.setQuantity(quantity);
         cartRepository.save(cartItem);
@@ -63,8 +64,8 @@ public class CartPersistenceAdapter implements CartPort {
 
     @Override
     @Transactional
-    public void delete(String email, Long productId) {
-        CartItemJpaEntity cartItem = cartRepository.findByUserEmailAndProductId(email, productId)
+    public void delete(String email, Long productId, String variantName) {
+        CartItemJpaEntity cartItem = cartRepository.findByUserEmailAndProductIdAndVariantName(email, productId, variantName)
                 .orElseThrow(() -> new RuntimeException("Cart item not found"));
         cartRepository.delete(cartItem);
     }

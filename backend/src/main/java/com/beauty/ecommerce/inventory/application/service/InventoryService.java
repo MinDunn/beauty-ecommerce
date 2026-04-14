@@ -20,14 +20,15 @@ public class InventoryService {
 
     private final InventoryReceiptRepository receiptRepository;
     private final ProductRepository productRepository;
+    private final com.beauty.ecommerce.product.adapter.out.persistence.ProductVariantRepository variantRepository;
 
     @Transactional
     public InventoryReceiptJpaEntity addStock(Long productId, BigDecimal costPrice, Integer quantity) {
-        return addStock(productId, costPrice, quantity, null);
+        return addStock(productId, costPrice, quantity, null, null);
     }
 
     @Transactional
-    public InventoryReceiptJpaEntity addStock(Long productId, BigDecimal costPrice, Integer quantity, LocalDateTime receivedAt) {
+    public InventoryReceiptJpaEntity addStock(Long productId, BigDecimal costPrice, Integer quantity, LocalDateTime receivedAt, String variantName) {
         // 1. Load product
         ProductJpaEntity product = productRepository.findById(productId)
                 .orElseThrow(() -> new RuntimeException("Sản phẩm không tồn tại với ID: " + productId));
@@ -37,14 +38,24 @@ public class InventoryService {
                 .productId(productId)
                 .costPrice(costPrice)
                 .quantity(quantity)
+                .variantName(variantName)
                 .receivedAt(receivedAt != null ? receivedAt : LocalDateTime.now())
                 .build();
         
         InventoryReceiptJpaEntity savedReceipt = receiptRepository.save(receipt);
 
-        // 3. Update product stock
-        product.setStockQuantity(product.getStockQuantity() + quantity);
+        // 3. Update product stock (always update total stock)
+        product.setStockQuantity((product.getStockQuantity() != null ? product.getStockQuantity() : 0) + quantity);
         productRepository.save(product);
+
+        // 4. Update variant stock if provided
+        if (variantName != null && !variantName.trim().isEmpty()) {
+            com.beauty.ecommerce.product.adapter.out.persistence.ProductVariantJpaEntity variant = variantRepository.findByProductIdAndVariantName(productId, variantName)
+                    .orElseThrow(() -> new RuntimeException("Biến thể '" + variantName + "' không tồn tại cho sản phẩm này."));
+            
+            variant.setStockQuantity((variant.getStockQuantity() != null ? variant.getStockQuantity() : 0) + quantity);
+            variantRepository.save(variant);
+        }
 
         return savedReceipt;
     }
@@ -52,7 +63,7 @@ public class InventoryService {
     @Transactional
     public void addStockBulk(java.util.List<com.beauty.ecommerce.inventory.adapter.in.web.AdminInventoryController.InventoryReceiptRequest> requests) {
         for (com.beauty.ecommerce.inventory.adapter.in.web.AdminInventoryController.InventoryReceiptRequest request : requests) {
-            addStock(request.getProductId(), request.getCostPrice(), request.getQuantity(), request.getReceivedAt());
+            addStock(request.getProductId(), request.getCostPrice(), request.getQuantity(), request.getReceivedAt(), request.getVariantName());
         }
     }
 
@@ -71,6 +82,7 @@ public class InventoryService {
                         productNameById.getOrDefault(receipt.getProductId(), "Sản phẩm không xác định"),
                         receipt.getCostPrice(),
                         receipt.getQuantity(),
+                        receipt.getVariantName(),
                         receipt.getReceivedAt()
                 ))
                 .toList();
@@ -82,6 +94,7 @@ public class InventoryService {
             String productName,
             BigDecimal costPrice,
             Integer quantity,
+            String variantName,
             LocalDateTime receivedAt
     ) {
     }

@@ -40,21 +40,21 @@ public class CartController {
     @PostMapping
     public ResponseEntity<Void> addToCart(@Valid @RequestBody CartItemRequest request) {
         String email = SecurityContextHolder.getContext().getAuthentication().getName();
-        cartUseCase.addToCart(email, request.getProductId(), request.getQuantity());
+        cartUseCase.addToCart(email, request.getProductId(), request.getQuantity(), request.getVariantName());
         return ResponseEntity.ok().build();
     }
 
     @PutMapping
     public ResponseEntity<Void> updateQuantity(@Valid @RequestBody CartItemRequest request) {
         String email = SecurityContextHolder.getContext().getAuthentication().getName();
-        cartUseCase.updateQuantity(email, request.getProductId(), request.getQuantity());
+        cartUseCase.updateQuantity(email, request.getProductId(), request.getQuantity(), request.getVariantName());
         return ResponseEntity.ok().build();
     }
 
     @DeleteMapping("/{productId}")
-    public ResponseEntity<Void> removeFromCart(@PathVariable Long productId) {
+    public ResponseEntity<Void> removeFromCart(@PathVariable Long productId, @RequestParam(required = false) String variantName) {
         String email = SecurityContextHolder.getContext().getAuthentication().getName();
-        cartUseCase.removeFromCart(email, productId);
+        cartUseCase.removeFromCart(email, productId, variantName);
         return ResponseEntity.ok().build();
     }
 }

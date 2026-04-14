@@ -364,7 +364,12 @@ const Checkout = () => {
                             <img src={item.image} alt={item.name} className="w-full h-full object-contain" />
                          </div>
                          <div className="flex-1 min-w-0">
-                            <h4 className="text-[10px] font-bold text-slate-300 line-clamp-1 uppercase tracking-tight group-hover:text-primary-400 transition-colors">{item.name}</h4>
+                            <h4 className="text-[10px] font-bold text-slate-300 line-clamp-1 uppercase tracking-tight group-hover:text-primary-400 transition-colors">
+                               {item.name}
+                            </h4>
+                            {item.variantName && (
+                               <p className="text-[8px] font-black text-slate-500 uppercase tracking-widest mt-0.5">Loại: {item.variantName}</p>
+                            )}
                             <div className="flex justify-between items-center mt-1">
                                <span className="text-[10px] text-slate-500 font-black">X{item.quantity}</span>
                                <span className="text-xs font-black text-primary-400">{item.price.toLocaleString()}đ</span>

@@ -14,6 +14,7 @@ public class CartMapper {
                 .productId(jpaEntity.getProduct().getId())
                 .productName(jpaEntity.getProduct().getName())
                 .productImageUrl(jpaEntity.getProduct().getImageUrl())
+                .variantName(jpaEntity.getVariantName())
                 .price(jpaEntity.getProduct().getCurrentPrice())
                 .quantity(jpaEntity.getQuantity())
                 .build();

@@ -18,6 +18,7 @@ public class CartItem {
     private Long productId;
     private String productName;
     private String productImageUrl;
+    private String variantName;
     private BigDecimal price;
     private Integer quantity;
     private Long userId;

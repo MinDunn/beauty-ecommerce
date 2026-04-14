@@ -22,20 +22,20 @@ public class CartService implements CartUseCase {
     }
 
     @Override
-    public void addToCart(String email, Long productId, Integer quantity) {
-        cartPort.save(email, productId, quantity);
-        activityLogService.logActivity(null, email, "ADD_TO_CART", "Thêm sản phẩm ID " + productId + " vào giỏ hàng (Số lượng: " + quantity + ")");
+    public void addToCart(String email, Long productId, Integer quantity, String variantName) {
+        cartPort.save(email, productId, quantity, variantName);
+        activityLogService.logActivity(null, email, "ADD_TO_CART", "Thêm sản phẩm ID " + productId + (variantName != null ? " (" + variantName + ")" : "") + " vào giỏ hàng (Số lượng: " + quantity + ")");
     }
 
     @Override
-    public void updateQuantity(String email, Long productId, Integer quantity) {
-        cartPort.updateQuantity(email, productId, quantity);
+    public void updateQuantity(String email, Long productId, Integer quantity, String variantName) {
+        cartPort.updateQuantity(email, productId, quantity, variantName);
     }
 
     @Override
-    public void removeFromCart(String email, Long productId) {
-        cartPort.delete(email, productId);
-        activityLogService.logActivity(null, email, "REMOVE_FROM_CART", "Xóa sản phẩm ID " + productId + " khỏi giỏ hàng");
+    public void removeFromCart(String email, Long productId, String variantName) {
+        cartPort.delete(email, productId, variantName);
+        activityLogService.logActivity(null, email, "REMOVE_FROM_CART", "Xóa sản phẩm ID " + productId + (variantName != null ? " (" + variantName + ")" : "") + " khỏi giỏ hàng");
     }
 
     @Override

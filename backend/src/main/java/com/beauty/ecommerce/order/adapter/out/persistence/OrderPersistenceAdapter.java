@@ -53,6 +53,7 @@ public class OrderPersistenceAdapter implements OrderPort {
                             .product(product)
                             .quantity(item.getQuantity())
                             .price(item.getPrice())
+                            .variantName(item.getVariantName())
                             .build();
                 })
                 .collect(Collectors.toList());

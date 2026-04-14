@@ -143,7 +143,7 @@ export const InventoryReceiptsPage = () => {
       </div>
 
       <div className="bg-slate-900 border border-slate-800 rounded-[2rem] overflow-hidden shadow-xl">
-        <div className="overflow-x-auto">
+        <div className="overflow-x-auto max-h-[600px] overflow-y-auto scrollbar-thin scrollbar-track-slate-900 scrollbar-thumb-slate-800">
           <table className="w-full text-left border-collapse">
             <thead>
               <tr className="bg-slate-800/50">

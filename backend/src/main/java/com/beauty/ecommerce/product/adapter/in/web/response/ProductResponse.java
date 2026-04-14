@@ -22,9 +22,23 @@ public class ProductResponse {
     private BigDecimal currentPrice;
     private Integer stockQuantity;
     private String imageUrl;
+    private java.util.List<String> images;
+    private java.util.List<ProductVariantResponse> variants;
     private Long categoryId;
     private String instructions;
     private String ingredients;
     private LocalDateTime createdAt;
     private Double averageRating;
+
+    @Getter
+    @Setter
+    @Builder
+    @NoArgsConstructor
+    @AllArgsConstructor
+    public static class ProductVariantResponse {
+        private Long id;
+        private String variantName;
+        private java.math.BigDecimal price;
+        private String imageUrl;
+    }
 }

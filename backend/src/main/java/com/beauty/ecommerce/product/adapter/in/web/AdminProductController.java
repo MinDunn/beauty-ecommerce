@@ -22,10 +22,9 @@ public class AdminProductController {
     @PostMapping(consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
     public ResponseEntity<ProductResponse> createProduct(
             @RequestPart("product") @Valid AdminProductRequest request,
-            @RequestPart(value = "image", required = false) MultipartFile image) {
+            @RequestPart(value = "images", required = false) java.util.List<MultipartFile> images) {
         
-        System.out.println("DEBUG: Create Product Request - Instructions: " + request.getInstructions());
-        System.out.println("DEBUG: Create Product Request - Ingredients: " + request.getIngredients());
+        System.out.println("DEBUG: Create Product Request - Variants: " + (request.getVariants() != null ? request.getVariants().size() : 0));
         
         ManageProductUseCase.CreateProductCommand command = ManageProductUseCase.CreateProductCommand.builder()
                 .name(request.getName())
@@ -36,9 +35,18 @@ public class AdminProductController {
                 .categoryId(request.getCategoryId())
                 .instructions(request.getInstructions())
                 .ingredients(request.getIngredients())
+                .existingImages(request.getExistingImages())
+                .variants(request.getVariants() != null ? request.getVariants().stream()
+                        .map(v -> ManageProductUseCase.VariantCommand.builder()
+                                .variantName(v.getVariantName())
+                                .price(v.getPrice())
+                                .imageUrl(v.getImageUrl())
+                                .imageIndex(v.getImageIndex())
+                                .build())
+                        .collect(java.util.stream.Collectors.toList()) : null)
                 .build();
                 
-        Product product = manageProductUseCase.createProduct(command, image);
+        Product product = manageProductUseCase.createProduct(command, images);
         return ResponseEntity.status(HttpStatus.CREATED).body(mapToResponse(product));
     }
 
@@ -46,11 +54,9 @@ public class AdminProductController {
     public ResponseEntity<ProductResponse> updateProduct(
             @PathVariable Long id,
             @RequestPart("product") @Valid AdminProductRequest request,
-            @RequestPart(value = "image", required = false) MultipartFile image) {
+            @RequestPart(value = "images", required = false) java.util.List<MultipartFile> images) {
 
         System.out.println("DEBUG: Update Product Request ID: " + id);
-        System.out.println("DEBUG: Update - Instructions: " + request.getInstructions());
-        System.out.println("DEBUG: Update - Ingredients: " + request.getIngredients());
             
         ManageProductUseCase.UpdateProductCommand command = ManageProductUseCase.UpdateProductCommand.builder()
                 .name(request.getName())
@@ -61,9 +67,18 @@ public class AdminProductController {
                 .categoryId(request.getCategoryId())
                 .instructions(request.getInstructions())
                 .ingredients(request.getIngredients())
+                .existingImages(request.getExistingImages())
+                .variants(request.getVariants() != null ? request.getVariants().stream()
+                        .map(v -> ManageProductUseCase.VariantCommand.builder()
+                                .variantName(v.getVariantName())
+                                .price(v.getPrice())
+                                .imageUrl(v.getImageUrl())
+                                .imageIndex(v.getImageIndex())
+                                .build())
+                        .collect(java.util.stream.Collectors.toList()) : null)
                 .build();
                 
-        Product product = manageProductUseCase.updateProduct(id, command, image);
+        Product product = manageProductUseCase.updateProduct(id, command, images);
         return ResponseEntity.ok(mapToResponse(product));
     }
 
@@ -87,6 +102,14 @@ public class AdminProductController {
                 .ingredients(product.getIngredients())
                 .createdAt(product.getCreatedAt())
                 .averageRating(0.0) // Return 0.0 for newly created / updated since we don't query reviews here
+                .variants(product.getVariants() != null ? product.getVariants().stream()
+                        .map(v -> ProductResponse.ProductVariantResponse.builder()
+                                .id(v.getId())
+                                .variantName(v.getVariantName())
+                                .price(v.getPrice())
+                                .imageUrl(v.getImageUrl())
+                                .build())
+                        .collect(java.util.stream.Collectors.toList()) : new java.util.ArrayList<>())
                 .build();
     }
 }

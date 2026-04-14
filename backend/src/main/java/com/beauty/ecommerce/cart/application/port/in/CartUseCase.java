@@ -5,8 +5,8 @@ import java.util.List;
 
 public interface CartUseCase {
     List<CartItem> getCart(String email);
-    void addToCart(String email, Long productId, Integer quantity);
-    void updateQuantity(String email, Long productId, Integer quantity);
-    void removeFromCart(String email, Long productId);
+    void addToCart(String email, Long productId, Integer quantity, String variantName);
+    void updateQuantity(String email, Long productId, Integer quantity, String variantName);
+    void removeFromCart(String email, Long productId, String variantName);
     void clearCart(String email);
 }

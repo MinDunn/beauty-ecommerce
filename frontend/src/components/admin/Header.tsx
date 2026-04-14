@@ -39,7 +39,8 @@ export const Header = ({ logout }: { logout: () => void }) => {
       const within48Hours = (dateString?: string) => {
         if (!dateString) return false;
         const diff = now.getTime() - new Date(dateString).getTime();
-        return diff >= 0 && diff <= 48 * 60 * 60 * 1000;
+        // Allow for 10 minutes of clock skew (future dates)
+        return diff >= -600000 && diff <= 48 * 60 * 60 * 1000;
       };
 
       const newOrders = (orders || []).filter((order: any) => within48Hours(order.orderDate));

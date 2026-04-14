@@ -10,6 +10,7 @@ import toast from 'react-hot-toast';
 import { productService } from '../api/productService';
 import wishlistService from '../api/wishlistService';
 import reviewService from '../api/reviewService';
+import { cartService } from '../api/cartService';
 import type { Review } from '../api/reviewService';
 
 const resolveProductImage = (image?: string) => {
@@ -34,6 +35,7 @@ const ProductDetails = () => {
   const [isSubmittingReview, setIsSubmittingReview] = useState(false);
   const [newReview, setNewReview] = useState({ rating: 5, comment: '' });
   const [mainImage, setMainImage] = useState('');
+  const [selectedVariant, setSelectedVariant] = useState<any>(null);
 
   const fetchProduct = useCallback(async () => {
     if (!id) return;
@@ -41,11 +43,15 @@ const ProductDetails = () => {
     try {
       const numericId = Number(id);
       if (isNaN(numericId)) {
-          // Fallback if ID is string based (mock legacy)
           navigate('/');
           return;
       }
       const data = await productService.getProductById(numericId);
+      
+      const images = data.images && data.images.length > 0 
+        ? data.images.map((img: string) => resolveProductImage(img))
+        : [resolveProductImage(data.imageUrl)];
+
       const mappedProduct = {
         id: data.id.toString(),
         name: data.name,
@@ -56,14 +62,17 @@ const ProductDetails = () => {
         reviewsCount: data.reviewsCount || 0,
         sold: data.sold || 0,
         description: data.description,
-        images: [
-          resolveProductImage(data.imageUrl),
-          'https://images.unsplash.com/photo-1556228578-0d85b1a4d571?q=80&w=600&auto=format&fit=crop',
-          'https://images.unsplash.com/photo-1611078489935-0cb964de46d6?q=80&w=600&auto=format&fit=crop',
-        ],
+        instructions: data.instructions,
+        ingredients: data.ingredients,
+        images: images,
+        variants: data.variants || []
       };
+      
       setProduct(mappedProduct);
       setMainImage(mappedProduct.images[0]);
+      if (mappedProduct.variants.length > 0) {
+        setSelectedVariant(mappedProduct.variants[0]);
+      }
     } catch (err) {
       console.error("Failed to fetch product", err);
       toast.error("Không tìm thấy sản phẩm");
@@ -140,15 +149,31 @@ const ProductDetails = () => {
     }
   };
 
-  const handleAddToCart = () => {
-    dispatch(addItem({
+  const handleAddToCart = async () => {
+    const payload = {
       id: product.id,
       name: product.name,
-      price: product.price,
+      price: selectedVariant ? product.price + selectedVariant.price : product.price,
       image: mainImage,
       brand: product.brand,
-      quantity: quantity
-    }));
+      quantity: quantity,
+      variantName: selectedVariant?.variantName || null
+    };
+
+    dispatch(addItem(payload));
+
+    if (user) {
+      try {
+        await cartService.addToCart({
+          productId: Number(product.id),
+          quantity: quantity,
+          variantName: selectedVariant?.variantName || null
+        });
+      } catch (error) {
+        console.error("Failed to sync cart with backend", error);
+      }
+    }
+    
     toast.success('Đã thêm vào giỏ hàng');
   };
 
@@ -278,14 +303,41 @@ const ProductDetails = () => {
 
             <div className="bg-gray-50/50 p-8 rounded-[2.5rem] mb-10 border border-primary-50 shadow-sm">
                <div className="flex items-end gap-6 mb-3">
-                 <div className="text-5xl font-black text-primary-600 tracking-tighter drop-shadow-sm">{product.price.toLocaleString('vi-VN')} đ</div>
+                 <div className="text-5xl font-black text-primary-600 tracking-tighter drop-shadow-sm">
+                   {(selectedVariant ? product.price + selectedVariant.price : product.price).toLocaleString('vi-VN')} đ
+                 </div>
                  {product.originalPrice && (
                     <div className="text-gray-400 text-xl font-bold line-through mb-1.5 italic opacity-40">
                         {product.originalPrice.toLocaleString('vi-VN')} đ
                     </div>
                  )}
                </div>
+               {selectedVariant && selectedVariant.price > 0 && (
+                 <p className="text-[10px] font-black text-primary-400 uppercase tracking-widest italic">+ {selectedVariant.price.toLocaleString()}đ (Phụ phí biến thể)</p>
+               )}
             </div>
+
+            {product.variants && product.variants.length > 0 && (
+              <div className="mb-10">
+                <h3 className="text-[10px] font-black text-gray-400 uppercase tracking-[0.3em] mb-4">Lựa chọn của bạn</h3>
+                <div className="flex flex-wrap gap-3">
+                  {product.variants.map((v: any) => (
+                    <button
+                      key={v.id}
+                      onClick={() => setSelectedVariant(v)}
+                      className={cn(
+                        "px-6 py-3 rounded-2xl text-xs font-black uppercase tracking-widest transition-all border-2",
+                        selectedVariant?.id === v.id 
+                          ? "bg-primary-500 border-primary-500 text-white shadow-lg shadow-primary-500/20 scale-105" 
+                          : "bg-white border-gray-100 text-gray-400 hover:border-primary-200 hover:text-primary-500"
+                      )}
+                    >
+                      {v.variantName}
+                    </button>
+                  ))}
+                </div>
+              </div>
+            )}
 
             <div className="mb-10">
               <h3 className="text-[10px] font-black text-gray-400 uppercase tracking-[0.3em] mb-4">Số lượng sản phẩm</h3>

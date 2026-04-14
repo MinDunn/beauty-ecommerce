@@ -57,4 +57,9 @@ public class ProductPersistenceAdapter implements LoadProductPort, UpdateProduct
     public void deleteProduct(Long id) {
         productRepository.deleteById(id);
     }
+
+    public ProductJpaEntity loadJpaEntity(Long id) {
+        return productRepository.findById(id)
+                .orElseThrow(() -> new RuntimeException("Product not found"));
+    }
 }

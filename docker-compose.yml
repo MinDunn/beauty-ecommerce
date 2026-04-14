@@ -1,36 +1,17 @@
 services:
-  db:
-    image: mysql:8.0
-    restart: always
-    environment:
-      MYSQL_DATABASE: ${MYSQL_DATABASE:-beauty_ecommerce}
-      MYSQL_ROOT_PASSWORD: ${MYSQL_ROOT_PASSWORD:-password}
-    ports:
-      - "${MYSQL_PORT:-3306}:3306"
-    volumes:
-      - mysql_data:/var/lib/mysql
-    healthcheck:
-      test: ["CMD", "mysqladmin", "ping", "-h", "localhost", "-u", "root", "-p${MYSQL_ROOT_PASSWORD}"]
-      interval: 5s
-      timeout: 5s
-      retries: 5
-
   backend:
     build: ./backend
     restart: always
     ports:
       - "8080:8080"
     environment:
-      - DB_URL=jdbc:mysql://db:3306/${MYSQL_DATABASE}?createDatabaseIfNotExist=true&useSSL=false&allowPublicKeyRetrieval=true
-      - DB_USERNAME=root
-      - DB_PASSWORD=${MYSQL_ROOT_PASSWORD}
+      - DB_URL=${DB_URL}
+      - DB_USERNAME=${DB_USERNAME}
+      - DB_PASSWORD=${DB_PASSWORD}
       - JWT_SECRET=${JWT_SECRET}
       - CLOUDINARY_CLOUD_NAME=${CLOUDINARY_CLOUD_NAME}
       - CLOUDINARY_API_KEY=${CLOUDINARY_API_KEY}
       - CLOUDINARY_API_SECRET=${CLOUDINARY_API_SECRET}
-    depends_on:
-      db:
-        condition: service_healthy
     volumes:
       - uploads_data:/app/uploads
 
@@ -48,5 +29,4 @@ services:
       - uploads_data:/usr/share/nginx/html/uploads
 
 volumes:
-  mysql_data:
   uploads_data:

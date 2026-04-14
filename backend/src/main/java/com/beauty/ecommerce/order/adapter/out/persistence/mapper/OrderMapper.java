@@ -40,6 +40,7 @@ public class OrderMapper {
                 .productImageUrl(jpaEntity.getProduct().getImageUrl())
                 .quantity(jpaEntity.getQuantity())
                 .price(jpaEntity.getPrice())
+                .variantName(jpaEntity.getVariantName())
                 .build();
     }
 }

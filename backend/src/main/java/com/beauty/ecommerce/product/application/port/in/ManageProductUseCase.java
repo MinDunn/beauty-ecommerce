@@ -9,9 +9,9 @@ import java.math.BigDecimal;
 
 public interface ManageProductUseCase {
 
-    Product createProduct(CreateProductCommand command, MultipartFile image);
+    Product createProduct(CreateProductCommand command, java.util.List<MultipartFile> images);
 
-    Product updateProduct(Long id, UpdateProductCommand command, MultipartFile image);
+    Product updateProduct(Long id, UpdateProductCommand command, java.util.List<MultipartFile> images);
 
     void deleteProduct(Long id);
 
@@ -20,24 +20,37 @@ public interface ManageProductUseCase {
     class CreateProductCommand {
         private String name;
         private String description;
-        private BigDecimal originalPrice;
-        private BigDecimal currentPrice;
+        private java.math.BigDecimal originalPrice;
+        private java.math.BigDecimal currentPrice;
         private Integer stockQuantity;
         private Long categoryId;
         private String instructions;
         private String ingredients;
+        private java.util.List<String> existingImages;
+        private java.util.List<VariantCommand> variants;
     }
-
+ 
     @Getter
     @Builder
     class UpdateProductCommand {
         private String name;
         private String description;
-        private BigDecimal originalPrice;
-        private BigDecimal currentPrice;
+        private java.math.BigDecimal originalPrice;
+        private java.math.BigDecimal currentPrice;
         private Integer stockQuantity;
         private Long categoryId;
         private String instructions;
         private String ingredients;
+        private java.util.List<String> existingImages;
+        private java.util.List<VariantCommand> variants;
+    }
+
+    @Getter
+    @Builder
+    class VariantCommand {
+        private String variantName;
+        private java.math.BigDecimal price;
+        private String imageUrl;
+        private Integer imageIndex;
     }
 }

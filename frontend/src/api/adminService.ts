@@ -17,7 +17,7 @@ export const adminService = {
   },
   getInventoryReceipts: async () => {
     const response = await axiosInstance.get('/admin/inventory/receipts');
-    return response.data; // List<InventoryReceiptJpaEntity>
+    return response.data.data; // ApiResponse<List<InventoryReceiptResponse>>
   }
 };
 

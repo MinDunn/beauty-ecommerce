@@ -9,6 +9,6 @@ import java.util.Optional;
 @Repository
 public interface CartRepository extends JpaRepository<CartItemJpaEntity, Long> {
     List<CartItemJpaEntity> findByUserEmail(String email);
-    Optional<CartItemJpaEntity> findByUserEmailAndProductId(String email, Long productId);
+    Optional<CartItemJpaEntity> findByUserEmailAndProductIdAndVariantName(String email, Long productId, String variantName);
     void deleteByUserEmail(String email);
 }

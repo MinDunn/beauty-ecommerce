@@ -107,13 +107,22 @@ public class ProductController {
                 .originalPrice(product.getOriginalPrice())
                 .stockQuantity(product.getStockQuantity())
                 .imageUrl(product.getImageUrl())
+                .images(product.getImages())
+                .variants(product.getVariants() != null ? product.getVariants().stream()
+                        .map(v -> ProductResponse.ProductVariantResponse.builder()
+                                .id(v.getId())
+                                .variantName(v.getVariantName())
+                                .price(v.getPrice())
+                                .imageUrl(v.getImageUrl())
+                                .build())
+                        .collect(Collectors.toList()) : Collections.emptyList())
                 .categoryId(product.getCategoryId())
                 .instructions(product.getInstructions())
                 .ingredients(product.getIngredients())
                 .averageRating(avgRating != null ? avgRating : 0.0)
                 .build();
     }
-
+ 
     private ProductResponse mapToResponse(Product product) {
         Double avgRating = reviewRepository.findAverageRatingByProductId(product.getId());
         if (avgRating == null) avgRating = 0.0;
@@ -125,6 +134,15 @@ public class ProductController {
                 .currentPrice(product.getCurrentPrice())
                 .stockQuantity(product.getStockQuantity())
                 .imageUrl(product.getImageUrl())
+                .images(product.getImages())
+                .variants(product.getVariants() != null ? product.getVariants().stream()
+                        .map(v -> ProductResponse.ProductVariantResponse.builder()
+                                .id(v.getId())
+                                .variantName(v.getVariantName())
+                                .price(v.getPrice())
+                                .imageUrl(v.getImageUrl())
+                                .build())
+                        .collect(Collectors.toList()) : Collections.emptyList())
                 .categoryId(product.getCategoryId())
                 .instructions(product.getInstructions())
                 .ingredients(product.getIngredients())

@@ -10,6 +10,13 @@ export type Product = {
   categoryName?: string;
   instructions?: string;
   ingredients?: string;
+  images?: string[];
+  variants?: {
+    id: number;
+    variantName: string;
+    price: number;
+    imageUrl?: string;
+  }[];
   createdAt?: string;
 };
 
@@ -24,6 +31,17 @@ export type OrderItem = {
   productName: string;
   productImageUrl?: string;
   quantity: number;
+  price: number;
+  subTotal: number;
+};
+
+export type CartItem = {
+  productId: number;
+  productName: string;
+  image: string;
+  brand: string;
+  quantity: number;
+  variantName?: string | null;
   price: number;
   subTotal: number;
 };
@@ -54,5 +72,6 @@ export type InventoryReceipt = {
   productName?: string;
   costPrice: number;
   quantity: number;
+  variantName?: string;
   receivedAt: string;
 };

@@ -16,4 +16,5 @@ public class OrderItem {
     private String productImageUrl;
     private Integer quantity;
     private BigDecimal price;
+    private String variantName;
 }

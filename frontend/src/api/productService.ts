@@ -9,22 +9,26 @@ export const productService = {
     const response = await axiosInstance.get(`/products/${id}`);
     return response.data;
   },
-  adminCreateProduct: async (productData: any, image: File | null) => {
+  adminCreateProduct: async (productData: any, images: File[]) => {
     const formData = new FormData();
     formData.append('product', new Blob([JSON.stringify(productData)], { type: 'application/json' }));
-    if (image) {
-      formData.append('image', image);
+    if (images && images.length > 0) {
+      images.forEach(image => {
+        formData.append('images', image);
+      });
     }
     const response = await axiosInstance.post('/admin/products', formData, {
       headers: { 'Content-Type': 'multipart/form-data' }
     });
     return response.data;
   },
-  adminUpdateProduct: async (id: number, productData: any, image: File | null) => {
+  adminUpdateProduct: async (id: number, productData: any, images: File[]) => {
     const formData = new FormData();
     formData.append('product', new Blob([JSON.stringify(productData)], { type: 'application/json' }));
-    if (image) {
-      formData.append('image', image);
+    if (images && images.length > 0) {
+      images.forEach(image => {
+        formData.append('images', image);
+      });
     }
     const response = await axiosInstance.put(`/admin/products/${id}`, formData, {
       headers: { 'Content-Type': 'multipart/form-data' }

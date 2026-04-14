@@ -9,7 +9,7 @@ Hệ thống thương mại điện tử chuyên cung cấp mỹ phẩm và các
 ### Backend (Java Spring Boot)
 - **Framework:** Spring Boot 3.x (Java 17)
 - **Security:** Spring Security + JWT (Json Web Token) với cơ chế Refresh Token.
-- **Database:** MySQL 8.0
+- **Database:** TiDB Cloud (MySQL compatible, Serverless/Dedicated)
 - **ORM:** Spring Data JPA (Hibernate)
 - **Logging:** SLF4J + Lombok
 - **API Documentation:** Swagger/OpenAPI (Tích hợp sẵn)
@@ -85,22 +85,20 @@ Bạn có thể sử dụng các tài khoản sau để kiểm tra các tính n�
 - [Docker](https://www.docker.com/) (Tùy chọn, dùng để chạy nhanh MySQL)
 
 ### 2. Cấu hình Biến môi trường
-Dự án sử dụng file `.env` ở thư mục gốc để quản lý cấu hình:
+Dự án sử dụng file `.env` ở thư mục gốc để quản lý cấu hình kết nối tới TiDB Cloud:
 ```env
-MYSQL_DATABASE=beauty_ecommerce
-MYSQL_ROOT_PASSWORD=your_password
-MYSQL_PORT=3306
-DB_URL=jdbc:mysql://localhost:3306/beauty_ecommerce
-DB_USERNAME=root
-DB_PASSWORD=your_password
+DB_URL=jdbc:mysql://gateway01.ap-southeast-1.prod.aws.tidbcloud.com:4000/beauty_ecommerce_prod?sslMode=VERIFY_IDENTITY&enabledTLSProtocols=TLSv1.2,TLSv1.3
+DB_USERNAME=your_tidb_user
+DB_PASSWORD=your_tidb_password
 JWT_SECRET=your_long_secret_key
 ```
 
-### 3. Khởi chạy với Docker (Nhanh nhất)
-Sử dụng Docker Compose để tạo database MySQL:
+### 3. Khởi chạy với Docker
+Sử dụng Docker Compose để tạo môi trường cho Backend và Frontend:
 ```bash
 docker-compose up -d
 ```
+*Lưu ý: Local MySQL đã được gỡ bỏ khỏi docker-compose.yml vì hệ thống hiện đã chuyển sang sử dụng TiDB Cloud.*
 
 ### 4. Khởi chạy Backend
 ```bash

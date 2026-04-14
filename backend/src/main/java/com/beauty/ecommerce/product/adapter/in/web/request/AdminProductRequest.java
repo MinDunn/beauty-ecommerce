@@ -27,4 +27,15 @@ public class AdminProductRequest {
     
     private String instructions;
     private String ingredients;
+    
+    private java.util.List<String> existingImages;
+    private java.util.List<VariantRequest> variants;
+
+    @Data
+    public static class VariantRequest {
+        private String variantName;
+        private java.math.BigDecimal price;
+        private String imageUrl;
+        private Integer imageIndex; // Index in the general images list
+    }
 }

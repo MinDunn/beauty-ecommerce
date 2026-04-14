@@ -23,7 +23,7 @@ export const Sidebar = () => {
   ];
 
   return (
-    <div className="w-72 h-screen bg-[#0f172a] text-slate-300 flex flex-col border-r border-slate-800 hidden md:flex shrink-0">
+    <div className="w-72 h-screen bg-[#0f172a] text-slate-300 flex flex-col border-r border-slate-800 hidden md:flex shrink-0 fixed left-0 top-0 z-50">
       <div className="p-8 flex items-center gap-3">
         <div className="bg-primary-500 p-2 rounded-lg">
           <Sparkles className="text-white w-6 h-6" />

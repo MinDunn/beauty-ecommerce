@@ -35,7 +35,7 @@ function AdminLayout({ logout }: { logout: () => void }) {
   return (
     <div className="flex bg-[#020617] min-h-screen font-sans selection:bg-primary-500/30">
       <Sidebar />
-      <div className="flex-1 flex flex-col min-w-0">
+      <div className="flex-1 flex flex-col min-w-0 md:pl-72">
         <Header logout={logout} />
         <main className="flex-1 p-6 md:p-10 overflow-x-hidden">
           <Routes>

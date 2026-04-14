@@ -26,5 +26,7 @@ public class CartItemJpaEntity {
     @JoinColumn(name = "product_id")
     private ProductJpaEntity product;
 
+    private String variantName;
+
     private Integer quantity;
 }

@@ -64,6 +64,7 @@ public class OrderService implements OrderUseCase {
                                 .productImageUrl(cartItem.getProductImageUrl())
                                 .quantity(cartItem.getQuantity())
                                 .price(cartItem.getPrice())
+                                .variantName(cartItem.getVariantName())
                                 .build())
                         .collect(Collectors.toList()))
                 .build();

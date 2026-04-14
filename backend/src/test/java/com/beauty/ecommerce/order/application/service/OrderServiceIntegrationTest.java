@@ -68,8 +68,8 @@ public class OrderServiceIntegrationTest {
         productRepository.saveAll(List.of(product1, product2));
 
         // 3. Add to Cart
-        cartPort.save(testUser.getEmail(), product1.getId(), 2); // 2 units of product1
-        cartPort.save(testUser.getEmail(), product2.getId(), 1); // 1 unit of product2
+        cartPort.save(testUser.getEmail(), product1.getId(), 2, null); // 2 units of product1
+        cartPort.save(testUser.getEmail(), product2.getId(), 1, null); // 1 unit of product2
     }
 
     @Test
