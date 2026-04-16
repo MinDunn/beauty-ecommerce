@@ -17,8 +17,9 @@ public class DashboardController {
     private final DashboardService dashboardService;
 
     @GetMapping("/stats")
-    public ResponseEntity<ApiResponse<DashboardResponse>> getDashboardStats() {
-        DashboardResponse stats = dashboardService.getStats();
+    public ResponseEntity<ApiResponse<DashboardResponse>> getDashboardStats(
+            @org.springframework.web.bind.annotation.RequestParam(defaultValue = "7") int days) {
+        DashboardResponse stats = dashboardService.getStats(days);
         return ResponseEntity.ok(ApiResponse.success(stats));
     }
 }

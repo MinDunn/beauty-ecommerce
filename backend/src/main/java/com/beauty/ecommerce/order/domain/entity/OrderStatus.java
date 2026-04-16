@@ -2,6 +2,7 @@ package com.beauty.ecommerce.order.domain.entity;
 
 public enum OrderStatus {
     PENDING,
+    CONFIRMED,
     SHIPPING,
     DELIVERED,
     CANCELLED

@@ -45,8 +45,8 @@ public class PaymentController {
         try {
             Long orderId = Long.parseLong(fullOrderId.split("_")[0]);
             if (resultCode == 0) {
-                orderUseCase.updatePaymentStatus(orderId, PaymentStatus.PAID);
-                log.info("Order #{} marked as PAID", orderId);
+                orderUseCase.completePayment(orderId);
+                log.info("Order #{} marked as PAID and STOCK DEDUCTED", orderId);
             } else {
                 orderUseCase.updatePaymentStatus(orderId, PaymentStatus.FAILED);
                 log.warn("Order #{} payment FAILED with code {}", orderId, resultCode);

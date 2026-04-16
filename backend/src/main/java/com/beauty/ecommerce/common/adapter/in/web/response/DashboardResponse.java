@@ -13,6 +13,10 @@ public class DashboardResponse {
     private long totalOrders;
     private long totalCustomers;
     private long totalFeedback;
+    private BigDecimal revenueGrowth;
+    private BigDecimal orderGrowth;
+    private BigDecimal customerGrowth;
+    private BigDecimal feedbackGrowth;
     private List<RevenueData> revenueHistory;
     private List<Map<String, Object>> recentOrders;
 

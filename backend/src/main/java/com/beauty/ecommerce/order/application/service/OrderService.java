@@ -86,9 +86,11 @@ public class OrderService implements OrderUseCase {
         // 1. Save Order
         Order savedOrder = orderPort.save(order);
 
-        // 2. Update Product Stock
-        for (CartItem cartItem : cartItems) {
-            updateProductStockPort.updateStock(cartItem.getProductId(), cartItem.getQuantity());
+        // 2. Update Product Stock (Only for COD)
+        if (paymentMethod == PaymentMethod.COD) {
+            for (CartItem cartItem : cartItems) {
+                updateProductStockPort.updateStock(cartItem.getProductId(), cartItem.getQuantity());
+            }
         }
 
         // 3. Clear Cart
@@ -118,6 +120,29 @@ public class OrderService implements OrderUseCase {
     @Override
     public void updatePaymentStatus(Long orderId, PaymentStatus status) {
         orderPort.updatePaymentStatus(orderId, status);
+    }
+
+    @Override
+    @Transactional
+    public void completePayment(Long orderId) {
+        Order order = orderPort.findById(orderId)
+                .orElseThrow(() -> new RuntimeException("Order not found: " + orderId));
+
+        if (order.getPaymentStatus() == PaymentStatus.PAID) {
+            return; // Already processed
+        }
+
+        // 1. Deduct stock
+        for (OrderItem item : order.getItems()) {
+            updateProductStockPort.updateStock(item.getProductId(), item.getQuantity());
+        }
+
+        // 2. Update status
+        orderPort.updatePaymentStatus(orderId, PaymentStatus.PAID);
+        orderPort.updateStatus(orderId, OrderStatus.CONFIRMED);
+
+        activityLogService.logActivity(order.getUserId(), "SYSTEM", "COMPLETE_PAYMENT", 
+                "Hoàn tất thanh toán cho đơn hàng #" + orderId + ". Tồn kho đã được cập nhật.");
     }
 
     @Override

@@ -13,5 +13,6 @@ public interface OrderUseCase {
     List<Order> getAllOrders();
     void updateOrderStatus(Long orderId, OrderStatus status);
     void updatePaymentStatus(Long orderId, PaymentStatus status);
+    void completePayment(Long orderId);
     Order lookupOrder(Long orderId);
 }
