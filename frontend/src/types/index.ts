@@ -51,6 +51,8 @@ export type Order = {
   orderDate: string;
   totalPrice: number;
   status: string;
+  paymentMethod?: string;
+  paymentStatus?: string;
   receiverName: string;
   receiverPhone: string;
   shippingAddress: string;

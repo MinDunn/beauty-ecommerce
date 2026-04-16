@@ -12,6 +12,8 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import com.beauty.ecommerce.product.adapter.out.persistence.mapper.ProductMapper;
+import com.beauty.ecommerce.product.domain.entity.Product;
 import java.time.LocalDateTime;
 import java.util.List;
 
@@ -23,6 +25,7 @@ public class WishlistService {
     private final WishlistRepository wishlistRepository;
     private final UserRepository userRepository;
     private final ProductRepository productRepository;
+    private final ProductMapper productMapper;
 
     private static final int WISHLIST_LIMIT = 100;
 
@@ -63,12 +66,16 @@ public class WishlistService {
         wishlistRepository.deleteByUserIdAndProductId(user.getId(), productId);
     }
 
-    public List<Long> getWishlistProductIds(String userEmail) {
+    public List<Product> getWishlistProducts(String userEmail) {
         UserJpaEntity user = userRepository.findByEmail(userEmail)
                 .orElseThrow(() -> new ResourceNotFoundException("Không tìm thấy người dùng"));
 
-        return wishlistRepository.findByUserId(user.getId()).stream()
+        List<Long> productIds = wishlistRepository.findByUserId(user.getId()).stream()
                 .map(WishlistJpaEntity::getProductId)
+                .toList();
+
+        return productRepository.findAllById(productIds).stream()
+                .map(productMapper::mapToDomainEntity)
                 .toList();
     }
     

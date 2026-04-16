@@ -9,7 +9,8 @@ import type { UserProfile } from '../api/authService';
 import toast from 'react-hot-toast';
 import { useNavigate } from 'react-router-dom';
 import wishlistService from '../api/wishlistService';
-import { products as mockProducts } from '../data/products';
+import orderService from '../api/orderService';
+import type { Order } from '../types';
 import { ProductCard } from '../components/ui/ProductCard';
 
 const Profile = () => {
@@ -141,10 +142,7 @@ const Profile = () => {
       const loadWishlist = async () => {
         try {
           const resp = await wishlistService.getWishlist();
-          const savedIds = resp.data.data.map(String);
-          // Combine mock products that match saved IDs
-          const found = mockProducts.filter(p => savedIds.includes(p.id));
-          setWishlistProducts(found);
+          setWishlistProducts(resp.data.data);
         } catch (error) {
           console.error('Error loading wishlist', error);
         } finally {
@@ -185,9 +183,15 @@ const Profile = () => {
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
             {wishlistProducts.map(product => (
               <div key={product.id} className="relative group">
-                <ProductCard {...product} />
+                <ProductCard 
+                  id={String(product.id)}
+                  name={product.name}
+                  price={product.currentPrice}
+                  originalPrice={product.originalPrice}
+                  image={product.imageUrl || ''}
+                />
                 <button 
-                  onClick={(e) => { e.preventDefault(); handleRemove(product.id); }}
+                  onClick={(e) => { e.preventDefault(); handleRemove(String(product.id)); }}
                   className="absolute top-4 right-4 p-2 bg-white/90 backdrop-blur-sm text-red-500 rounded-xl shadow-lg opacity-0 group-hover:opacity-100 transition-opacity z-30 border border-red-100"
                   title="Xóa khỏi yêu thích"
                 >
@@ -206,6 +210,126 @@ const Profile = () => {
               className="mt-6 px-8 py-3 bg-primary-500 text-white font-black rounded-xl text-xs uppercase tracking-widest hover:bg-primary-600 transition-all"
             >
               Tiếp tục mua sắm
+            </button>
+          </div>
+        )}
+      </div>
+    );
+  };
+  
+  const OrdersTab = () => {
+    const [orderHistory, setOrderHistory] = useState<Order[]>([]);
+    const [isLoading, setIsLoading] = useState(true);
+
+    useEffect(() => {
+      const loadOrders = async () => {
+        try {
+          const data = await orderService.getOrderHistory();
+          setOrderHistory(data);
+        } catch (error) {
+          console.error('Error loading orders', error);
+          toast.error('Không thể tải lịch sử đơn hàng');
+        } finally {
+          setIsLoading(false);
+        }
+      };
+      loadOrders();
+    }, []);
+
+    const getStatusColor = (status: string) => {
+      switch (status) {
+        case 'DELIVERED': return 'bg-green-50 text-green-600';
+        case 'CANCELLED': return 'bg-red-50 text-red-600';
+        case 'SHIPPING': return 'bg-blue-50 text-blue-600';
+        default: return 'bg-amber-50 text-amber-600';
+      }
+    };
+
+    const getStatusLabel = (status: string) => {
+      switch (status) {
+        case 'DELIVERED': return 'Đã giao hàng';
+        case 'CANCELLED': return 'Đã hủy';
+        case 'SHIPPING': return 'Đang giao hàng';
+        default: return 'Chờ duyệt';
+      }
+    };
+
+    return (
+      <div className="space-y-8 animate-in fade-in slide-in-from-bottom-4 duration-500">
+        <div className="flex items-center justify-between">
+          <div>
+            <h2 className="text-2xl font-black text-gray-900 uppercase mb-2">Đơn hàng của tôi</h2>
+            <p className="text-gray-500 font-medium">Theo dõi lịch sử và tình trạng đơn hàng.</p>
+          </div>
+          <span className="bg-primary-50 text-primary-600 px-4 py-2 rounded-xl text-xs font-black">
+            {orderHistory.length} Đơn hàng
+          </span>
+        </div>
+
+        {isLoading ? (
+          <div className="py-20 flex flex-col items-center justify-center gap-4">
+            <div className="w-10 h-10 border-4 border-primary-500 border-t-transparent rounded-full animate-spin"></div>
+            <p className="text-xs font-black text-gray-400 uppercase tracking-widest">Đang tải lịch sử...</p>
+          </div>
+        ) : orderHistory.length > 0 ? (
+          <div className="space-y-4">
+            {orderHistory.map((order) => (
+              <div key={order.id} className="border border-gray-100 rounded-3xl p-6 hover:border-primary-200 transition-colors bg-gray-50/20">
+                <div className="flex flex-wrap items-center justify-between gap-4 mb-4">
+                  <div className="flex items-center space-x-3 font-black text-[10px] uppercase tracking-tighter">
+                    <span className="text-gray-400">Mã đơn:</span>
+                    <span className="text-gray-900">#GLW{order.id}</span>
+                  </div>
+                  <span className={`px-3 py-1 text-[9px] font-black uppercase rounded-lg ${getStatusColor(order.status)}`}>
+                    {getStatusLabel(order.status)}
+                  </span>
+                  <span className="text-[10px] text-gray-400 font-bold ml-auto">
+                    {new Date(order.orderDate).toLocaleDateString('vi-VN')}
+                  </span>
+                </div>
+                
+                {/* Order Summary / Items Preview */}
+                <div className="space-y-4">
+                  {order.items.map((item, idx) => (
+                    <div key={idx} className="flex items-center space-x-4">
+                      <div className="w-16 h-16 rounded-2xl bg-white p-2 overflow-hidden border border-gray-100 flex-shrink-0">
+                        <img 
+                          src={item.productImageUrl || 'https://placehold.co/100x100?text=Product'} 
+                          className="w-full h-full object-contain mix-blend-multiply" 
+                          alt={item.productName}
+                        />
+                      </div>
+                      <div className="flex-1">
+                        <h4 className="font-bold text-gray-800 text-xs translate-y-[-1px] line-clamp-1">{item.productName}</h4>
+                        <p className="text-[10px] text-gray-400 mt-1 font-bold">Số lượng: {String(item.quantity).padStart(2, '0')}</p>
+                      </div>
+                      <div className="text-right">
+                        <span className="text-sm font-black text-gray-600 tracking-tighter">{(item.price * item.quantity).toLocaleString()}đ</span>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+                
+                <div className="mt-6 pt-4 border-t border-gray-100 flex justify-between items-center">
+                   <div className="text-[10px] font-black text-gray-400 uppercase tracking-widest">Thanh toán bằng {order.paymentMethod === 'MOMO' ? 'Ví MoMo' : 'COD (Tiền mặt)'}</div>
+                   <div className="text-right">
+                      <p className="text-[8px] font-black text-primary-500 uppercase tracking-widest mb-1">Tổng thanh toán</p>
+                      <p className="text-xl font-black text-primary-600 tracking-tighter">{order.totalPrice.toLocaleString()}đ</p>
+                   </div>
+                </div>
+              </div>
+            ))}
+          </div>
+        ) : (
+          <div className="text-center py-20 bg-gray-50 rounded-[2.5rem] border border-dashed border-gray-300">
+            <Package size={48} className="mx-auto text-gray-200 mb-4" />
+            <h3 className="text-lg font-black text-gray-900 uppercase">Chưa có đơn hàng nào</h3>
+            <p className="text-gray-400 text-sm mt-1 italic">Hãy thực hiện đơn hàng đầu tiên để theo dõi tại đây!</p>
+            <button 
+              onClick={() => navigate('/')}
+              className="mt-6 px-8 py-3 bg-primary-500 text-white font-black rounded-xl text-xs uppercase tracking-widest hover:bg-primary-600 transition-all"
+            >
+              Mua sắm ngay
             </button>
           </div>
         )}
@@ -351,40 +475,7 @@ const Profile = () => {
               )}
 
               {activeTab === 'orders' && (
-                <div className="space-y-8 animate-in fade-in slide-in-from-bottom-4 duration-500">
-                  <div className="flex items-center justify-between">
-                    <div>
-                      <h2 className="text-2xl font-black text-gray-900 uppercase mb-2">Đơn hàng của tôi</h2>
-                      <p className="text-gray-500 font-medium">Theo dõi lịch sử và tình trạng đơn hàng.</p>
-                    </div>
-                    <span className="bg-primary-50 text-primary-600 px-4 py-2 rounded-xl text-xs font-black">2 Đơn hàng</span>
-                  </div>
-
-                  <div className="space-y-4">
-                    <div className="border border-gray-100 rounded-3xl p-6 hover:border-primary-200 transition-colors bg-gray-50/20">
-                      <div className="flex flex-wrap items-center justify-between gap-4 mb-4">
-                        <div className="flex items-center space-x-3 font-black text-[10px] uppercase tracking-tighter">
-                          <span className="text-gray-400">Mã đơn:</span>
-                          <span className="text-gray-900">#GLW88921</span>
-                        </div>
-                        <span className="px-3 py-1 bg-green-50 text-green-600 text-[9px] font-black uppercase rounded-lg">Đã giao hàng</span>
-                        <span className="text-[10px] text-gray-400 font-bold ml-auto">01/01/2026</span>
-                      </div>
-                      <div className="flex items-center space-x-4">
-                         <div className="w-16 h-16 rounded-2xl bg-white p-2 overflow-hidden border border-gray-100 flex-shrink-0">
-                            <img src="https://images.unsplash.com/photo-1598440947619-2c35fc9aa908?q=80&w=100&auto=format&fit=crop" className="w-full h-full object-contain mix-blend-multiply" />
-                         </div>
-                         <div className="flex-1">
-                            <h4 className="font-bold text-gray-800 text-xs translate-y-[-1px] line-clamp-1">Kem Chống Nắng La Roche-Posay Anthelios UVmune 400</h4>
-                            <p className="text-[10px] text-gray-400 mt-1 font-bold">Số lượng: 02</p>
-                         </div>
-                         <div className="text-right">
-                            <span className="text-lg font-black text-primary-600 tracking-tighter">870.000đ</span>
-                         </div>
-                      </div>
-                    </div>
-                  </div>
-                </div>
+                <OrdersTab />
               )}
 
               {activeTab === 'security' && (

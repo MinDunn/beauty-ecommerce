@@ -2,6 +2,7 @@ package com.beauty.ecommerce.product.adapter.in.web;
 
 import com.beauty.ecommerce.common.dto.ApiResponse;
 import com.beauty.ecommerce.product.application.service.WishlistService;
+import com.beauty.ecommerce.product.domain.entity.Product;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.ResponseEntity;
@@ -19,10 +20,10 @@ public class WishlistController {
     private final WishlistService wishlistService;
 
     @GetMapping
-    public ResponseEntity<ApiResponse<List<Long>>> getWishlist(Authentication authentication) {
-        log.info("Lấy danh sách ID sản phẩm trong wishlist của {}", authentication.getName());
-        List<Long> productIds = wishlistService.getWishlistProductIds(authentication.getName());
-        return ResponseEntity.ok(ApiResponse.success(productIds));
+    public ResponseEntity<ApiResponse<List<Product>>> getWishlist(Authentication authentication) {
+        log.info("Lấy danh sách sản phẩm trong wishlist của {}", authentication.getName());
+        List<Product> products = wishlistService.getWishlistProducts(authentication.getName());
+        return ResponseEntity.ok(ApiResponse.success(products));
     }
 
     @PostMapping("/{productId}")

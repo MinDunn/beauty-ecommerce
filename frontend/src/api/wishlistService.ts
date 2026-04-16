@@ -1,9 +1,10 @@
 import axiosInstance from './axiosInstance';
 import type { ApiResponse } from '../types/api';
+import type { Product } from '../types';
 
 export const wishlistService = {
   getWishlist: () => 
-    axiosInstance.get<ApiResponse<number[]>>('/wishlist'),
+    axiosInstance.get<ApiResponse<Product[]>>('/wishlist'),
     
   addToWishlist: (productId: number) => 
     axiosInstance.post<ApiResponse<void>>(`/wishlist/${productId}`),
