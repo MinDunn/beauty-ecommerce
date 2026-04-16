@@ -39,11 +39,13 @@ export const Products = () => {
     originalPrice: "",
     salePrice: "",
     stockQuantity: "",
+    imageUrl: "",
     categoryId: "",
     instructions: "",
     ingredients: "",
     variants: [] as { variantName: string, price: string, imageUrl: string, file?: File }[]
   });
+
   const [restockData, setRestockData] = useState({
     productId: 0,
     productName: "",
@@ -51,8 +53,6 @@ export const Products = () => {
     totalPriceManual: "" as string | null,
     items: [] as { variantName: string, quantity: string, costPrice: string }[]
   });
-  const [previews, setPreviews] = useState<string[]>([]);
-  const [selectedImages, setSelectedImages] = useState<File[]>([]);
 
   const fetchProducts = async () => {
     setIsLoading(true);
@@ -100,6 +100,7 @@ export const Products = () => {
         originalPrice: (product.originalPrice ?? 0).toString(),
         salePrice: (product.currentPrice ?? 0).toString(),
         stockQuantity: (product.stockQuantity ?? 0).toString(),
+        imageUrl: product.imageUrl || "",
         categoryId: product.categoryId?.toString() || "",
         instructions: product.instructions || "",
         ingredients: product.ingredients || "",
@@ -110,22 +111,11 @@ export const Products = () => {
           file: undefined
         })) || []
       });
-      setPreviews(product.images && product.images.length > 0 ? product.images : (product.imageUrl ? [product.imageUrl] : []));
     } else {
       setEditingProduct(null);
       resetForm();
     }
-    setSelectedImages([]);
     setShowModal(true);
-  };
-
-  const handleImages = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const files = e.target.files;
-    if (files && files[0]) {
-      const file = files[0];
-      setSelectedImages([file]);
-      setPreviews([URL.createObjectURL(file)]);
-    }
   };
 
   const handleSave = async (e: React.FormEvent) => {
@@ -137,35 +127,12 @@ export const Products = () => {
 
     setIsSaving(true);
     try {
-      const allFiles: File[] = [];
-
-      // Collect ALL selected main gallery images
-      selectedImages.forEach(file => {
-        if (file) allFiles.push(file);
-      });
-
-      // Track existing images (URLs that are not Blobs)
-      const existingImageUrls = previews.filter(url => !url.startsWith('blob:'));
-
       const variantsWithIndex = formData.variants.map(v => {
-        let imageIndex = undefined;
-        let finalImageUrl = v.imageUrl;
-
-        // If a specific file is chosen for this variant
-        if (v.file) {
-          allFiles.push(v.file);
-          imageIndex = allFiles.length - 1;
-        }
-        // If no image is set for variant, try to use the product's main image
-        else if (!finalImageUrl && previews.length > 0) {
-          finalImageUrl = previews[0];
-        }
-
         return {
           variantName: v.variantName,
           price: Number(sanitizeCurrencyInput(v.price || "0")),
-          imageUrl: finalImageUrl,
-          imageIndex: imageIndex
+          imageUrl: v.imageUrl,
+          imageIndex: undefined
         };
       });
 
@@ -175,21 +142,19 @@ export const Products = () => {
         originalPrice: Number(sanitizeCurrencyInput(formData.originalPrice || "0")),
         salePrice: Number(sanitizeCurrencyInput(formData.salePrice || "0")),
         stockQuantity: editingProduct ? (parseInt(formData.stockQuantity) || 0) : 0,
+        imageUrl: formData.imageUrl,
         categoryId: parseInt(formData.categoryId),
         instructions: formData.instructions,
         ingredients: formData.ingredients,
-        existingImages: existingImageUrls,
+        existingImages: [] as string[],
         variants: variantsWithIndex
       };
 
-      console.log("DEBUG: Sending Product DTO:", productDto);
-      console.log("DEBUG: Total files being uploaded:", allFiles.length);
-
       if (editingProduct) {
-        await productService.adminUpdateProduct(editingProduct.id, productDto, allFiles);
+        await productService.adminUpdateProduct(editingProduct.id, productDto, []);
         toast.success("Cập nhật sản phẩm thành công!");
       } else {
-        await productService.adminCreateProduct(productDto, allFiles);
+        await productService.adminCreateProduct(productDto, []);
         toast.success("Đã thêm sản phẩm thành công!");
       }
 
@@ -313,13 +278,12 @@ export const Products = () => {
       originalPrice: "",
       salePrice: "",
       stockQuantity: "",
+      imageUrl: "",
       categoryId: categories[0]?.id?.toString() || "",
       instructions: "",
       ingredients: "",
       variants: []
     });
-    setSelectedImages([]);
-    setPreviews([]);
   };
 
   const filteredProducts = products.filter(p =>
@@ -356,7 +320,7 @@ export const Products = () => {
     stock: (
       <span className={`px-3 py-1 rounded-full text-[10px] font-black uppercase tracking-tight ${p.stockQuantity < 10 ? "bg-rose-500/10 text-rose-500" : "bg-emerald-500/10 text-emerald-500"
         }`}>
-        {p.stockQuantity} đơn vị
+        {p.stockQuantity}
       </span>
     ),
     actions: (
@@ -659,54 +623,34 @@ export const Products = () => {
                     </div>
 
                     <div className="flex items-center justify-between gap-4 pt-2">
-                      {/* Image Selector Box */}
+                      {/* Image URL Input */}
                       <div className="flex-1">
-                        <label className="text-[10px] font-black text-slate-500 uppercase tracking-widest ml-1 mb-1.5 block">Hình gắn với biến thể</label>
+                        <label className="text-[10px] font-black text-slate-500 uppercase tracking-widest ml-1 mb-1.5 block">Link hình ảnh biến thể</label>
                         <div className="flex items-center gap-3">
-                          <label className="cursor-pointer group/upload">
-                            <div className="w-16 h-16 rounded-2xl border-2 border-dashed border-slate-700 bg-slate-800 flex items-center justify-center group-hover/upload:border-primary-500/50 group-hover/upload:bg-slate-700 transition-all overflow-hidden relative">
-                              {variant.file || variant.imageUrl ? (
-                                <img
-                                  src={variant.file ? URL.createObjectURL(variant.file) : variant.imageUrl}
-                                  className="w-full h-full object-cover"
-                                  alt="variant"
-                                />
-                              ) : (
-                                <Plus className="text-slate-600 group-hover/upload:text-primary-500 transition-colors" />
-                              )}
-                            </div>
+                          <div className="flex-1">
                             <input
-                              type="file"
-                              className="hidden"
-                              accept="image/*"
+                              placeholder="Dán link ảnh tại đây..."
+                              className="w-full bg-slate-800 border border-slate-700 rounded-2xl px-4 py-3 text-white text-sm outline-none focus:border-primary-500/50 transition-all"
+                              value={variant.imageUrl}
                               onChange={e => {
-                                const file = e.target.files?.[0];
-                                if (file) {
-                                  const newVariants = [...formData.variants];
-                                  newVariants[index].file = file;
-                                  newVariants[index].imageUrl = "";
-                                  setFormData({ ...formData, variants: newVariants });
-                                }
+                                const newVariants = [...formData.variants];
+                                newVariants[index].imageUrl = e.target.value;
+                                setFormData({ ...formData, variants: newVariants });
                               }}
                             />
-                          </label>
-                          <div className="flex flex-col">
-                            <span className="text-[10px] text-slate-400 font-bold max-w-[120px] truncate">
-                              {variant.file ? variant.file.name : (variant.imageUrl ? "Ảnh hiện tại" : "Chưa chọn ảnh")}
-                            </span>
-                            {(variant.file || variant.imageUrl) && (
-                              <button
-                                type="button"
-                                onClick={() => {
-                                  const newVariants = [...formData.variants];
-                                  newVariants[index].file = undefined;
-                                  newVariants[index].imageUrl = "";
-                                  setFormData({ ...formData, variants: newVariants });
+                          </div>
+                          <div className="w-16 h-16 rounded-2xl border-2 border-slate-700 bg-slate-800 flex items-center justify-center overflow-hidden relative shrink-0">
+                            {variant.imageUrl ? (
+                              <img
+                                src={variant.imageUrl}
+                                className="w-full h-full object-cover"
+                                alt="variant preview"
+                                onError={(e) => {
+                                  (e.target as HTMLImageElement).src = "https://via.placeholder.com/64?text=Error";
                                 }}
-                                className="text-[9px] font-black text-rose-500 uppercase tracking-tighter hover:text-rose-400 mt-1 flex items-center gap-1"
-                              >
-                                <X size={10} /> Gỡ ảnh
-                              </button>
+                              />
+                            ) : (
+                              <ImageIcon className="text-slate-600" />
                             )}
                           </div>
                         </div>
@@ -723,52 +667,51 @@ export const Products = () => {
               })}
             </div>
 
-            {/* Image Upload */}
+            {/* Image URL Input */}
             <div className="space-y-2">
-              <label className="text-[10px] font-black text-slate-500 uppercase tracking-widest ml-1">Hình ảnh chính (Tối đa 1 ảnh)</label>
-              <div className="space-y-3">
-                <input
-                  type="file"
-                  id="image-upload"
-                  className="hidden"
-                  onChange={handleImages}
-                  accept="image/*"
-                />
-                <label
-                  htmlFor="image-upload"
-                  className="flex flex-col items-center justify-center border-2 border-dashed border-slate-700 bg-slate-800/30 rounded-2xl p-6 cursor-pointer hover:border-primary-500/50 hover:bg-slate-800/50 transition-all group"
-                >
-                  <div className="w-12 h-12 rounded-2xl bg-slate-800 flex items-center justify-center mb-3 group-hover:bg-primary-500 group-hover:scale-110 transition-all">
-                    <ImageIcon className="text-slate-400 group-hover:text-white" />
+              <label className="text-[10px] font-black text-slate-500 uppercase tracking-widest ml-1">Link hình ảnh chính</label>
+              <div className="grid grid-cols-1 md:grid-cols-4 gap-4 items-start">
+                <div className="md:col-span-3 space-y-3">
+                  <div className="relative group">
+                    <Tag className="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-500 group-focus-within:text-primary-500 transition-colors" />
+                    <input
+                      placeholder="Dán link ảnh từ website hoặc Cloudinary..."
+                      className="bg-slate-800/50 border border-slate-700 w-full pl-11 pr-4 py-3.5 rounded-2xl text-white placeholder:text-slate-600 outline-none focus:border-primary-500/50 focus:ring-4 focus:ring-primary-500/10 transition-all font-medium"
+                      value={formData.imageUrl}
+                      onChange={e => setFormData({ ...formData, imageUrl: e.target.value })}
+                    />
                   </div>
-                  <span className="text-sm font-bold text-slate-400 group-hover:text-white transition-colors">Chọn ảnh từ máy tính</span>
-                  <span className="text-[10px] text-slate-600 mt-1 uppercase font-black tracking-widest">Chỉ chọn 1 ảnh chính cho sản phẩm</span>
-                </label>
+                  <p className="text-[9px] text-slate-600 uppercase font-black tracking-widest ml-1">
+                    Dán URL ảnh vào đây để tất cả thành viên đều có thể thấy hình ảnh sản phẩm.
+                  </p>
+                </div>
 
-                {previews.length > 0 && (
-                  <div className="grid grid-cols-4 gap-2">
-                    {previews.map((url, i) => (
-                      <div key={i} className="relative aspect-square rounded-xl overflow-hidden border border-slate-700 group/img">
-                        <img src={url} className="w-full h-full object-cover" alt={`Preview ${i}`} />
-                        {i === 0 && (
-                          <div className="absolute top-1 left-1 bg-primary-500 text-white text-[8px] font-black uppercase px-1.5 py-0.5 rounded-md shadow-lg">
-                            Ảnh chính
-                          </div>
-                        )}
-                        <button
-                          type="button"
-                          onClick={() => {
-                            setSelectedImages(selectedImages.filter((_, idx) => idx !== i));
-                            setPreviews(previews.filter((_, idx) => idx !== i));
-                          }}
-                          className="absolute top-1 right-1 p-1 bg-rose-500 text-white rounded-md opacity-0 group-hover/img:opacity-100 transition-opacity"
-                        >
-                          <X size={10} />
-                        </button>
-                      </div>
-                    ))}
-                  </div>
-                )}
+                <div className="aspect-square rounded-[2rem] overflow-hidden border-2 border-slate-700 bg-slate-800/30 flex items-center justify-center relative group/preview shadow-xl">
+                  {formData.imageUrl ? (
+                    <img 
+                      src={formData.imageUrl} 
+                      className="w-full h-full object-cover transition-transform group-hover/preview:scale-110" 
+                      alt="Main preview" 
+                      onError={(e) => {
+                        (e.target as HTMLImageElement).src = "https://via.placeholder.com/150?text=Invalid+URL";
+                      }}
+                    />
+                  ) : (
+                    <div className="flex flex-col items-center gap-2">
+                      <ImageIcon className="text-slate-700 w-8 h-8" />
+                      <span className="text-[8px] font-black text-slate-700 uppercase tracking-tighter">Chưa có ảnh</span>
+                    </div>
+                  )}
+                  {formData.imageUrl && (
+                    <button
+                      type="button"
+                      onClick={() => setFormData({ ...formData, imageUrl: "" })}
+                      className="absolute top-2 right-2 p-1.5 bg-rose-500 text-white rounded-lg opacity-0 group-hover/preview:opacity-100 transition-all hover:bg-rose-600 shadow-lg"
+                    >
+                      <X size={12} />
+                    </button>
+                  )}
+                </div>
               </div>
             </div>
 

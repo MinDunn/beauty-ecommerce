@@ -29,7 +29,10 @@ public class ProductManagementService implements ManageProductUseCase {
         String mainImageUrl = null;
         java.util.List<ProductImageJpaEntity> galleryImages = new java.util.ArrayList<>();
 
-        if (images != null && !images.isEmpty()) {
+        if (command.getImageUrl() != null && !command.getImageUrl().isBlank()) {
+            mainImageUrl = command.getImageUrl();
+            galleryImages.add(ProductImageJpaEntity.builder().imageUrl(mainImageUrl).build());
+        } else if (images != null && !images.isEmpty()) {
             for (int i = 0; i < images.size(); i++) {
                 String uploadedUrl = uploadImagePort.uploadFile(images.get(i));
                 if (i == 0) {
@@ -106,7 +109,9 @@ public class ProductManagementService implements ManageProductUseCase {
         }
 
         java.util.List<String> newUploadedUrls = new java.util.ArrayList<>();
-        if (images != null && !images.isEmpty()) {
+        if (command.getImageUrl() != null && !command.getImageUrl().isBlank()) {
+            finalImageUrls.add(command.getImageUrl());
+        } else if (images != null && !images.isEmpty()) {
             for (int i = 0; i < images.size(); i++) {
                 String uploadedUrl = uploadImagePort.uploadFile(images.get(i));
                 newUploadedUrls.add(uploadedUrl);
