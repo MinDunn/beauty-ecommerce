@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { Link, useNavigate } from 'react-router-dom';
+import { Link, useNavigate, useLocation } from 'react-router-dom';
 import { useSelector, useDispatch } from 'react-redux';
 import { 
   Search, 
@@ -23,7 +23,6 @@ import { OrderLookupModal } from '../modals/OrderLookupModal';
 
 export const Header = () => {
   const [isMenuOpen, setIsMenuOpen] = useState(false);
-  const [isCategoryOpen, setIsCategoryOpen] = useState(false);
   const [isOrderLookupOpen, setIsOrderLookupOpen] = useState(false);
   const [searchQuery, setSearchQuery] = useState('');
   
@@ -31,6 +30,7 @@ export const Header = () => {
   const { totalQuantity } = useSelector((state: RootState) => state.cart);
   const dispatch = useDispatch();
   const navigate = useNavigate();
+  const location = useLocation();
 
   const handleLogout = () => {
     dispatch(logoutAction());
@@ -44,14 +44,6 @@ export const Header = () => {
       setIsMenuOpen(false);
     }
   };
-
-  const categories = [
-    { name: 'Chăm sóc da', slug: 'skincare', icon: Sparkles, desc: 'Serum, Kem dưỡng, Đặc trị' },
-    { name: 'Trang điểm', slug: 'makeup', icon: Flower2, desc: 'Son môi, Phấn nền, Mắt' },
-    { name: 'Chăm sóc tóc', slug: 'haircare', icon: Wind, desc: 'Dầu gội, Dưỡng tóc, Tạo kiểu' },
-    { name: 'Chăm sóc cơ thể', slug: 'bodycare', icon: Smile, desc: 'Sữa tắm, Dưỡng thể' },
-    { name: 'Thực phẩm chức năng', slug: 'supplements', icon: Zap, desc: 'Vitamin, Collagen' },
-  ];
 
   const navLinks = [
     { name: 'Chăm sóc da', href: '/category/skincare' },
@@ -188,55 +180,28 @@ export const Header = () => {
           <div className="flex items-center">
             <div className="relative group/cat">
               <button 
-                onMouseEnter={() => setIsCategoryOpen(true)}
                 className="flex items-center space-x-2 bg-primary-500 text-white px-6 py-3 font-bold text-sm uppercase tracking-wider rounded-t-xl"
               >
                 <Menu size={18} />
                 <span>Danh mục sản phẩm</span>
-                <ChevronDown size={14} className={cn("transition-transform duration-300", isCategoryOpen && "rotate-180")} />
               </button>
-
-              {/* Mega Menu Dropdown */}
-              <div 
-                onMouseLeave={() => setIsCategoryOpen(false)}
-                className={cn(
-                  "absolute top-full left-0 w-[600px] bg-white shadow-2xl rounded-tr-3xl rounded-b-3xl border border-gray-100 transition-all duration-300 z-50 overflow-hidden",
-                  isCategoryOpen ? "opacity-100 visible translate-y-0" : "opacity-0 invisible -translate-y-2 pointer-events-none"
-                )}
-              >
-                <div className="grid grid-cols-2 p-6 gap-6">
-                  {categories.map((cat) => (
-                    <Link 
-                      key={cat.slug}
-                      to={`/category/${cat.slug}`}
-                      onClick={() => setIsCategoryOpen(false)}
-                      className="flex items-start p-4 hover:bg-primary-50 rounded-2xl transition-all group/item"
-                    >
-                      <div className="p-3 bg-gray-100 group-hover/item:bg-white rounded-xl text-gray-600 group-hover/item:text-primary-500 transition-colors mr-4">
-                        <cat.icon size={24} />
-                      </div>
-                      <div>
-                        <h4 className="font-bold text-slate-900 group-hover/item:text-primary-600 transition-colors">{cat.name}</h4>
-                        <p className="text-xs text-gray-500 mt-1">{cat.desc}</p>
-                      </div>
-                    </Link>
-                  ))}
-                </div>
-                <div className="bg-gray-50 p-4 flex justify-center border-t border-gray-100">
-                  <Link to="/products" className="text-xs font-black text-primary-500 uppercase tracking-widest hover:underline">Xem tất cả sản phẩm</Link>
-                </div>
-              </div>
             </div>
             <div className="flex items-center space-x-8 ml-8">
-              {navLinks.map((link) => (
-                <Link 
-                  key={link.name} 
-                  to={link.href} 
-                  className="text-sm font-bold text-gray-700 hover:text-primary-500 uppercase tracking-wide transition-colors"
-                >
-                  {link.name}
-                </Link>
-              ))}
+              {navLinks.map((link) => {
+                const isActive = location.pathname === link.href;
+                return (
+                  <Link 
+                    key={link.name} 
+                    to={link.href} 
+                    className={cn(
+                      "text-sm font-bold uppercase tracking-wide transition-colors",
+                      isActive ? "text-primary-500" : "text-gray-700 hover:text-primary-500"
+                    )}
+                  >
+                    {link.name}
+                  </Link>
+                );
+              })}
             </div>
           </div>
         </div>

@@ -5,6 +5,8 @@ import com.beauty.ecommerce.contact.adapter.out.persistence.ContactRepository;
 import com.beauty.ecommerce.order.adapter.out.persistence.OrderJpaEntity;
 import com.beauty.ecommerce.order.adapter.out.persistence.OrderRepository;
 import com.beauty.ecommerce.order.domain.entity.OrderStatus;
+import com.beauty.ecommerce.order.domain.entity.PaymentStatus;
+import com.beauty.ecommerce.order.domain.entity.PaymentMethod;
 import com.beauty.ecommerce.review.adapter.out.persistence.ReviewRepository;
 import com.beauty.ecommerce.user.adapter.out.persistence.UserRepository;
 import lombok.RequiredArgsConstructor;
@@ -35,11 +37,15 @@ public class DashboardService {
         // Calculate totals
         BigDecimal totalRevenue = allOrders.stream()
                 .filter(o -> o.getStatus() != null && !OrderStatus.CANCELLED.name().equalsIgnoreCase(o.getStatus()))
+                .filter(o -> PaymentStatus.PAID.name().equals(o.getPaymentStatus()) || PaymentMethod.COD.name().equals(o.getPaymentMethod()))
                 .map(OrderJpaEntity::getTotalPrice)
                 .filter(java.util.Objects::nonNull)
                 .reduce(BigDecimal.ZERO, BigDecimal::add);
 
-        long totalOrders = allOrders.size();
+        long totalOrders = allOrders.stream()
+                .filter(o -> o.getStatus() != null && !OrderStatus.CANCELLED.name().equalsIgnoreCase(o.getStatus()))
+                .filter(o -> PaymentStatus.PAID.name().equals(o.getPaymentStatus()) || PaymentMethod.COD.name().equals(o.getPaymentMethod()))
+                .count();
         long totalCustomers = userRepository.count();
         long totalFeedback = reviewRepository.count() + contactRepository.count();
 
@@ -51,18 +57,22 @@ public class DashboardService {
         // Current period totals
         BigDecimal currentPeriodRevenue = allOrders.stream()
                 .filter(o -> o.getStatus() != null && !OrderStatus.CANCELLED.name().equalsIgnoreCase(o.getStatus()))
+                .filter(o -> PaymentStatus.PAID.name().equals(o.getPaymentStatus()) || PaymentMethod.COD.name().equals(o.getPaymentMethod()))
                 .filter(o -> o.getOrderDate() != null && !o.getOrderDate().toLocalDate().isBefore(currentPeriodStart))
                 .map(OrderJpaEntity::getTotalPrice)
                 .filter(java.util.Objects::nonNull)
                 .reduce(BigDecimal.ZERO, BigDecimal::add);
 
         long currentPeriodOrders = allOrders.stream()
+                .filter(o -> o.getStatus() != null && !OrderStatus.CANCELLED.name().equalsIgnoreCase(o.getStatus()))
+                .filter(o -> PaymentStatus.PAID.name().equals(o.getPaymentStatus()) || PaymentMethod.COD.name().equals(o.getPaymentMethod()))
                 .filter(o -> o.getOrderDate() != null && !o.getOrderDate().toLocalDate().isBefore(currentPeriodStart))
                 .count();
 
         // Previous period totals
         BigDecimal prevRevenue = allOrders.stream()
                 .filter(o -> o.getStatus() != null && !OrderStatus.CANCELLED.name().equalsIgnoreCase(o.getStatus()))
+                .filter(o -> PaymentStatus.PAID.name().equals(o.getPaymentStatus()) || PaymentMethod.COD.name().equals(o.getPaymentMethod()))
                 .filter(o -> o.getOrderDate() != null 
                         && !o.getOrderDate().toLocalDate().isBefore(previousPeriodStart) 
                         && o.getOrderDate().toLocalDate().isBefore(currentPeriodStart))
@@ -71,6 +81,8 @@ public class DashboardService {
                 .reduce(BigDecimal.ZERO, BigDecimal::add);
 
         long prevOrders = allOrders.stream()
+                .filter(o -> o.getStatus() != null && !OrderStatus.CANCELLED.name().equalsIgnoreCase(o.getStatus()))
+                .filter(o -> PaymentStatus.PAID.name().equals(o.getPaymentStatus()) || PaymentMethod.COD.name().equals(o.getPaymentMethod()))
                 .filter(o -> o.getOrderDate() != null 
                         && !o.getOrderDate().toLocalDate().isBefore(previousPeriodStart) 
                         && o.getOrderDate().toLocalDate().isBefore(currentPeriodStart))
@@ -119,6 +131,7 @@ public class DashboardService {
 
             BigDecimal dayRevenue = allOrders.stream()
                     .filter(o -> o.getStatus() != null && !OrderStatus.CANCELLED.name().equalsIgnoreCase(o.getStatus()))
+                    .filter(o -> PaymentStatus.PAID.name().equals(o.getPaymentStatus()) || PaymentMethod.COD.name().equals(o.getPaymentMethod()))
                     .filter(o -> {
                         if (o.getOrderDate() == null) return false;
                         LocalDate orderDate = o.getOrderDate().toLocalDate();

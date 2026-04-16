@@ -7,9 +7,6 @@ import { productService } from '../api/productService';
 import { categoryService } from '../api/categoryService';
 import { cn } from '../utils/cn';
 
-
-
-
 const Category = () => {
   const { slug } = useParams<{ slug: string }>();
   const [categories, setCategories] = useState<any[]>([]);
@@ -22,6 +19,15 @@ const Category = () => {
   const [sortBy, setSortBy] = useState('newest');
   const [isMobileFilterOpen, setIsMobileFilterOpen] = useState(false);
   
+  // Price range mapping
+  const categoryDescriptions: Record<string, string> = {
+    'skincare': 'Serum, kem dưỡng, đặc trị, mặt nạ và các sản phẩm chăm sóc da chuyên sâu.',
+    'makeup': 'Son môi, phấn nền, chì kẻ mắt, má hồng và bộ sưu tập trang điểm thời thượng.',
+    'haircare': 'Dầu gội, dầu xả, tinh dầu dưỡng và các sản phẩm tạo kiểu tóc chuyên nghiệp.',
+    'bodycare': 'Sữa tắm, dưỡng thể, tẩy tế bào chết và chăm sóc da toàn thân mịn màng.',
+    'supplements': 'Vitamin, collagen và các thực phẩm bổ sung hỗ trợ sức khỏe và sắc đẹp từ bên trong.'
+  };
+
   // Filter states
   const [selectedBrands, setSelectedBrands] = useState<string[]>([]);
   const [selectedPriceRange, setSelectedPriceRange] = useState<string | null>(null);
@@ -146,7 +152,9 @@ const Category = () => {
             <h1 className="text-4xl md:text-5xl font-black text-gray-900 tracking-tighter uppercase mb-2">
               {categoryName}
             </h1>
-            <p className="text-primary-700 font-medium max-w-xl text-sm md:text-base">Khám phá bộ sưu tập hàng trăm sản phẩm chính hãng với mức giá siêu ưu đãi từ Glowzy.</p>
+            <p className="text-primary-700 font-medium max-w-xl text-sm md:text-base italic">
+              {slug && categoryDescriptions[slug] ? categoryDescriptions[slug] : "Khám phá bộ sưu tập hàng trăm sản phẩm chính hãng với mức giá siêu ưu đãi từ Glowzy."}
+            </p>
         </div>
       </div>
 
