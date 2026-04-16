@@ -6,6 +6,7 @@ export interface Review {
   userId: number;
   userFullName: string;
   productId: number;
+  productName: string;
   ratingStar: number;
   comment: string;
   createdAt: string;
@@ -21,7 +22,10 @@ export const reviewService = {
     axiosInstance.get<ApiResponse<Review[]>>(`/reviews/${productId}`),
     
   createReview: (productId: number, data: CreateReviewRequest) => 
-    axiosInstance.post<ApiResponse<Review>>(`/reviews/${productId}`, data)
+    axiosInstance.post<ApiResponse<Review>>(`/reviews/${productId}`, data),
+
+  getAllReviews: () =>
+    axiosInstance.get<ApiResponse<Review[]>>('/reviews/admin/all')
 };
 
 export default reviewService;

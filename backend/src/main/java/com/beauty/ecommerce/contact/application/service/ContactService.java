@@ -47,7 +47,7 @@ public class ContactService {
                 .email(entity.getEmail())
                 .phone(entity.getPhone())
                 .message(entity.getMessage())
-                .createdAt(entity.getCreatedAt())
+                .createdAt(entity.getCreatedAt().toString() + "Z")
                 .build();
     }
 }

@@ -56,9 +56,11 @@ public class ReviewService {
                 .createdAt(LocalDateTime.now())
                 .build();
 
-        reviewRepository.save(review);
+        String productName = productRepository.findById(productId)
+                .map(p -> p.getName())
+                .orElse("Sản phẩm không xác định");
 
-        return mapToResponse(review, user.getFullName());
+        return mapToResponse(review, user.getFullName(), productName);
     }
 
     public List<ReviewResponse> getReviewsByProductId(Long productId) {
@@ -69,25 +71,46 @@ public class ReviewService {
         }
 
         List<ReviewJpaEntity> reviews = reviewRepository.findByProductId(productId);
+        String productName = productRepository.findById(productId)
+                .map(p -> p.getName())
+                .orElse("Sản phẩm không xác định");
+
         return reviews.stream()
                 .map(review -> {
                     String fullName = userRepository.findById(review.getUserId())
                             .map(UserJpaEntity::getFullName)
                             .orElse("Ẩn danh");
-                    return mapToResponse(review, fullName);
+                    return mapToResponse(review, fullName, productName);
                 })
                 .collect(Collectors.toList());
     }
 
-    private ReviewResponse mapToResponse(ReviewJpaEntity review, String userFullName) {
+    public List<ReviewResponse> getAllReviews() {
+        log.info("Admin đang lấy danh sách tất cả đánh giá");
+        List<ReviewJpaEntity> reviews = reviewRepository.findAll();
+        return reviews.stream()
+                .map(review -> {
+                    String fullName = userRepository.findById(review.getUserId())
+                            .map(UserJpaEntity::getFullName)
+                            .orElse("Ẩn danh");
+                    String productName = productRepository.findById(review.getProductId())
+                            .map(p -> p.getName())
+                            .orElse("Sản phẩm không xác định");
+                    return mapToResponse(review, fullName, productName);
+                })
+                .collect(Collectors.toList());
+    }
+
+    private ReviewResponse mapToResponse(ReviewJpaEntity review, String userFullName, String productName) {
         return ReviewResponse.builder()
                 .id(review.getId())
                 .userId(review.getUserId())
                 .userFullName(userFullName)
                 .productId(review.getProductId())
+                .productName(productName)
                 .ratingStar(review.getRatingStar())
                 .comment(review.getComment())
-                .createdAt(review.getCreatedAt())
+                .createdAt(review.getCreatedAt().toString() + "Z")
                 .build();
     }
 }

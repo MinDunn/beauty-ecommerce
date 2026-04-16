@@ -17,5 +17,5 @@ public class ContactResponse {
     private String email;
     private String phone;
     private String message;
-    private LocalDateTime createdAt;
+    private String createdAt;
 }

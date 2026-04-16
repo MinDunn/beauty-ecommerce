@@ -6,11 +6,12 @@ import { adminService } from "../../api/adminService";
 import { orderService } from "../../api/orderService";
 import { feedbackService } from "../../api/feedbackService";
 import { productService } from "../../api/productService";
+import { reviewService } from "../../api/reviewService";
 
 type AdminNotification = {
   id: string;
   title: string;
-  type: "ĐƠN MỚI" | "FEEDBACK" | "TỒN KHO" | "NHẬP KHO";
+  type: "ĐƠN MỚI" | "FEEDBACK" | "TỒN KHO" | "NHẬP KHO" | "ĐÁNH GIÁ";
   time: string;
   read: boolean;
   route: string;
@@ -28,12 +29,15 @@ export const Header = ({ logout }: { logout: () => void }) => {
   const fetchNotifications = async () => {
     setLoading(true);
     try {
-      const [orders, feedbacks, productsPage, receipts] = await Promise.all([
+      const [orders, feedbacks, productsPage, receipts, reviewRes] = await Promise.all([
         orderService.adminGetAllOrders(),
         feedbackService.getAllFeedbacks(),
         productService.searchProducts({ size: 200 }),
-        adminService.getInventoryReceipts()
+        adminService.getInventoryReceipts(),
+        reviewService.getAllReviews()
       ]);
+
+      const reviews = reviewRes.data.data;
 
       const now = new Date();
       const within48Hours = (dateString?: string) => {
@@ -45,6 +49,7 @@ export const Header = ({ logout }: { logout: () => void }) => {
 
       const newOrders = (orders || []).filter((order: any) => within48Hours(order.orderDate));
       const newFeedbacks = (feedbacks || []).filter((feedback: any) => within48Hours(feedback.createdAt));
+      const newReviews = (reviews || []).filter((review: any) => within48Hours(review.createdAt));
       const lowStockProducts = (productsPage?.content || []).filter((product: any) => Number(product.stockQuantity) > 0 && Number(product.stockQuantity) < 10);
       const recentReceipts = (receipts || []).filter((receipt: any) => within48Hours(receipt.receivedAt));
 
@@ -71,6 +76,18 @@ export const Header = ({ logout }: { logout: () => void }) => {
           time: formatRelativeTime(latestFeedback.createdAt),
           read: false,
           route: "/admin/feedback"
+        });
+      }
+
+      if (newReviews.length > 0) {
+        const latestReview = [...newReviews].sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime())[0];
+        generated.push({
+          id: `review-${latestReview.id}`,
+          title: `Có ${newReviews.length} nhận xét mới về sản phẩm`,
+          type: "ĐÁNH GIÁ",
+          time: formatRelativeTime(latestReview.createdAt),
+          read: false,
+          route: "/admin/feedback?tab=reviews"
         });
       }
 

@@ -39,4 +39,11 @@ public class ReviewController {
         List<ReviewResponse> reviews = reviewService.getReviewsByProductId(productId);
         return ResponseEntity.ok(ApiResponse.success(reviews));
     }
+
+    @GetMapping("/admin/all")
+    public ResponseEntity<ApiResponse<List<ReviewResponse>>> getAllReviews() {
+        log.info("Yêu cầu lấy tất cả đánh giá từ Admin");
+        List<ReviewResponse> reviews = reviewService.getAllReviews();
+        return ResponseEntity.ok(ApiResponse.success(reviews));
+    }
 }
