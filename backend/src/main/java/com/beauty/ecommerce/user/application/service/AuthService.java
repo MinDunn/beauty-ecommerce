@@ -74,12 +74,18 @@ public class AuthService {
     @Transactional
     public AuthResponse login(LoginUserRequest request) {
         log.info("Đang đăng nhập người dùng: {}", request.getEmail());
+        
+        UserJpaEntity user = userRepository.findByEmail(request.getEmail())
+                .orElseThrow(() -> new ResourceNotFoundException("Không tìm thấy người dùng"));
+
+        if (user.getIsActive() == null || !user.getIsActive()) {
+            log.warn("Cố gắng đăng nhập vào tài khoản bị khóa: {}", request.getEmail());
+            throw new BadRequestException("Tài khoản của bạn đã bị khóa. Vui lòng liên hệ quản trị viên.");
+        }
+
         authenticationManager.authenticate(
                 new UsernamePasswordAuthenticationToken(request.getEmail(), request.getPassword())
         );
-
-        UserJpaEntity user = userRepository.findByEmail(request.getEmail())
-                .orElseThrow(() -> new ResourceNotFoundException("Không tìm thấy người dùng"));
 
         String accessToken = jwtUtil.generateAccessToken(user.getEmail(), user.getRole(), user.getId());
         String refreshToken = createRefreshToken(user).getToken();

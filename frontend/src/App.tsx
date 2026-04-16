@@ -27,6 +27,7 @@ import { Products } from './pages/Product';
 import { Orders } from './pages/Orders';
 import { FeedbackPage } from './pages/Feedback';
 import { AdminDashboard } from './pages/admin/AdminDashboard';
+import { UserManagement } from './pages/admin/UserManagement';
 import { InventoryReceiptsPage } from './pages/admin/InventoryReceiptsPage';
 import { Activities } from './pages/Activities';
 import { useAuth } from './hooks/useAuth';
@@ -43,6 +44,7 @@ function AdminLayout({ logout }: { logout: () => void }) {
             <Route path="products" element={<Products />} />
             <Route path="orders" element={<Orders />} />
             <Route path="inventory-receipts" element={<InventoryReceiptsPage />} />
+            <Route path="users" element={<UserManagement />} />
             <Route path="feedback" element={<FeedbackPage />} />
             <Route path="activities" element={<Activities />} />
           </Routes>
