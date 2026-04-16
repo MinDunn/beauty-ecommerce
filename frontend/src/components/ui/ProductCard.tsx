@@ -128,12 +128,12 @@ export const ProductCard = ({ id, name, price, originalPrice, image, badge, bran
         </h3>
         <div className="flex items-end justify-between">
           <div>
-            <div className="font-black text-primary-600 text-xl tracking-tighter">
-              {price.toLocaleString('vi-VN')} đ
+            <div className="font-black text-primary-600 text-xl tracking-tighter whitespace-nowrap">
+              {price.toLocaleString('vi-VN')}đ
             </div>
             {originalPrice && (
-              <div className="text-xs text-gray-400 line-through font-bold opacity-60">
-                {originalPrice.toLocaleString('vi-VN')} đ
+              <div className="text-xs text-gray-400 line-through font-bold opacity-60 whitespace-nowrap">
+                {originalPrice.toLocaleString('vi-VN')}đ
               </div>
             )}
           </div>
