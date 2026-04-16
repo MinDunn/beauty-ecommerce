@@ -26,6 +26,7 @@ public interface ManageProductUseCase {
         private Long categoryId;
         private String instructions;
         private String ingredients;
+        private String imageUrl;
         private java.util.List<String> existingImages;
         private java.util.List<VariantCommand> variants;
     }
@@ -41,6 +42,7 @@ public interface ManageProductUseCase {
         private Long categoryId;
         private String instructions;
         private String ingredients;
+        private String imageUrl;
         private java.util.List<String> existingImages;
         private java.util.List<VariantCommand> variants;
     }
