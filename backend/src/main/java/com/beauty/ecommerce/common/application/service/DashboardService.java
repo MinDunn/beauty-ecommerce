@@ -11,9 +11,8 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 
 import java.math.BigDecimal;
+import java.math.RoundingMode;
 import java.time.LocalDate;
-import java.time.LocalDateTime;
-import java.time.LocalTime;
 import java.time.format.DateTimeFormatter;
 import java.util.ArrayList;
 import java.util.HashMap;
@@ -30,31 +29,107 @@ public class DashboardService {
     private final ReviewRepository reviewRepository;
     private final ContactRepository contactRepository;
 
-    public DashboardResponse getStats() {
-        List<OrderJpaEntity> allOrders = orderRepository.findAllByOrderByOrderDateDesc();
+    public DashboardResponse getStats(int days) {
+        List<OrderJpaEntity> allOrders = orderRepository.findAll();
         
+        // Calculate totals
         BigDecimal totalRevenue = allOrders.stream()
-                .filter(o -> !OrderStatus.CANCELLED.name().equals(o.getStatus()))
+                .filter(o -> o.getStatus() != null && !OrderStatus.CANCELLED.name().equalsIgnoreCase(o.getStatus()))
                 .map(OrderJpaEntity::getTotalPrice)
+                .filter(java.util.Objects::nonNull)
                 .reduce(BigDecimal.ZERO, BigDecimal::add);
 
         long totalOrders = allOrders.size();
         long totalCustomers = userRepository.count();
         long totalFeedback = reviewRepository.count() + contactRepository.count();
 
-        // 7 days revenue chart
+        // Time periods for growth calculation
+        LocalDate today = LocalDate.now();
+        LocalDate currentPeriodStart = today.minusDays(days);
+        LocalDate previousPeriodStart = today.minusDays(2 * days);
+
+        // Current period totals
+        BigDecimal currentPeriodRevenue = allOrders.stream()
+                .filter(o -> o.getStatus() != null && !OrderStatus.CANCELLED.name().equalsIgnoreCase(o.getStatus()))
+                .filter(o -> o.getOrderDate() != null && !o.getOrderDate().toLocalDate().isBefore(currentPeriodStart))
+                .map(OrderJpaEntity::getTotalPrice)
+                .filter(java.util.Objects::nonNull)
+                .reduce(BigDecimal.ZERO, BigDecimal::add);
+
+        long currentPeriodOrders = allOrders.stream()
+                .filter(o -> o.getOrderDate() != null && !o.getOrderDate().toLocalDate().isBefore(currentPeriodStart))
+                .count();
+
+        // Previous period totals
+        BigDecimal prevRevenue = allOrders.stream()
+                .filter(o -> o.getStatus() != null && !OrderStatus.CANCELLED.name().equalsIgnoreCase(o.getStatus()))
+                .filter(o -> o.getOrderDate() != null 
+                        && !o.getOrderDate().toLocalDate().isBefore(previousPeriodStart) 
+                        && o.getOrderDate().toLocalDate().isBefore(currentPeriodStart))
+                .map(OrderJpaEntity::getTotalPrice)
+                .filter(java.util.Objects::nonNull)
+                .reduce(BigDecimal.ZERO, BigDecimal::add);
+
+        long prevOrders = allOrders.stream()
+                .filter(o -> o.getOrderDate() != null 
+                        && !o.getOrderDate().toLocalDate().isBefore(previousPeriodStart) 
+                        && o.getOrderDate().toLocalDate().isBefore(currentPeriodStart))
+                .count();
+
+        long prevCustomers = userRepository.findAll().stream()
+                .filter(u -> u.getCreatedAt() != null 
+                        && !u.getCreatedAt().toLocalDate().isBefore(previousPeriodStart) 
+                        && u.getCreatedAt().toLocalDate().isBefore(currentPeriodStart))
+                .count();
+
+        long prevFeedback = (long) reviewRepository.findAll().stream()
+                .filter(r -> r.getCreatedAt() != null 
+                        && !r.getCreatedAt().toLocalDate().isBefore(previousPeriodStart) 
+                        && r.getCreatedAt().toLocalDate().isBefore(currentPeriodStart))
+                .count() + contactRepository.findAll().stream()
+                .filter(c -> c.getCreatedAt() != null 
+                        && !c.getCreatedAt().toLocalDate().isBefore(previousPeriodStart) 
+                        && c.getCreatedAt().toLocalDate().isBefore(currentPeriodStart))
+                .count();
+
+        // Current period totals for Customers and Feedback
+        long currentPeriodCustomers = userRepository.findAll().stream()
+                .filter(u -> u.getCreatedAt() != null && !u.getCreatedAt().toLocalDate().isBefore(currentPeriodStart))
+                .count();
+        long currentPeriodFeedback = (long) reviewRepository.findAll().stream()
+                .filter(r -> r.getCreatedAt() != null && !r.getCreatedAt().toLocalDate().isBefore(currentPeriodStart))
+                .count() + contactRepository.findAll().stream()
+                .filter(c -> c.getCreatedAt() != null && !c.getCreatedAt().toLocalDate().isBefore(currentPeriodStart))
+                .count();
+
+        // Calculate growths
+        BigDecimal revenueGrowth = calculateGrowth(currentPeriodRevenue.subtract(prevRevenue), prevRevenue);
+        BigDecimal orderGrowth = calculateGrowth(BigDecimal.valueOf(currentPeriodOrders - prevOrders), BigDecimal.valueOf(prevOrders));
+        BigDecimal customerGrowth = calculateGrowth(BigDecimal.valueOf(currentPeriodCustomers - prevCustomers), BigDecimal.valueOf(prevCustomers));
+        BigDecimal feedbackGrowth = calculateGrowth(BigDecimal.valueOf(currentPeriodFeedback - prevFeedback), BigDecimal.valueOf(prevFeedback));
+
+        // revenue chart history
         List<DashboardResponse.RevenueData> revenueHistory = new ArrayList<>();
         DateTimeFormatter formatter = DateTimeFormatter.ofPattern("dd/MM");
         
-        for (int i = 6; i >= 0; i--) {
-            LocalDate date = LocalDate.now().minusDays(i);
-            LocalDateTime startOfDay = date.atStartOfDay();
-            LocalDateTime endOfDay = date.atTime(LocalTime.MAX);
+        int historyDays = Math.min(days, 30);
+        for (int i = historyDays - 1; i >= 0; i--) {
+            LocalDate date = today.minusDays(i);
+            final int dayIndex = i;
 
             BigDecimal dayRevenue = allOrders.stream()
-                    .filter(o -> !OrderStatus.CANCELLED.equals(o.getStatus()))
-                    .filter(o -> o.getOrderDate() != null && o.getOrderDate().isAfter(startOfDay) && o.getOrderDate().isBefore(endOfDay))
+                    .filter(o -> o.getStatus() != null && !OrderStatus.CANCELLED.name().equalsIgnoreCase(o.getStatus()))
+                    .filter(o -> {
+                        if (o.getOrderDate() == null) return false;
+                        LocalDate orderDate = o.getOrderDate().toLocalDate();
+                        // If it's the last bar (today), be more lenient to catch timezone shifts
+                        if (dayIndex == 0) {
+                            return !orderDate.isBefore(date.minusDays(1)); // Count today and yesterday's late orders if needed
+                        }
+                        return orderDate.equals(date);
+                    })
                     .map(OrderJpaEntity::getTotalPrice)
+                    .filter(java.util.Objects::nonNull)
                     .reduce(BigDecimal.ZERO, BigDecimal::add);
 
             revenueHistory.add(DashboardResponse.RevenueData.builder()
@@ -65,6 +140,8 @@ public class DashboardService {
 
         // Recent 4 orders
         List<Map<String, Object>> recentOrders = allOrders.stream()
+                .filter(o -> o.getOrderDate() != null)
+                .sorted((o1, o2) -> o2.getOrderDate().compareTo(o1.getOrderDate()))
                 .limit(4)
                 .map(o -> {
                     Map<String, Object> map = new HashMap<>();
@@ -81,8 +158,20 @@ public class DashboardService {
                 .totalOrders(totalOrders)
                 .totalCustomers(totalCustomers)
                 .totalFeedback(totalFeedback)
+                .revenueGrowth(revenueGrowth)
+                .orderGrowth(orderGrowth)
+                .customerGrowth(customerGrowth)
+                .feedbackGrowth(feedbackGrowth)
                 .revenueHistory(revenueHistory)
                 .recentOrders(recentOrders)
                 .build();
+    }
+
+    private BigDecimal calculateGrowth(BigDecimal currentDiff, BigDecimal previous) {
+        if (previous == null || previous.compareTo(BigDecimal.ZERO) == 0) {
+            // If currentDiff is positive, return 100% growth
+            return currentDiff.compareTo(BigDecimal.ZERO) > 0 ? BigDecimal.valueOf(100) : BigDecimal.ZERO;
+        }
+        return currentDiff.divide(previous, 4, RoundingMode.HALF_UP).multiply(BigDecimal.valueOf(100));
     }
 }

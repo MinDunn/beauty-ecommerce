@@ -1,8 +1,8 @@
 import axiosInstance from './axiosInstance';
 
 export const adminService = {
-  getDashboardStats: async () => {
-    const response = await axiosInstance.get('/admin/dashboard/stats');
+  getDashboardStats: async (days: number = 7) => {
+    const response = await axiosInstance.get(`/admin/dashboard/stats?days=${days}`);
     return response.data.data; // ApiResponse<DashboardResponse>
   },
   getRecentActivities: async () => {
