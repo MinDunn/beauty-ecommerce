@@ -55,6 +55,8 @@ public class ReviewService {
                 .comment(request.getComment())
                 .createdAt(LocalDateTime.now())
                 .build();
+        
+        review = reviewRepository.save(review);
 
         String productName = productRepository.findById(productId)
                 .map(p -> p.getName())
