@@ -1,5 +1,6 @@
 package com.beauty.ecommerce.payment.adapter.in.web;
 
+import com.beauty.ecommerce.common.config.MoMoConfig;
 import com.beauty.ecommerce.order.application.port.in.OrderUseCase;
 import com.beauty.ecommerce.order.domain.entity.Order;
 import com.beauty.ecommerce.order.domain.entity.PaymentStatus;
@@ -19,6 +20,7 @@ public class PaymentController {
 
     private final MoMoService moMoService;
     private final OrderUseCase orderUseCase;
+    private final MoMoConfig moMoConfig;
 
     @PostMapping("/create-momo")
     public ResponseEntity<Map<String, String>> createMomoPayment(@RequestBody Map<String, Long> request) {
@@ -38,14 +40,50 @@ public class PaymentController {
     public ResponseEntity<Void> receiveMomoIpn(@RequestBody Map<String, Object> ipnData) {
         log.info("Received MoMo IPN: {}", ipnData);
         
-        // MoMo orderId format: orderId_timestamp
-        String fullOrderId = (String) ipnData.get("orderId");
-        int resultCode = (int) ipnData.get("resultCode");
-        
         try {
-            Long orderId = Long.parseLong(fullOrderId.split("_")[0]);
+            String partnerCode = (String) ipnData.get("partnerCode");
+            String accessKey = (String) ipnData.get("accessKey");
+            String requestId = (String) ipnData.get("requestId");
+            String amount = String.valueOf(ipnData.get("amount"));
+            String orderIdStr = (String) ipnData.get("orderId");
+            String orderInfo = (String) ipnData.get("orderInfo");
+            String orderType = (String) ipnData.get("orderType");
+            String transId = String.valueOf(ipnData.get("transId"));
+            String message = (String) ipnData.get("message");
+            String localMessage = (String) ipnData.get("localMessage");
+            String responseTime = (String) ipnData.get("responseTime");
+            String errorCode = String.valueOf(ipnData.get("errorCode"));
+            String payType = (String) ipnData.get("payType");
+            String extraData = (String) ipnData.get("extraData");
+            String signature = (String) ipnData.get("signature");
+
+            // Build raw signature according to MoMo documentation
+            String rawHash = "accessKey=" + accessKey +
+                    "&amount=" + amount +
+                    "&extraData=" + extraData +
+                    "&message=" + message +
+                    "&orderId=" + orderIdStr +
+                    "&orderInfo=" + orderInfo +
+                    "&orderType=" + orderType +
+                    "&partnerCode=" + partnerCode +
+                    "&payType=" + payType +
+                    "&requestId=" + requestId +
+                    "&responseTime=" + responseTime +
+                    "&resultCode=" + String.valueOf(ipnData.get("resultCode")) +
+                    "&transId=" + transId;
+
+            String expectedSignature = com.beauty.ecommerce.common.util.SignatureUtil.hmacSha256(rawHash, moMoConfig.getSecretKey());
+            
+            if (!expectedSignature.equals(signature)) {
+                log.error("MoMo IPN Signature verification failed! Expected: {}, got: {}", expectedSignature, signature);
+                return ResponseEntity.badRequest().build();
+            }
+
+            int resultCode = (int) ipnData.get("resultCode");
+            Long orderId = Long.parseLong(orderIdStr.split("_")[0]);
+            
             if (resultCode == 0) {
-                orderUseCase.completePayment(orderId);
+                orderUseCase.completePayment(orderId, transId);
                 log.info("Order #{} marked as PAID and STOCK DEDUCTED", orderId);
             } else {
                 orderUseCase.updatePaymentStatus(orderId, PaymentStatus.FAILED);

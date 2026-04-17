@@ -64,4 +64,49 @@ public class MoMoService {
             throw new RuntimeException("Lỗi kết nối tới cổng thanh toán MoMo: " + e.getMessage());
         }
     }
+
+    public boolean refundOrder(Long orderId, String transIdStr, Long amount) {
+        String requestId = UUID.randomUUID().toString();
+        String orderIdStr = "refund_" + orderId + "_" + System.currentTimeMillis();
+
+        String rawSignature = "accessKey=" + moMoConfig.getAccessKey() +
+                "&amount=" + amount +
+                "&description=" + "Hoan tien don hang " + orderId +
+                "&orderId=" + orderIdStr +
+                "&partnerCode=" + moMoConfig.getPartnerCode() +
+                "&requestId=" + requestId +
+                "&transId=" + transIdStr;
+
+        String signature = SignatureUtil.hmacSha256(rawSignature, moMoConfig.getSecretKey());
+
+        Map<String, Object> request = Map.of(
+                "partnerCode", moMoConfig.getPartnerCode(),
+                "orderId", orderIdStr,
+                "requestId", requestId,
+                "amount", amount,
+                "transId", Long.parseLong(transIdStr),
+                "lang", "vi",
+                "description", "Hoan tien don hang " + orderId,
+                "signature", signature
+        );
+
+        try {
+            // MoMo refund endpoint is usually /v2/gateway/api/refund
+            String refundUrl = moMoConfig.getPayUrl().replace("/create", "/refund");
+            Map<String, Object> response = restTemplate.postForObject(refundUrl, request, Map.class);
+            
+            if (response != null) {
+                Integer resultCode = (Integer) response.get("resultCode");
+                if (resultCode != null && resultCode == 0) {
+                    log.info("Refund successful for order {}", orderId);
+                    return true;
+                }
+                log.error("MoMo refund failed: {}", response);
+            }
+            return false;
+        } catch (Exception e) {
+            log.error("Error calling MoMo Refund API", e);
+            return false;
+        }
+    }
 }

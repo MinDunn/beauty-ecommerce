@@ -47,6 +47,14 @@ public class ProductPersistenceAdapter implements LoadProductPort, UpdateProduct
     }
 
     @Override
+    public void restoreStock(Long productId, Integer quantity) {
+        ProductJpaEntity product = productRepository.findById(productId)
+                .orElseThrow(() -> new RuntimeException("Product not found"));
+        product.setStockQuantity(product.getStockQuantity() + quantity);
+        productRepository.save(product);
+    }
+
+    @Override
     public Product saveProduct(Product product) {
         ProductJpaEntity entity = productMapper.mapToJpaEntity(product);
         ProductJpaEntity savedEntity = productRepository.save(entity);

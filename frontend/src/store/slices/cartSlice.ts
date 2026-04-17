@@ -8,6 +8,7 @@ export interface CartItem {
   brand?: string;
   quantity: number;
   variantName?: string | null;
+  selected?: boolean;
 }
 
 interface CartState {
@@ -45,9 +46,10 @@ const cartSlice = createSlice({
       state.totalAmount += newItem.price * newItem.quantity;
 
       if (!existingItem) {
-        state.items.push(newItem);
+        state.items.push({ ...newItem, selected: true });
       } else {
         existingItem.quantity += newItem.quantity;
+        existingItem.selected = true; // Auto select if added again
       }
 
       localStorage.setItem('cartItems', JSON.stringify(state.items));
@@ -101,8 +103,40 @@ const cartSlice = createSlice({
       localStorage.removeItem('totalQuantity');
       localStorage.removeItem('totalAmount');
     },
+
+    toggleItemSelection(state, action: PayloadAction<{ id: string; variantName?: string | null }>) {
+      const { id, variantName } = action.payload;
+      const item = state.items.find(i => i.id === id && i.variantName === variantName);
+      if (item) {
+        item.selected = !item.selected;
+      }
+      localStorage.setItem('cartItems', JSON.stringify(state.items));
+    },
+
+    toggleAllSelection(state, action: PayloadAction<boolean>) {
+      state.items.forEach(item => {
+        item.selected = action.payload;
+      });
+      localStorage.setItem('cartItems', JSON.stringify(state.items));
+    },
+
+    selectOnlyItems(state, action: PayloadAction<{ id: string; variantName?: string | null }[]>) {
+      state.items.forEach(item => {
+        const isTarget = action.payload.find(p => p.id === item.id && p.variantName === item.variantName);
+        item.selected = !!isTarget;
+      });
+      localStorage.setItem('cartItems', JSON.stringify(state.items));
+    },
   },
 });
 
-export const { addItem, removeItem, updateQuantity, clearCart } = cartSlice.actions;
+export const { 
+  addItem, 
+  removeItem, 
+  updateQuantity, 
+  clearCart, 
+  toggleItemSelection, 
+  toggleAllSelection, 
+  selectOnlyItems 
+} = cartSlice.actions;
 export default cartSlice.reducer;

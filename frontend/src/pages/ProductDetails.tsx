@@ -2,7 +2,7 @@ import { useState, useEffect, useCallback } from 'react';
 import { useParams, Link, useNavigate } from 'react-router-dom';
 import { Star, ShoppingCart, Heart, ShieldCheck, Truck, Share2, Facebook, MessageCircle, ChevronRight, Minus, Plus, Loader2 } from 'lucide-react';
 import { useDispatch, useSelector } from 'react-redux';
-import { addItem } from '../store/slices/cartSlice';
+import { addItem, selectOnlyItems } from '../store/slices/cartSlice';
 import { cn } from '../utils/cn';
 import type { RootState } from '../store';
 import toast from 'react-hot-toast';
@@ -179,8 +179,16 @@ const ProductDetails = () => {
     toast.success('Đã thêm vào giỏ hàng');
   };
 
-  const handleBuyNow = () => {
-    handleAddToCart();
+  const handleBuyNow = async () => {
+    // Add to cart first
+    await handleAddToCart();
+    
+    // Select ONLY this item in the cart for checkout
+    dispatch(selectOnlyItems([{ 
+      id: product.id, 
+      variantName: selectedVariant?.variantName || null 
+    }]));
+    
     navigate('/checkout');
   };
 

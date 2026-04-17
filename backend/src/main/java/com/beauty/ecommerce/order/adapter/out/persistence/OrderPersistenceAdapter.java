@@ -99,4 +99,13 @@ public class OrderPersistenceAdapter implements OrderPort {
         order.setPaymentStatus(status != null ? status.name() : null);
         orderRepository.save(order);
     }
+
+    @Override
+    @Transactional
+    public void updatePaymentTransactionId(Long id, String transId) {
+        OrderJpaEntity order = orderRepository.findById(id)
+                .orElseThrow(() -> new RuntimeException("Order not found"));
+        order.setPaymentTransactionId(transId);
+        orderRepository.save(order);
+    }
 }

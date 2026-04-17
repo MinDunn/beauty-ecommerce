@@ -12,6 +12,7 @@ import wishlistService from '../api/wishlistService';
 import orderService from '../api/orderService';
 import type { Order } from '../types';
 import { ProductCard } from '../components/ui/ProductCard';
+import { addItem, selectOnlyItems } from '../store/slices/cartSlice';
 
 const Profile = () => {
   const { user } = useSelector((state: RootState) => state.auth);
@@ -204,7 +205,7 @@ const Profile = () => {
           <div className="text-center py-20 bg-gray-50 rounded-[2.5rem] border border-dashed border-gray-300">
             <Sparkles size={48} className="mx-auto text-gray-200 mb-4" />
             <h3 className="text-lg font-black text-gray-900 uppercase">Chưa có sản phẩm nào</h3>
-            <p className="text-gray-400 text-sm mt-1 italic italic">Hãy thả tim sản phẩm bạn yêu thích để lưu tại đây nhé!</p>
+            <p className="text-gray-400 text-sm mt-1 italic">Hãy thả tim sản phẩm bạn yêu thích để lưu tại đây nhé!</p>
             <button 
               onClick={() => navigate('/')}
               className="mt-6 px-8 py-3 bg-primary-500 text-white font-black rounded-xl text-xs uppercase tracking-widest hover:bg-primary-600 transition-all"
@@ -220,6 +221,20 @@ const Profile = () => {
   const OrdersTab = () => {
     const [orderHistory, setOrderHistory] = useState<Order[]>([]);
     const [isLoading, setIsLoading] = useState(true);
+    
+    // Cancellation Modal state
+    const [isCancelModalOpen, setIsCancelModalOpen] = useState(false);
+    const [orderToCancel, setOrderToCancel] = useState<number | null>(null);
+    const [selectedReason, setSelectedReason] = useState<string>("");
+    const [customReason, setCustomReason] = useState<string>("");
+
+    const cancelReasons = [
+      "Sai địa chỉ nhận hàng",
+      "Muốn thay đổi sản phẩm trong đơn hàng",
+      "Tìm thấy sản phẩm khác rẻ hơn",
+      "Đổi ý, không muốn mua nữa",
+      "Khác"
+    ];
 
     useEffect(() => {
       const loadOrders = async () => {
@@ -241,6 +256,8 @@ const Profile = () => {
         case 'DELIVERED': return 'bg-green-50 text-green-600';
         case 'CANCELLED': return 'bg-red-50 text-red-600';
         case 'SHIPPING': return 'bg-blue-50 text-blue-600';
+        case 'CONFIRMED': return 'bg-purple-50 text-purple-600';
+        case 'CANCELLATION_REQUESTED': return 'bg-pink-50 text-pink-600 animate-pulse';
         default: return 'bg-amber-50 text-amber-600';
       }
     };
@@ -250,7 +267,70 @@ const Profile = () => {
         case 'DELIVERED': return 'Đã giao hàng';
         case 'CANCELLED': return 'Đã hủy';
         case 'SHIPPING': return 'Đang giao hàng';
+        case 'CONFIRMED': return 'Đang chuẩn bị hàng';
+        case 'CANCELLATION_REQUESTED': return 'Chờ duyệt hủy';
         default: return 'Chờ duyệt';
+      }
+    };
+
+    const handleCancelOrder = (orderId: number) => {
+      setOrderToCancel(orderId);
+      setIsCancelModalOpen(true);
+      setSelectedReason("");
+      setCustomReason("");
+    };
+
+    const handleBuyAgain = async (order: Order) => {
+      const itemsToSelect: { id: string; variantName: string | null }[] = [];
+      
+      for (const item of order.items) {
+        dispatch(addItem({
+          id: String(item.productId),
+          name: item.productName,
+          price: item.price,
+          image: item.productImageUrl || '',
+          quantity: item.quantity,
+          variantName: (item as any).variantName || null
+        }));
+        
+        itemsToSelect.push({
+          id: String(item.productId),
+          variantName: (item as any).variantName || null
+        });
+      }
+      
+      dispatch(selectOnlyItems(itemsToSelect));
+      toast.success('Đã chuẩn bị đơn hàng để thanh toán lại!');
+      navigate('/checkout');
+    };
+
+    const confirmCancel = async () => {
+      if (!orderToCancel) return;
+      if (!selectedReason) {
+        toast.error("Vui lòng chọn lý do hủy đơn");
+        return;
+      }
+      
+      const reason = selectedReason === "Khác" ? customReason : selectedReason;
+      if (selectedReason === "Khác" && !customReason.trim()) {
+        toast.error("Vui lòng nhập lý do cụ thể");
+        return;
+      }
+
+      const loadingToast = toast.loading('Đang xử lý hủy đơn...');
+      try {
+        await orderService.cancelOrder(orderToCancel, reason);
+        toast.success('Hủy đơn hàng thành công!', { id: loadingToast });
+        setIsCancelModalOpen(false);
+        const data = await orderService.getOrderHistory();
+        if (Array.isArray(data)) {
+          setOrderHistory(data);
+        } else {
+          console.error("Order history data is not an array:", data);
+          setOrderHistory([]);
+        }
+      } catch (error: any) {
+        toast.error(error.response?.data || 'Không thể hủy đơn hàng lúc này', { id: loadingToast });
       }
     };
 
@@ -262,7 +342,7 @@ const Profile = () => {
             <p className="text-gray-500 font-medium">Theo dõi lịch sử và tình trạng đơn hàng.</p>
           </div>
           <span className="bg-primary-50 text-primary-600 px-4 py-2 rounded-xl text-xs font-black">
-            {orderHistory.length} Đơn hàng
+            {Array.isArray(orderHistory) ? orderHistory.length : 0} Đơn hàng
           </span>
         </div>
 
@@ -271,7 +351,7 @@ const Profile = () => {
             <div className="w-10 h-10 border-4 border-primary-500 border-t-transparent rounded-full animate-spin"></div>
             <p className="text-xs font-black text-gray-400 uppercase tracking-widest">Đang tải lịch sử...</p>
           </div>
-        ) : orderHistory.length > 0 ? (
+        ) : (Array.isArray(orderHistory) && orderHistory.length > 0) ? (
           <div className="space-y-4">
             {orderHistory.map((order) => (
               <div key={order.id} className="border border-gray-100 rounded-3xl p-6 hover:border-primary-200 transition-colors bg-gray-50/20">
@@ -290,7 +370,7 @@ const Profile = () => {
                 
                 {/* Order Summary / Items Preview */}
                 <div className="space-y-4">
-                  {order.items.map((item, idx) => (
+                  {order.items?.map((item, idx) => (
                     <div key={idx} className="flex items-center space-x-4">
                       <div className="w-16 h-16 rounded-2xl bg-white p-2 overflow-hidden border border-gray-100 flex-shrink-0">
                         <img 
@@ -311,10 +391,26 @@ const Profile = () => {
                 </div>
                 
                 <div className="mt-6 pt-4 border-t border-gray-100 flex justify-between items-center">
-                   <div className="text-[10px] font-black text-gray-400 uppercase tracking-widest">Thanh toán bằng {order.paymentMethod === 'MOMO' ? 'Ví MoMo' : 'COD (Tiền mặt)'}</div>
-                   <div className="text-right">
-                      <p className="text-[8px] font-black text-primary-500 uppercase tracking-widest mb-1">Tổng thanh toán</p>
-                      <p className="text-xl font-black text-primary-600 tracking-tighter">{order.totalPrice.toLocaleString()}đ</p>
+                   <div className="text-[10px] font-black text-gray-400 uppercase tracking-widest">Thanh toán bằng {order.paymentMethod === 'MOMO' ? 'Ví MoMo' : 'COD'}</div>
+                   <div className="text-right flex items-center justify-end gap-4">
+                      {(order.status === 'PENDING' || order.status === 'CONFIRMED') && (
+                        <button 
+                          onClick={() => handleCancelOrder(order.id)}
+                          className="px-4 py-2 bg-red-50 text-red-600 rounded-xl text-[10px] font-black uppercase tracking-widest hover:bg-red-600 hover:text-white transition-colors border border-red-100"
+                        >
+                          Hủy Đơn
+                        </button>
+                      )}
+                      <button 
+                        onClick={() => handleBuyAgain(order)}
+                        className="px-4 py-2 bg-primary-500 text-white rounded-xl text-[10px] font-black uppercase tracking-widest hover:bg-black transition-all shadow-lg shadow-primary-500/20"
+                      >
+                        Mua lại
+                      </button>
+                      <div>
+                        <p className="text-[8px] font-black text-primary-500 uppercase tracking-widest mb-1">Tổng thanh toán</p>
+                        <p className="text-xl font-black text-primary-600 tracking-tighter">{(order.totalPrice || 0).toLocaleString()}đ</p>
+                      </div>
                    </div>
                 </div>
               </div>
@@ -331,6 +427,69 @@ const Profile = () => {
             >
               Mua sắm ngay
             </button>
+          </div>
+        )}
+
+        {/* Cancellation Modal */}
+        {isCancelModalOpen && (
+          <div className="fixed inset-0 z-[100] flex items-center justify-center p-4">
+            <div className="absolute inset-0 bg-black/60 backdrop-blur-sm animate-in fade-in duration-300" onClick={() => setIsCancelModalOpen(false)}></div>
+            <div className="bg-white rounded-[2.5rem] w-full max-w-lg relative z-10 shadow-2xl overflow-hidden animate-in zoom-in-95 duration-300 border border-gray-100">
+              <div className="p-8 md:p-10">
+                <div className="flex items-center gap-4 mb-6">
+                  <div className="w-12 h-12 bg-red-50 rounded-2xl flex items-center justify-center text-red-500">
+                    <Package size={24} />
+                  </div>
+                  <div>
+                    <h3 className="text-xl font-black text-gray-900 uppercase">Xác nhận hủy đơn</h3>
+                    <p className="text-sm text-gray-500 font-medium italic">Vui lòng cho Glowzy biết lý do bạn muốn hủy đơn hàng này nhé!</p>
+                  </div>
+                </div>
+
+                <div className="space-y-4 mb-8">
+                  {cancelReasons.map((reason) => (
+                    <label key={reason} className="flex items-center p-4 rounded-2xl border border-gray-100 hover:border-primary-200 hover:bg-primary-50/10 cursor-pointer transition-all group">
+                      <input 
+                        type="radio" 
+                        name="cancelReason" 
+                        value={reason} 
+                        checked={selectedReason === reason}
+                        onChange={(e) => setSelectedReason(e.target.value)}
+                        className="w-5 h-5 border-2 border-gray-300 text-primary-500 focus:ring-primary-500 checked:border-primary-500 transition-all"
+                      />
+                      <span className={`ml-4 text-sm font-bold transition-colors ${selectedReason === reason ? 'text-gray-900' : 'text-gray-500 group-hover:text-gray-700'}`}>
+                        {reason}
+                      </span>
+                    </label>
+                  ))}
+
+                  {selectedReason === "Khác" && (
+                    <textarea 
+                      className="w-full mt-2 p-4 bg-gray-50 border border-gray-100 rounded-2xl text-sm font-medium focus:bg-white focus:border-primary-500 focus:ring-4 focus:ring-primary-500/10 outline-none transition-all placeholder:text-gray-400"
+                      placeholder="Nhập lý do cụ thể của bạn..."
+                      rows={3}
+                      value={customReason}
+                      onChange={(e) => setCustomReason(e.target.value)}
+                    ></textarea>
+                  )}
+                </div>
+
+                <div className="flex gap-4">
+                  <button 
+                    onClick={() => setIsCancelModalOpen(false)}
+                    className="flex-1 py-4 bg-gray-50 text-gray-500 font-black rounded-2xl hover:bg-gray-100 transition-all uppercase tracking-widest text-xs"
+                  >
+                    Quay lại
+                  </button>
+                  <button 
+                    onClick={confirmCancel}
+                    className="flex-1 py-4 bg-red-600 text-white font-black rounded-2xl hover:bg-red-700 shadow-lg shadow-red-200 transition-all uppercase tracking-widest text-xs"
+                  >
+                    Xác nhận hủy
+                  </button>
+                </div>
+              </div>
+            </div>
           </div>
         )}
       </div>

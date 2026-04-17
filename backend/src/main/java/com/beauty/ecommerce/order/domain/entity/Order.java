@@ -22,5 +22,6 @@ public class Order {
     private String receiverName;
     private String receiverPhone;
     private String shippingAddress;
+    private String paymentTransactionId;
     private List<OrderItem> items;
 }

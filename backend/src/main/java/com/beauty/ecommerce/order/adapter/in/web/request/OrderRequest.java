@@ -2,6 +2,7 @@ package com.beauty.ecommerce.order.adapter.in.web.request;
 
 import jakarta.validation.constraints.NotBlank;
 import lombok.Data;
+import java.util.List;
 
 @Data
 public class OrderRequest {
@@ -17,4 +18,14 @@ public class OrderRequest {
 
     @NotBlank(message = "Payment method is required")
     private String paymentMethod;
+
+    private String couponCode;
+
+    private List<CheckoutItem> checkoutItems;
+
+    @Data
+    public static class CheckoutItem {
+        private Long productId;
+        private String variantName;
+    }
 }

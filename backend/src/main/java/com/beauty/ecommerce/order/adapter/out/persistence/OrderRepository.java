@@ -9,4 +9,6 @@ import java.util.List;
 public interface OrderRepository extends JpaRepository<OrderJpaEntity, Long> {
     List<OrderJpaEntity> findByUserEmailOrderByOrderDateDesc(String email);
     List<OrderJpaEntity> findAllByOrderByOrderDateDesc();
+    
+    List<OrderJpaEntity> findByStatusAndPaymentMethodAndOrderDateBefore(String status, String paymentMethod, java.time.LocalDateTime cutoffTime);
 }

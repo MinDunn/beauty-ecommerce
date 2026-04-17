@@ -34,6 +34,18 @@ public class AdminOrderController {
         return ResponseEntity.ok().build();
     }
 
+    @PutMapping("/{id}/approve-cancel")
+    public ResponseEntity<Void> approveCancellation(@PathVariable Long id) {
+        orderUseCase.approveCancellation(id);
+        return ResponseEntity.ok().build();
+    }
+
+    @PutMapping("/{id}/reject-cancel")
+    public ResponseEntity<Void> rejectCancellation(@PathVariable Long id) {
+        orderUseCase.rejectCancellation(id);
+        return ResponseEntity.ok().build();
+    }
+
     private OrderResponse mapToResponse(Order order) {
         return OrderResponse.builder()
                 .id(order.getId())

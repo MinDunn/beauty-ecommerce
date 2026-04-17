@@ -13,4 +13,5 @@ public interface OrderPort {
     Optional<Order> findById(Long id);
     void updateStatus(Long id, OrderStatus status);
     void updatePaymentStatus(Long id, PaymentStatus status);
+    void updatePaymentTransactionId(Long id, String transId);
 }

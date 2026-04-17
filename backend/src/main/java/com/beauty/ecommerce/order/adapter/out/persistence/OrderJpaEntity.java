@@ -50,6 +50,9 @@ public class OrderJpaEntity {
     @Column(name = "shipping_address")
     private String shippingAddress;
 
+    @Column(name = "payment_transaction_id")
+    private String paymentTransactionId;
+
     @OneToMany(mappedBy = "order", cascade = CascadeType.ALL)
     private List<OrderItemJpaEntity> items;
 }
