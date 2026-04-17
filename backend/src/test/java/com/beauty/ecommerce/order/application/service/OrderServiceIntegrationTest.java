@@ -3,6 +3,7 @@ package com.beauty.ecommerce.order.application.service;
 import com.beauty.ecommerce.cart.application.port.out.CartPort;
 import com.beauty.ecommerce.cart.domain.entity.CartItem;
 import com.beauty.ecommerce.order.application.port.in.OrderUseCase;
+import com.beauty.ecommerce.order.application.port.in.PlaceOrderCommand;
 import com.beauty.ecommerce.order.domain.entity.Order;
 import com.beauty.ecommerce.order.domain.entity.OrderStatus;
 import com.beauty.ecommerce.order.domain.entity.PaymentMethod;
@@ -81,7 +82,15 @@ public class OrderServiceIntegrationTest {
         String shippingAddress = "TP.HCM";
 
         // When
-        Order savedOrder = orderUseCase.placeOrder(email, receiverName, receiverPhone, shippingAddress, PaymentMethod.COD);
+        PlaceOrderCommand command = PlaceOrderCommand.builder()
+            .email(email)
+            .receiverName(receiverName)
+            .receiverPhone(receiverPhone)
+            .shippingAddress(shippingAddress)
+            .paymentMethod(PaymentMethod.COD)
+            .build();
+
+        Order savedOrder = orderUseCase.placeOrder(command);
 
         // Then: 1. Check Order Details
         assertThat(savedOrder).isNotNull();

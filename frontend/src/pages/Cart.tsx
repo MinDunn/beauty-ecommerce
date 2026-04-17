@@ -1,7 +1,7 @@
 import { Minus, Plus, Trash2, ArrowRight } from 'lucide-react';
 import { Link } from 'react-router-dom';
 import { useSelector, useDispatch } from 'react-redux';
-import { removeItem, updateQuantity } from '../store/slices/cartSlice';
+import { removeItem, updateQuantity, toggleItemSelection, toggleAllSelection } from '../store/slices/cartSlice';
 import { cn } from '../utils/cn';
 import type { RootState } from '../store';
 import toast from 'react-hot-toast';
@@ -10,7 +10,7 @@ import { cartService } from '../api/cartService';
 
 const Cart = () => {
   const dispatch = useDispatch();
-  const { items: cartItems, totalAmount: subTotal } = useSelector((state: RootState) => state.cart);
+  const { items: cartItems } = useSelector((state: RootState) => state.cart);
   const { user } = useSelector((state: RootState) => state.auth);
 
   const handleUpdateQuantity = async (id: string, variantName: string | null | undefined, delta: number, name: string) => {
@@ -52,8 +52,20 @@ const Cart = () => {
     toast.success(`Đã xóa ${name}${variantName ? ` (${variantName})` : ''} khỏi giỏ hàng`);
   };
 
-  const discount = subTotal > 1000000 ? 50000 : 0; // Simple conditional discount
-  const total = subTotal > 0 ? (subTotal - discount) : 0;
+  const handleToggleSelection = (id: string, variantName: string | null | undefined) => {
+    dispatch(toggleItemSelection({ id, variantName }));
+  };
+
+  const handleToggleAll = (e: React.ChangeEvent<HTMLInputElement>) => {
+    dispatch(toggleAllSelection(e.target.checked));
+  };
+
+  const selectedItems = cartItems.filter(item => item.selected);
+  const isAllSelected = cartItems.length > 0 && cartItems.every(item => item.selected);
+  
+  const selectedSubTotal = selectedItems.reduce((sum, item) => sum + (item.price * item.quantity), 0);
+  const discount = selectedSubTotal > 1000000 ? 50000 : 0;
+  const total = selectedSubTotal > 0 ? (selectedSubTotal - discount) : 0;
 
   return (
     <div className="bg-gray-50 min-h-screen py-8 md:py-16">
@@ -81,8 +93,16 @@ const Cart = () => {
                </div>
              ) : (
                 <>
-                  <div className="hidden md:grid grid-cols-12 gap-4 text-xs font-black text-gray-400 uppercase tracking-widest px-6 pb-2">
-                     <div className="col-span-6">Sản phẩm</div>
+                  <div className="hidden md:grid grid-cols-12 gap-4 text-xs font-black text-gray-400 uppercase tracking-widest px-6 pb-4 border-b border-gray-100 mb-2">
+                     <div className="col-span-1 flex items-center justify-center">
+                        <input 
+                          type="checkbox" 
+                          checked={isAllSelected}
+                          onChange={handleToggleAll}
+                          className="w-5 h-5 rounded-lg border-2 border-gray-200 text-primary-500 focus:ring-primary-500 cursor-pointer transition-all"
+                        />
+                     </div>
+                     <div className="col-span-5">Sản phẩm</div>
                      <div className="col-span-3 text-center">Đơn giá</div>
                      <div className="col-span-2 text-center">Số lượng</div>
                      <div className="col-span-1 text-right">Tuỳ chọn</div>
@@ -90,19 +110,32 @@ const Cart = () => {
 
                   <div className="glowzy-card overflow-hidden">
                     {cartItems.map((item, index) => (
-                      <div key={`${item.id}-${item.variantName || 'none'}`} className={`grid grid-cols-1 md:grid-cols-12 gap-6 items-center p-8 group ${index !== cartItems.length - 1 ? 'border-b border-gray-100' : ''}`}>
-                         {/* Product Image & Info */}
-                          <div className="col-span-1 md:col-span-6 flex items-start gap-6">
-                             <div className="w-28 h-28 bg-gray-50 rounded-2xl flex-shrink-0 p-3 overflow-hidden border border-gray-100 transition-all group-hover:border-primary-200">
+                       <div key={`${item.id}-${item.variantName || 'none'}`} className={`grid grid-cols-1 md:grid-cols-12 gap-6 items-center p-8 group ${index !== cartItems.length - 1 ? 'border-b border-gray-100' : ''} ${item.selected ? 'bg-white' : 'bg-gray-50/30'}`}>
+                          {/* Selector */}
+                          <div className="col-span-1 flex items-center justify-center">
+                             <input 
+                               type="checkbox" 
+                               checked={!!item.selected}
+                               onChange={() => handleToggleSelection(item.id, item.variantName)}
+                               className="w-6 h-6 rounded-xl border-2 border-gray-200 text-primary-500 focus:ring-primary-400 cursor-pointer transition-all hover:scale-110 checked:border-primary-500"
+                             />
+                          </div>
+
+                          {/* Product Image & Info */}
+                          <div className="col-span-1 md:col-span-5 flex items-start gap-6">
+                             <div className="w-28 h-28 bg-gray-50 rounded-2xl flex-shrink-0 p-3 overflow-hidden border border-gray-100 transition-all group-hover:border-primary-200 shadow-sm">
                                 <img src={item.image} alt={item.name} className="w-full h-full object-contain mix-blend-multiply group-hover:scale-110 transition-transform duration-500" />
                              </div>
                              <div className="flex flex-col pt-2 overflow-hidden">
                                 <span className="text-[10px] font-black text-primary-500 uppercase tracking-widest mb-1.5 opacity-70 italic">{item.brand}</span>
-                                <Link to={`/product/${item.id}`} className="font-black text-gray-800 text-sm md:text-base leading-snug line-clamp-2 hover:text-primary-600 transition-colors">
+                                <Link to={`/product/${item.id}`} className={cn(
+                                   "font-black text-sm md:text-base leading-snug line-clamp-2 hover:text-primary-600 transition-colors",
+                                   item.selected ? "text-gray-800" : "text-gray-400"
+                                )}>
                                    {item.name}
                                 </Link>
                                 {item.variantName && (
-                                   <div className="mt-2 text-[10px] font-black text-gray-400 uppercase tracking-widest bg-gray-100 px-3 py-1.5 rounded-lg w-fit italic">
+                                   <div className="mt-2 text-[10px] font-black text-gray-400 uppercase tracking-widest bg-white px-3 py-1.5 rounded-lg w-fit italic border border-gray-100">
                                       Loại: {item.variantName}
                                    </div>
                                 )}
@@ -152,8 +185,8 @@ const Cart = () => {
                
                <div className="space-y-4 mb-8">
                  <div className="flex justify-between items-center text-gray-500 font-bold text-sm italic">
-                    <span>Tạm tính</span>
-                    <span className="text-gray-900">{subTotal.toLocaleString('vi-VN')} đ</span>
+                    <span>Tạm tính ({selectedItems.length} món)</span>
+                    <span className="text-gray-900">{selectedSubTotal.toLocaleString('vi-VN')} đ</span>
                  </div>
                  <div className="flex justify-between items-center text-gray-500 font-bold text-sm italic">
                     <span>Voucher giảm giá</span>
@@ -178,8 +211,8 @@ const Cart = () => {
                <Link 
                 to="/checkout"
                 className={cn(
-                  "glowzy-btn-primary w-full py-6 flex items-center justify-center gap-4 group",
-                  cartItems.length === 0 && "opacity-50 pointer-events-none"
+                  "glowzy-btn-primary w-full py-6 flex items-center justify-center gap-4 group transition-all",
+                  selectedItems.length === 0 && "opacity-50 pointer-events-none grayscale"
                 )}
                >
                  <span>Thanh toán đơn hàng</span>

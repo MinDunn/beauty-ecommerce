@@ -4,6 +4,7 @@ import com.beauty.ecommerce.order.adapter.in.web.request.OrderRequest;
 import com.beauty.ecommerce.order.adapter.in.web.response.OrderItemResponse;
 import com.beauty.ecommerce.order.adapter.in.web.response.OrderResponse;
 import com.beauty.ecommerce.order.application.port.in.OrderUseCase;
+import com.beauty.ecommerce.order.application.port.in.PlaceOrderCommand;
 import com.beauty.ecommerce.order.domain.entity.Order;
 import com.beauty.ecommerce.order.domain.entity.PaymentMethod;
 import jakarta.validation.Valid;
@@ -27,13 +28,24 @@ public class OrderController {
     public ResponseEntity<OrderResponse> placeOrder(@Valid @RequestBody OrderRequest request) {
         String email = SecurityContextHolder.getContext().getAuthentication().getName();
         PaymentMethod method = PaymentMethod.valueOf(request.getPaymentMethod().toUpperCase());
-        Order order = orderUseCase.placeOrder(
-            email, 
-            request.getReceiverName(), 
-            request.getReceiverPhone(), 
-            request.getShippingAddress(),
-            method
-        );
+        
+        PlaceOrderCommand command = PlaceOrderCommand.builder()
+            .email(email)
+            .receiverName(request.getReceiverName())
+            .receiverPhone(request.getReceiverPhone())
+            .shippingAddress(request.getShippingAddress())
+            .paymentMethod(method)
+            .couponCode(request.getCouponCode())
+            .checkoutItems(request.getCheckoutItems() != null ? 
+                request.getCheckoutItems().stream()
+                    .map(item -> PlaceOrderCommand.CheckoutItem.builder()
+                        .productId(item.getProductId())
+                        .variantName(item.getVariantName())
+                        .build())
+                    .collect(Collectors.toList()) : null)
+            .build();
+
+        Order order = orderUseCase.placeOrder(command);
         return ResponseEntity.ok(mapToResponse(order));
     }
 
@@ -50,6 +62,17 @@ public class OrderController {
     public ResponseEntity<OrderResponse> lookupOrder(@PathVariable Long orderId) {
         Order order = orderUseCase.lookupOrder(orderId);
         return ResponseEntity.ok(mapToResponse(order));
+    }
+
+    @PutMapping("/{orderId}/cancel")
+    public ResponseEntity<String> cancelOrder(@PathVariable Long orderId, @RequestParam(required = false) String reason) {
+        String email = SecurityContextHolder.getContext().getAuthentication().getName();
+        try {
+            orderUseCase.cancelOrderByUser(orderId, email, reason);
+            return ResponseEntity.ok("Đã hủy đơn hàng thành công");
+        } catch (RuntimeException e) {
+            return ResponseEntity.badRequest().body(e.getMessage());
+        }
     }
 
     private OrderResponse mapToResponse(Order order) {

@@ -41,9 +41,11 @@ public class CouponJpaEntity {
     @Builder.Default
     private LocalDateTime createdAt = LocalDateTime.now();
 
-    // Usage tracking (optional, might need dedicated columns in DB if intended to persist)
-    @Transient
-    private Integer usageLimit;
-    @Transient
-    private Integer usageCount;
+    @Column(name = "usage_limit")
+    @Builder.Default
+    private Integer usageLimit = 100; // Default limit
+
+    @Column(name = "usage_count")
+    @Builder.Default
+    private Integer usageCount = 0;
 }

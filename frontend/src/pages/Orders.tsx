@@ -53,10 +53,14 @@ export const Orders = () => {
         className={`text-[10px] font-black uppercase tracking-widest px-3 py-1.5 rounded-lg bg-slate-800 border-none focus:ring-1 focus:ring-primary-500 outline-none cursor-pointer ${
           order.status === 'DELIVERED' ? 'text-emerald-500' : 
           order.status === 'CANCELLED' ? 'text-rose-500' : 
-          order.status === 'SHIPPING' ? 'text-blue-500' : 'text-amber-500'
+          order.status === 'SHIPPING' ? 'text-blue-500' : 
+          order.status === 'CANCELLATION_REQUESTED' ? 'text-pink-500' :
+          order.status === 'CONFIRMED' ? 'text-purple-500' : 'text-amber-500'
         }`}
       >
         <option value="PENDING">Chờ duyệt</option>
+        <option value="CANCELLATION_REQUESTED">Yêu cầu hủy</option>
+        <option value="CONFIRMED">Đang chuẩn bị hàng</option>
         <option value="SHIPPING">Đang giao</option>
         <option value="DELIVERED">Hoàn thành</option>
         <option value="CANCELLED">Đã hủy</option>
@@ -68,17 +72,53 @@ export const Orders = () => {
       </div>
     ),
     actions: (
-      <button 
-        type="button"
-        onClick={(e) => {
-          e.stopPropagation();
-          setSelectedOrder(order);
-          setShowDetails(true);
-        }}
-        className="p-2 hover:bg-slate-800 rounded-xl text-primary-500 transition-colors"
-      >
-        <Eye size={18} />
-      </button>
+      <div className="flex items-center gap-2">
+        {order.status === 'CANCELLATION_REQUESTED' && (
+          <>
+            <button 
+              onClick={async () => {
+                try {
+                  await orderService.adminApproveCancellation(order.id);
+                  toast.success("Đã duyệt hủy đơn hàng");
+                  fetchOrders();
+                } catch (error) {
+                  toast.error("Lỗi khi duyệt hủy");
+                }
+              }}
+              className="px-2 py-1 bg-emerald-500/10 text-emerald-500 hover:bg-emerald-500 hover:text-white rounded-lg text-[10px] font-black uppercase transition-all"
+              title="Duyệt Hủy"
+            >
+              Duyệt
+            </button>
+            <button 
+              onClick={async () => {
+                try {
+                  await orderService.adminRejectCancellation(order.id);
+                  toast.success("Đã từ chối yêu cầu hủy");
+                  fetchOrders();
+                } catch (error) {
+                  toast.error("Lỗi khi từ chối hủy");
+                }
+              }}
+              className="px-2 py-1 bg-rose-500/10 text-rose-500 hover:bg-rose-500 hover:text-white rounded-lg text-[10px] font-black uppercase transition-all"
+              title="Từ Chối Hủy"
+            >
+              Từ chối
+            </button>
+          </>
+        )}
+        <button 
+          type="button"
+          onClick={(e) => {
+            e.stopPropagation();
+            setSelectedOrder(order);
+            setShowDetails(true);
+          }}
+          className="p-2 hover:bg-slate-800 rounded-xl text-primary-500 transition-colors"
+        >
+          <Eye size={18} />
+        </button>
+      </div>
     )
   }));
 

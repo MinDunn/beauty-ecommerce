@@ -1,4 +1,4 @@
-import { useState, useMemo } from 'react';
+import { useState, useMemo, useEffect } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { 
   ShieldCheck, 
@@ -11,7 +11,10 @@ import {
   Check,
   ChevronLeft,
   Truck,
-  Ticket
+  Ticket,
+  Minus,
+  Plus,
+  Trash2
 } from 'lucide-react';
 import { useSelector, useDispatch } from 'react-redux';
 import type { RootState } from '../store';
@@ -19,9 +22,12 @@ import { cn } from '../utils/cn';
 import toast from 'react-hot-toast';
 import couponService from '../api/couponService';
 import type { CouponData } from '../api/couponService';
-import { clearCart } from '../store/slices/cartSlice';
+import { clearCart, updateQuantity, removeItem } from '../store/slices/cartSlice';
 import { orderService } from '../api/orderService';
 import { paymentService } from '../api/paymentService';
+import authService from '../api/authService';
+import { updateUser } from '../store/slices/authSlice';
+import { cartService } from '../api/cartService';
 
 const STAGES = [
   { id: 1, name: 'Vận chuyển', icon: Truck },
@@ -32,8 +38,11 @@ const STAGES = [
 const Checkout = () => {
   const navigate = useNavigate();
   const dispatch = useDispatch();
-  const { items: cartItems, totalAmount: subTotal } = useSelector((state: RootState) => state.cart);
+  const { items: allCartItems } = useSelector((state: RootState) => state.cart);
   const { user } = useSelector((state: RootState) => state.auth);
+
+  const selectedItems = useMemo(() => allCartItems.filter(item => item.selected), [allCartItems]);
+  const subTotal = useMemo(() => selectedItems.reduce((sum, item) => sum + (item.price * item.quantity), 0), [selectedItems]);
   
   const [currentStep, setCurrentStep] = useState(1);
   const [paymentMethod, setPaymentMethod] = useState('cod');
@@ -45,6 +54,72 @@ const Checkout = () => {
     shippingAddress: user?.address || '',
     note: ''
   });
+
+  useEffect(() => {
+    const fetchLatestProfile = async () => {
+      if (user) {
+        try {
+          const resp = await authService.getProfile();
+          const profileData = resp.data.data;
+          
+          // Pre-fill if current fields are empty
+          setShippingInfo(prev => ({
+            ...prev,
+            receiverName: prev.receiverName || profileData.fullName || '',
+            receiverPhone: prev.receiverPhone || profileData.phone || '',
+            shippingAddress: prev.shippingAddress || profileData.address || ''
+          }));
+
+          // Sync with Redux store for future use
+          dispatch(updateUser({
+            fullName: profileData.fullName,
+            phone: profileData.phone,
+            address: profileData.address
+          }));
+        } catch (error) {
+          console.error('Error fetching latest profile for checkout', error);
+        }
+      }
+    };
+    fetchLatestProfile();
+  }, [user, dispatch]);
+
+  const handleUpdateQuantity = async (id: string, variantName: string | null | undefined, delta: number, name: string) => {
+    const item = selectedItems.find(i => i.id === id && i.variantName === variantName);
+    if (!item) return;
+
+    dispatch(updateQuantity({ id, variantName, delta }));
+
+    if (user) {
+      try {
+        await cartService.updateQuantity({
+          productId: Number(id),
+          quantity: item.quantity + delta,
+          variantName: variantName || null
+        });
+      } catch (error) {
+        console.error("Failed to sync quantity with backend", error);
+      }
+    }
+
+    if (delta > 0) {
+      toast.success(`Đã tăng số lượng ${name}`);
+    } else {
+      toast.success(`Đã giảm số lượng ${name}`);
+    }
+  };
+
+  const handleRemoveItem = async (id: string, variantName: string | null | undefined, name: string) => {
+    dispatch(removeItem({ id, variantName }));
+    if (user) {
+      try {
+        await cartService.removeFromCart(Number(id), variantName || null);
+      } catch (error) {
+        console.error("Failed to remove item from backend", error);
+      }
+    }
+    toast.success(`Đã xóa ${name}`);
+  };
   
   // Coupon state
   const [couponCode, setCouponCode] = useState('');
@@ -112,15 +187,22 @@ const Checkout = () => {
     setIsProcessing(true);
     const loadingToast = toast.loading('Đang xử lý đơn hàng của bạn...');
     try {
-      const resp = await orderService.placeOrder({
+      const orderData = {
         receiverName: shippingInfo.receiverName,
         receiverPhone: shippingInfo.receiverPhone,
         shippingAddress: shippingInfo.shippingAddress,
-        paymentMethod: paymentMethod // 'cod' or 'transfer' (MOMO)
-      });
+        paymentMethod: paymentMethod,
+        couponCode: appliedCoupon?.code || undefined,
+        checkoutItems: selectedItems.map(item => ({
+          productId: Number(item.id),
+          variantName: item.variantName || null
+        }))
+      };
+
+      const response = await orderService.placeOrder(orderData);
       
       if (paymentMethod === 'momo') {
-        const momoResp = await paymentService.createMomoPayment(resp.id);
+        const momoResp = await paymentService.createMomoPayment(response.id);
         if (momoResp.payUrl) {
            toast.success('Đang chuyển sang cổng MoMo...', { id: loadingToast });
            window.location.href = momoResp.payUrl;
@@ -130,7 +212,7 @@ const Checkout = () => {
       
       toast.success('Đặt hàng thành công! Cảm ơn bạn đã tin dùng Glowzy.', { id: loadingToast });
       dispatch(clearCart());
-      navigate('/order-success', { state: { orderId: resp.id } });
+      navigate('/order-success', { state: { orderId: response.id } });
     } catch (error: any) {
       const errMsg = error.response?.data?.message || 'Có lỗi xảy ra khi xử lý đặt hàng';
       toast.error(errMsg, { id: loadingToast });
@@ -139,7 +221,7 @@ const Checkout = () => {
     }
   };
 
-  if (cartItems.length === 0) {
+  if (selectedItems.length === 0) {
     return (
       <div className="min-h-[60vh] flex flex-col items-center justify-center text-center px-4">
         <div className="w-20 h-20 bg-gray-50 rounded-full flex items-center justify-center text-gray-300 mb-6">
@@ -357,27 +439,49 @@ const Checkout = () => {
                   Tóm tắt đơn hàng
                 </h3>
                 
-                <div className="space-y-4 mb-8 max-h-[300px] overflow-y-auto pr-2 custom-scrollbar">
-                   {cartItems.map((item) => (
-                      <div key={item.id} className="flex gap-4 group">
-                         <div className="w-14 h-14 rounded-xl bg-white/5 p-2 flex-shrink-0 border border-white/5 transition-all group-hover:border-primary-500/50">
-                            <img src={item.image} alt={item.name} className="w-full h-full object-contain" />
-                         </div>
-                         <div className="flex-1 min-w-0">
-                            <h4 className="text-[10px] font-bold text-slate-300 line-clamp-1 uppercase tracking-tight group-hover:text-primary-400 transition-colors">
-                               {item.name}
-                            </h4>
-                            {item.variantName && (
-                               <p className="text-[8px] font-black text-slate-500 uppercase tracking-widest mt-0.5">Loại: {item.variantName}</p>
-                            )}
-                            <div className="flex justify-between items-center mt-1">
-                               <span className="text-[10px] text-slate-500 font-black">X{item.quantity}</span>
-                               <span className="text-xs font-black text-primary-400">{item.price.toLocaleString()}đ</span>
-                            </div>
-                         </div>
-                      </div>
-                   ))}
-                </div>
+                <div className="space-y-6 mb-8 max-h-[400px] overflow-y-auto pr-2 custom-scrollbar">
+                    {selectedItems.map((item) => (
+                       <div key={`${item.id}-${item.variantName || 'none'}`} className="flex gap-4 group">
+                          <div className="w-16 h-16 rounded-2xl bg-white/10 p-2 flex-shrink-0 border border-white/5 transition-all group-hover:border-primary-500/50 shadow-inner">
+                             <img src={item.image} alt={item.name} className="w-full h-full object-contain mix-blend-screen" />
+                          </div>
+                          <div className="flex-1 min-w-0">
+                             <div className="flex justify-between items-start gap-2">
+                                <h4 className="text-[10px] font-black text-slate-100 line-clamp-1 uppercase tracking-tight group-hover:text-primary-400 transition-colors">
+                                   {item.name}
+                                </h4>
+                                <button 
+                                  onClick={() => handleRemoveItem(item.id, item.variantName, item.name)}
+                                  className="text-slate-600 hover:text-red-500 transition-colors"
+                                >
+                                  <Trash2 size={12} />
+                                </button>
+                             </div>
+                             {item.variantName && (
+                                <p className="text-[8px] font-black text-slate-500 uppercase tracking-widest mt-0.5 italic">Loại: {item.variantName}</p>
+                             )}
+                             <div className="flex justify-between items-center mt-3">
+                                <div className="flex items-center bg-white/5 rounded-lg border border-white/10 overflow-hidden">
+                                   <button 
+                                      onClick={() => handleUpdateQuantity(item.id, item.variantName, -1, item.name)}
+                                      className="p-1.5 hover:bg-white/10 text-slate-400 hover:text-primary-500 transition-colors"
+                                   >
+                                      <Minus size={10} strokeWidth={3} />
+                                   </button>
+                                   <span className="w-8 text-[10px] text-center font-black text-slate-200 bg-white/5">{item.quantity}</span>
+                                   <button 
+                                      onClick={() => handleUpdateQuantity(item.id, item.variantName, 1, item.name)}
+                                      className="p-1.5 hover:bg-white/10 text-slate-400 hover:text-primary-500 transition-colors"
+                                   >
+                                      <Plus size={10} strokeWidth={3} />
+                                   </button>
+                                </div>
+                                <span className="text-xs font-black text-primary-400 tracking-tighter">{(item.price * item.quantity).toLocaleString()}đ</span>
+                             </div>
+                          </div>
+                       </div>
+                    ))}
+                 </div>
 
                 <div className="mb-8 p-6 bg-white/5 rounded-3xl border border-white/10">
                    <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-4 flex items-center gap-2">

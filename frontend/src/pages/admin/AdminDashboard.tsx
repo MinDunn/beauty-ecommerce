@@ -329,14 +329,22 @@ export const AdminDashboard = () => {
                     <p className="text-sm font-black text-white tracking-tight">{(order.amount / 1000).toFixed(0)}K</p>
                     <div className={`mt-1 flex items-center justify-end gap-1.5`}>
                        <div className={`w-1.5 h-1.5 rounded-full ${
-                         order.status === 'DELIVERED' ? 'bg-emerald-500' : 'bg-amber-500'
+                         order.status === 'DELIVERED' ? 'bg-emerald-500' : 
+                         order.status === 'CANCELLED' ? 'bg-rose-500' :
+                         order.status === 'CANCELLATION_REQUESTED' ? 'bg-pink-500 animate-pulse' :
+                         order.status === 'CONFIRMED' ? 'bg-indigo-500' : 'bg-amber-500'
                        }`}></div>
                        <span className={`text-[10px] font-black uppercase tracking-widest ${
-                         order.status === 'DELIVERED' ? 'text-emerald-500' : 'text-amber-500'
+                         order.status === 'DELIVERED' ? 'text-emerald-500' : 
+                         order.status === 'CANCELLED' ? 'text-rose-500' :
+                         order.status === 'CANCELLATION_REQUESTED' ? 'text-pink-500' :
+                         order.status === 'CONFIRMED' ? 'text-indigo-500' : 'text-amber-500'
                        }`}>
                          {order.status === 'DELIVERED' ? 'Hoàn thành' : 
                           order.status === 'PENDING' ? 'Chờ duyệt' :
-                          order.status === 'SHIPPING' ? 'Đang giao' : 'Hủy'}
+                          order.status === 'SHIPPING' ? 'Đang giao' : 
+                          order.status === 'CONFIRMED' ? 'Đang chuẩn bị' :
+                          order.status === 'CANCELLATION_REQUESTED' ? 'Yêu cầu hủy' : 'Hủy'}
                        </span>
                     </div>
                   </div>
