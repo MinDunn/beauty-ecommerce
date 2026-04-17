@@ -16,23 +16,37 @@ const resolveProductImage = (imageUrl?: string) => {
   return `/images/${imageUrl}`;
 };
 
-export const ProductGrid = ({ title = "Sản phẩm nổi bật" }: { title?: string }) => {
+export const ProductGrid = ({ 
+  title = "Sản phẩm nổi bật", 
+  type = 'latest' 
+}: { 
+  title?: string;
+  type?: 'latest' | 'trending';
+}) => {
   const [products, setProducts] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
     const fetchProducts = async () => {
       try {
-        const res = await productService.searchProducts({ size: 5, sortBy: 'createdAt,desc' });
-        setProducts(res.content);
+        setLoading(true);
+        let data;
+        if (type === 'trending') {
+          const res = await productService.getTrendingProducts(5);
+          data = res.data; // ApiResponse format
+        } else {
+          const res = await productService.searchProducts({ size: 5, sortBy: 'createdAt,desc' });
+          data = res.content; // Page format
+        }
+        setProducts(data || []);
       } catch (err) {
-        console.error("Failed to fetch products for grid", err);
+        console.error(`Failed to fetch ${type} products for grid`, err);
       } finally {
         setLoading(false);
       }
     };
     fetchProducts();
-  }, []);
+  }, [type]);
 
   return (
     <section className="py-12 bg-gray-50 border-t border-gray-100">

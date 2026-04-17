@@ -13,6 +13,8 @@ import {
   ChevronDown,
   RefreshCcw,
   Eye,
+  Heart,
+  Star,
   type LucideIcon
 } from "lucide-react";
 
@@ -20,6 +22,15 @@ import { motion, AnimatePresence } from "framer-motion";
 import { adminService } from "../../api/adminService";
 import { toast } from "react-hot-toast";
 import { useNavigate } from "react-router-dom";
+import {
+  BarChart,
+  Bar,
+  XAxis,
+  YAxis,
+  Tooltip,
+  ResponsiveContainer,
+  Cell,
+} from "recharts";
 
 interface StatCardProps {
   title: string;
@@ -340,6 +351,130 @@ export const AdminDashboard = () => {
             Xem tất cả đơn hàng
           </button>
         </div>
+      </div>
+
+      {/* Product Trends Section — Horizontal Bar Charts */}
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+
+        {/* Potential Conversion / Stimuli Needed Products Chart */}
+        <div className="bg-slate-900 border border-slate-800 p-6 rounded-[1.5rem] shadow-xl">
+          <div className="flex items-center justify-between mb-5">
+            <div className="flex items-center gap-3">
+              <div className="p-2 rounded-lg bg-orange-500/10 text-orange-400">
+                <TrendingUp size={16} />
+              </div>
+              <div>
+                <h3 className="text-sm font-black text-white uppercase tracking-widest">SP Cần Kích Cầu</h3>
+                <p className="text-[10px] text-slate-500 font-medium">Lượt yêu thích cao nhưng ít người mua</p>
+              </div>
+            </div>
+            <span className="text-[9px] text-orange-400 font-black uppercase tracking-widest bg-orange-500/10 border border-orange-500/20 px-2.5 py-1 rounded-full">TIỀM NĂNG</span>
+          </div>
+
+          {(!stats?.topFavoritedProducts || stats.topFavoritedProducts.length === 0) ? (
+            <div className="flex items-center justify-center h-40 text-slate-600 text-xs italic">Chưa có dữ liệu tiềm năng</div>
+          ) : (
+            <ResponsiveContainer width="100%" height={stats.topFavoritedProducts.length * 52}>
+              <BarChart
+                data={stats.topFavoritedProducts.map((p: any) => ({ 
+                  name: p.name.length > 18 ? p.name.slice(0, 18) + '…' : p.name, 
+                  count: p.count, 
+                  sales: p.salesCount,
+                  fullName: p.name 
+                }))}
+                layout="vertical"
+                margin={{ top: 0, right: 48, left: 0, bottom: 0 }}
+              >
+                <XAxis type="number" hide />
+                <YAxis
+                  type="category"
+                  dataKey="name"
+                  width={140}
+                  tick={{ fill: '#94a3b8', fontSize: 11, fontWeight: 700 }}
+                  axisLine={false}
+                  tickLine={false}
+                />
+                <Tooltip
+                  cursor={{ fill: 'rgba(255,255,255,0.03)' }}
+                  contentStyle={{ background: '#0f172a', border: '1px solid #1e293b', borderRadius: '12px', padding: '12px' }}
+                  labelStyle={{ color: '#f1f5f9', fontWeight: 800, fontSize: 12, marginBottom: 4 }}
+                  itemStyle={{ padding: '2px 0' }}
+                  labelFormatter={(_: any, payload: any) => payload?.[0]?.payload?.fullName || ''}
+                />
+                <Bar 
+                  dataKey="count" 
+                  name="Lượt yêu thích" 
+                  fill="#f97316" 
+                  radius={[0, 4, 4, 0]} 
+                  maxBarSize={12} 
+                />
+                <Bar 
+                  dataKey="sales" 
+                  name="Đã bán" 
+                  fill="#475569" 
+                  radius={[0, 4, 4, 0]} 
+                  maxBarSize={12} 
+                />
+                {/* Visual gap indicator could be added here, but simple comparison is clear enough */}
+              </BarChart>
+            </ResponsiveContainer>
+          )}
+        </div>
+
+        {/* Top Rated Products Chart */}
+        <div className="bg-slate-900 border border-slate-800 p-6 rounded-[1.5rem] shadow-xl">
+          <div className="flex items-center justify-between mb-5">
+            <div className="flex items-center gap-3">
+              <div className="p-2 rounded-lg bg-amber-500/10 text-amber-400">
+                <Star size={16} fill="currentColor" />
+              </div>
+              <div>
+                <h3 className="text-sm font-black text-white uppercase tracking-widest">Top Đánh Giá</h3>
+                <p className="text-[10px] text-slate-500 font-medium">Lượt đánh giá 5 sao / 7 ngày</p>
+              </div>
+            </div>
+            <span className="text-[9px] text-amber-400 font-black uppercase tracking-widest bg-amber-500/10 border border-amber-500/20 px-2.5 py-1 rounded-full">5 SAO</span>
+          </div>
+
+          {(!stats?.topRatedProducts || stats.topRatedProducts.length === 0) ? (
+            <div className="flex items-center justify-center h-40 text-slate-600 text-xs italic">Chưa có đánh giá 5 sao nào</div>
+          ) : (
+            <ResponsiveContainer width="100%" height={stats.topRatedProducts.length * 52}>
+              <BarChart
+                data={stats.topRatedProducts.map((p: any) => ({ name: p.name.length > 18 ? p.name.slice(0, 18) + '…' : p.name, count: p.count, fullName: p.name }))}
+                layout="vertical"
+                margin={{ top: 0, right: 48, left: 0, bottom: 0 }}
+              >
+                <XAxis type="number" hide />
+                <YAxis
+                  type="category"
+                  dataKey="name"
+                  width={140}
+                  tick={{ fill: '#94a3b8', fontSize: 11, fontWeight: 700 }}
+                  axisLine={false}
+                  tickLine={false}
+                />
+                <Tooltip
+                  cursor={{ fill: 'rgba(255,255,255,0.03)' }}
+                  contentStyle={{ background: '#0f172a', border: '1px solid #1e293b', borderRadius: '12px', padding: '8px 14px' }}
+                  labelStyle={{ color: '#f1f5f9', fontWeight: 700, fontSize: 12 }}
+                  itemStyle={{ color: '#fbbf24', fontWeight: 700 }}
+                  formatter={(value: any) => [`${value} lượt`, '5 Sao']}
+                  labelFormatter={(_: any, payload: any) => payload?.[0]?.payload?.fullName || ''}
+                />
+                <Bar dataKey="count" radius={[0, 6, 6, 0]} maxBarSize={20}>
+                  {stats.topRatedProducts.map((_: any, index: number) => (
+                    <Cell
+                      key={index}
+                      fill={`rgba(251,191,36,${1 - index * 0.15})`}
+                    />
+                  ))}
+                </Bar>
+              </BarChart>
+            </ResponsiveContainer>
+          )}
+        </div>
+
       </div>
     </div>
   );

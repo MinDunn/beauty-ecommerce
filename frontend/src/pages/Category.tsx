@@ -109,6 +109,10 @@ const Category = () => {
   };
 
   useEffect(() => {
+    setCurrentPage(0);
+  }, [sortBy]);
+
+  useEffect(() => {
     fetchProducts();
   }, [slug, selectedBrands, selectedPriceRange, selectedSkinTypes, currentPage, sortBy, categories]);
 

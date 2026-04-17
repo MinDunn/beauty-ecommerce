@@ -11,4 +11,10 @@ public interface WishlistRepository extends JpaRepository<WishlistJpaEntity, Lon
     Optional<WishlistJpaEntity> findByUserIdAndProductId(Long userId, Long productId);
     long countByUserId(Long userId);
     void deleteByUserIdAndProductId(Long userId, Long productId);
+
+    @org.springframework.data.jpa.repository.Query("SELECT w.productId, COUNT(w.id) as favCount FROM WishlistJpaEntity w " +
+           "WHERE w.createdAt >= :startDate " +
+           "GROUP BY w.productId " +
+           "ORDER BY favCount DESC")
+    List<Object[]> findTopFavoritedProducts(java.time.LocalDateTime startDate, org.springframework.data.domain.Pageable pageable);
 }

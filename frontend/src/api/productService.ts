@@ -9,6 +9,10 @@ export const productService = {
     const response = await axiosInstance.get(`/products/${id}`);
     return response.data;
   },
+  getTrendingProducts: async (limit: number = 5) => {
+    const response = await axiosInstance.get('/products/trending', { params: { limit } });
+    return response.data;
+  },
   adminCreateProduct: async (productData: any, images: File[]) => {
     const formData = new FormData();
     formData.append('product', new Blob([JSON.stringify(productData)], { type: 'application/json' }));

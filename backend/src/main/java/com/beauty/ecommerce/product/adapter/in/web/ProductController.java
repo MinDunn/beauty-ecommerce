@@ -49,20 +49,50 @@ public class ProductController {
             return ResponseEntity.badRequest().build();
         }
 
-        // Xử lý Sorting
+        // Xử lý Sorting mạnh mẽ
         Sort sort = Sort.by(Sort.Direction.DESC, "createdAt");
-        if (sortBy != null) {
-            switch (sortBy) {
-                case "price_asc":
-                    sort = Sort.by(Sort.Direction.ASC, "currentPrice");
-                    break;
-                case "price_desc":
-                    sort = Sort.by(Sort.Direction.DESC, "currentPrice");
-                    break;
-                case "latest":
-                default:
-                    sort = Sort.by(Sort.Direction.DESC, "createdAt");
-                    break;
+        if (sortBy != null && !sortBy.isBlank() && !sortBy.equalsIgnoreCase("latest")) {
+            try {
+                String field = "createdAt";
+                Sort.Direction direction = Sort.Direction.DESC;
+
+                // Xử lý các định dạng: "currentPrice,asc", "price-asc", "price_asc"
+                String[] parts;
+                if (sortBy.contains(",")) {
+                    parts = sortBy.split(",");
+                } else if (sortBy.contains("-")) {
+                    parts = sortBy.split("-");
+                } else if (sortBy.contains("_")) {
+                    parts = sortBy.split("_");
+                } else {
+                    parts = new String[]{sortBy};
+                }
+
+                if (parts.length > 0) {
+                    String sortField = parts[0].toLowerCase();
+                    System.out.println("DEBUG: Processing Sort Field: " + sortField + " from " + sortBy);
+                    
+                    if (sortField.contains("price")) {
+                        field = "currentPrice";
+                    } else if (sortField.contains("created") || sortField.contains("latest")) {
+                        field = "createdAt";
+                    }
+
+                    if (parts.length > 1) {
+                        String sortDir = parts[1].toLowerCase();
+                        System.out.println("DEBUG: Processing Sort Direction: " + sortDir);
+                        
+                        if (sortDir.equals("asc") || sortDir.equals("low") || sortDir.equals("up")) {
+                            direction = Sort.Direction.ASC;
+                        } else if (sortDir.equals("desc") || sortDir.equals("high") || sortDir.equals("down")) {
+                            direction = Sort.Direction.DESC;
+                        }
+                    }
+                }
+                sort = Sort.by(direction, field);
+            } catch (Exception e) {
+                // Fallback về mặc định nếu có lỗi parse
+                sort = Sort.by(Sort.Direction.DESC, "createdAt");
             }
         }
 

@@ -2,19 +2,25 @@ package com.beauty.ecommerce.common.application.service;
 
 import com.beauty.ecommerce.common.adapter.in.web.response.DashboardResponse;
 import com.beauty.ecommerce.contact.adapter.out.persistence.ContactRepository;
+import com.beauty.ecommerce.order.adapter.out.persistence.OrderItemRepository;
 import com.beauty.ecommerce.order.adapter.out.persistence.OrderJpaEntity;
 import com.beauty.ecommerce.order.adapter.out.persistence.OrderRepository;
 import com.beauty.ecommerce.order.domain.entity.OrderStatus;
 import com.beauty.ecommerce.order.domain.entity.PaymentStatus;
 import com.beauty.ecommerce.order.domain.entity.PaymentMethod;
+import com.beauty.ecommerce.product.adapter.out.persistence.ProductJpaEntity;
+import com.beauty.ecommerce.product.adapter.out.persistence.ProductRepository;
+import com.beauty.ecommerce.product.adapter.out.persistence.WishlistRepository;
 import com.beauty.ecommerce.review.adapter.out.persistence.ReviewRepository;
 import com.beauty.ecommerce.user.adapter.out.persistence.UserRepository;
 import lombok.RequiredArgsConstructor;
+import org.springframework.data.domain.PageRequest;
 import org.springframework.stereotype.Service;
 
 import java.math.BigDecimal;
 import java.math.RoundingMode;
 import java.time.LocalDate;
+import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
 import java.util.ArrayList;
 import java.util.HashMap;
@@ -30,6 +36,9 @@ public class DashboardService {
     private final UserRepository userRepository;
     private final ReviewRepository reviewRepository;
     private final ContactRepository contactRepository;
+    private final WishlistRepository wishlistRepository;
+    private final OrderItemRepository orderItemRepository;
+    private final ProductRepository productRepository;
 
     public DashboardResponse getStats(int days) {
         List<OrderJpaEntity> allOrders = orderRepository.findAll();
@@ -166,6 +175,57 @@ public class DashboardService {
                 })
                 .collect(Collectors.toList());
 
+        // 1. Lấy lượt yêu thích
+        LocalDateTime startDateTime = currentPeriodStart.atStartOfDay();
+        Map<Long, Long> favoriteMap = wishlistRepository.findTopFavoritedProducts(startDateTime, PageRequest.of(0, 100))
+                .stream()
+                .collect(Collectors.toMap(
+                        obj -> (Long) obj[0],
+                        obj -> (Long) obj[1]
+                ));
+
+        // 2. Lấy lượt bán thực tế
+        Map<Long, Long> salesMap = orderItemRepository.findSalesCountByProduct(startDateTime)
+                .stream()
+                .collect(Collectors.toMap(
+                        obj -> (Long) obj[0],
+                        obj -> (Long) obj[1]
+                ));
+
+        // 3. Tính toán Potental Score = Favorites - Sales
+        List<DashboardResponse.ProductTrendData> topFavorited = favoriteMap.keySet().stream()
+                .map(productId -> {
+                    long faves = favoriteMap.get(productId);
+                    long sales = salesMap.getOrDefault(productId, 0L);
+                    ProductJpaEntity product = productRepository.findById(productId).orElse(null);
+                    return DashboardResponse.ProductTrendData.builder()
+                            .id(productId)
+                            .name(product != null ? product.getName() : "Unknown")
+                            .imageUrl(product != null ? product.getImageUrl() : "")
+                            .count(faves)
+                            .salesCount(sales)
+                            .build();
+                })
+                .sorted((a, b) -> Long.compare(b.getCount() - b.getSalesCount(), a.getCount() - a.getSalesCount()))
+                .limit(5)
+                .collect(Collectors.toList());
+
+        // Top Rated Products (5 stars)
+        List<DashboardResponse.ProductTrendData> topRated = reviewRepository.findTopRatedProducts(startDateTime, PageRequest.of(0, 5))
+                .stream()
+                .map(obj -> {
+                    Long productId = (Long) obj[0];
+                    long count = (Long) obj[1];
+                    ProductJpaEntity product = productRepository.findById(productId).orElse(null);
+                    return DashboardResponse.ProductTrendData.builder()
+                            .id(productId)
+                            .name(product != null ? product.getName() : "Unknown")
+                            .imageUrl(product != null ? product.getImageUrl() : "")
+                            .count(count)
+                            .build();
+                })
+                .collect(Collectors.toList());
+
         return DashboardResponse.builder()
                 .totalRevenue(totalRevenue)
                 .totalOrders(totalOrders)
@@ -177,6 +237,8 @@ public class DashboardService {
                 .feedbackGrowth(feedbackGrowth)
                 .revenueHistory(revenueHistory)
                 .recentOrders(recentOrders)
+                .topFavoritedProducts(topFavorited)
+                .topRatedProducts(topRated)
                 .build();
     }
 

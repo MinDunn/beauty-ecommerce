@@ -8,13 +8,7 @@ import {
   X, 
   PhoneCall, 
   MapPin,
-  ChevronDown,
-  User,
-  Sparkles,
-  Flower2,
-  Wind,
-  Smile,
-  Zap
+  User
 } from 'lucide-react';
 import type { RootState } from '../../store';
 import { logout as logoutAction } from '../../store/slices/authSlice';
