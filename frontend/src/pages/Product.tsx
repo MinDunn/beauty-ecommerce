@@ -43,7 +43,7 @@ export const Products = () => {
     categoryId: "",
     instructions: "",
     ingredients: "",
-    variants: [] as { variantName: string, price: string, imageUrl: string, file?: File }[]
+    variants: [] as { variantName: string, price: string, imageUrl: string, stockQuantity: number, file?: File }[]
   });
 
   const [restockData, setRestockData] = useState({
@@ -108,6 +108,7 @@ export const Products = () => {
           variantName: v.variantName,
           price: (v.price ?? 0).toString(),
           imageUrl: v.imageUrl || "",
+          stockQuantity: v.stockQuantity || 0,
           file: undefined
         })) || []
       });
@@ -132,6 +133,7 @@ export const Products = () => {
           variantName: v.variantName,
           price: Number(sanitizeCurrencyInput(v.price || "0")),
           imageUrl: v.imageUrl,
+          stockQuantity: v.stockQuantity || 0,
           imageIndex: undefined
         };
       });
@@ -318,10 +320,38 @@ export const Products = () => {
     ),
     category: categories.find(c => String(c.id) === String(p.categoryId))?.name || "Đang tải...",
     stock: (
-      <span className={`px-3 py-1 rounded-full text-[10px] font-black uppercase tracking-tight ${p.stockQuantity < 10 ? "bg-rose-500/10 text-rose-500" : "bg-emerald-500/10 text-emerald-500"
-        }`}>
-        {p.stockQuantity}
-      </span>
+      <div className="relative group/stock inline-block">
+        <span className={`px-3 py-1 rounded-full text-[10px] font-black uppercase tracking-tight cursor-help ${p.stockQuantity < 10 ? "bg-rose-500/10 text-rose-500" : "bg-emerald-500/10 text-emerald-500"
+          }`}>
+          {p.stockQuantity}
+        </span>
+        {p.variants && p.variants.length > 0 && (
+          <div className="absolute left-full top-1/2 -translate-y-1/2 ml-3 hidden group-hover/stock:block z-[9999] animate-in fade-in zoom-in duration-200">
+             <div className="bg-[#0f172a] border border-slate-700 p-4 rounded-2xl shadow-[0_0_40px_rgba(0,0,0,0.5)] min-w-[200px]">
+                <div className="flex items-center gap-2 mb-3 border-b border-slate-800 pb-2">
+                   <Package size={12} className="text-primary-500" />
+                   <p className="text-[9px] font-black text-slate-400 uppercase tracking-widest">Chi tiết tồn kho</p>
+                </div>
+                <div className="space-y-2.5">
+                   {p.variants.map((v: any, idx: number) => (
+                      <div key={idx} className="flex justify-between items-center gap-4">
+                         <span className="text-[10px] font-bold text-slate-400 truncate max-w-[120px]">{v.variantName}</span>
+                         <span className="text-[10px] font-black text-white bg-slate-800/50 border border-slate-700 px-2 py-0.5 rounded-lg min-w-[30px] text-center">
+                            {v.stockQuantity || 0}
+                         </span>
+                      </div>
+                   ))}
+                </div>
+                <div className="mt-3 pt-2 border-t border-slate-800 flex justify-between items-center">
+                   <span className="text-[8px] font-black text-slate-500 uppercase tracking-tighter">Tổng cộng:</span>
+                   <span className="text-[10px] font-black text-primary-500">{p.stockQuantity}</span>
+                </div>
+             </div>
+             {/* Arrow */}
+             <div className="absolute right-full top-1/2 -translate-y-1/2 -mr-[1px] w-0 h-0 border-t-[6px] border-t-transparent border-b-[6px] border-b-transparent border-r-[6px] border-r-slate-700"></div>
+          </div>
+        )}
+      </div>
     ),
     actions: (
       <div className="flex items-center gap-2">
@@ -564,7 +594,7 @@ export const Products = () => {
                   type="button"
                   onClick={() => setFormData({
                     ...formData,
-                    variants: [...formData.variants, { variantName: "", price: formData.salePrice || "0", imageUrl: "" }]
+                    variants: [...formData.variants, { variantName: "", price: formData.salePrice || "0", imageUrl: "", stockQuantity: 0 }]
                   })}
                   className="text-[10px] font-black text-primary-500 uppercase tracking-widest hover:text-primary-400 transition-colors"
                 >

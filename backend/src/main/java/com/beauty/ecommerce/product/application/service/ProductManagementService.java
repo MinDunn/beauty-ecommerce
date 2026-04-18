@@ -63,6 +63,7 @@ public class ProductManagementService implements ManageProductUseCase {
                                 .variantName(v.getVariantName())
                                 .price(v.getPrice())
                                 .imageUrl(variantImageUrl)
+                                .stockQuantity(v.getStockQuantity())
                                 .build();
                             variant.setProduct(null); // Will be set after builder builds productEntity and we loop
                             return variant;
@@ -145,6 +146,7 @@ public class ProductManagementService implements ManageProductUseCase {
                             .variantName(v.getVariantName())
                             .price(v.getPrice())
                             .imageUrl(variantImageUrl)
+                            .stockQuantity(v.getStockQuantity())
                             .product(productEntity)
                             .build();
                     })
@@ -188,6 +190,7 @@ public class ProductManagementService implements ManageProductUseCase {
                                 .variantName(v.getVariantName())
                                 .price(v.getPrice())
                                 .imageUrl(v.getImageUrl())
+                                .stockQuantity(v.getStockQuantity())
                                 .build())
                         .collect(java.util.stream.Collectors.toList()) : new java.util.ArrayList<>())
                 .build();

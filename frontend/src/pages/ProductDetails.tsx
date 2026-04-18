@@ -48,9 +48,18 @@ const ProductDetails = () => {
       }
       const data = await productService.getProductById(numericId);
       
-      const images = data.images && data.images.length > 0 
-        ? data.images.map((img: string) => resolveProductImage(img))
-        : [resolveProductImage(data.imageUrl)];
+      const imageSet = new Set<string>();
+      if (data.imageUrl) imageSet.add(resolveProductImage(data.imageUrl));
+      if (data.images && data.images.length > 0) {
+        data.images.forEach((img: string) => imageSet.add(resolveProductImage(img)));
+      }
+      if (data.variants && data.variants.length > 0) {
+        data.variants.forEach((v: any) => {
+          if (v.imageUrl) imageSet.add(resolveProductImage(v.imageUrl));
+        });
+      }
+      
+      const images = Array.from(imageSet);
 
       const mappedProduct = {
         id: data.id.toString(),
@@ -239,17 +248,6 @@ const ProductDetails = () => {
 
   if (!product) return null;
 
-  if (loading) {
-    return (
-        <div className="min-h-screen flex flex-col items-center justify-center gap-6">
-            <Loader2 size={64} className="text-primary-500 animate-spin" />
-            <p className="text-sm font-black uppercase tracking-[0.4em] text-gray-400">Đang tải thông tin sản phẩm...</p>
-        </div>
-    );
-  }
-
-  if (!product) return null;
-
   return (
     <div className="bg-white min-h-screen pb-20">
       <div className="bg-gray-50 py-4 border-b border-gray-100">
@@ -341,7 +339,10 @@ const ProductDetails = () => {
                   {product.variants.map((v: any) => (
                     <button
                       key={v.id}
-                      onClick={() => setSelectedVariant(v)}
+                      onClick={() => {
+                        setSelectedVariant(v);
+                        if (v.imageUrl) setMainImage(resolveProductImage(v.imageUrl));
+                      }}
                       className={cn(
                         "px-6 py-3 rounded-2xl text-xs font-black uppercase tracking-widest transition-all border-2",
                         selectedVariant?.id === v.id 
@@ -412,6 +413,18 @@ const ProductDetails = () => {
                 Mô tả chi tiết
               </button>
               <button
+                onClick={() => setActiveTab('instructions')}
+                className={cn("glowzy-tab flex-1 md:flex-none py-8", activeTab === 'instructions' ? "glowzy-tab-active" : "glowzy-tab-inactive")}
+              >
+                Hướng dẫn sử dụng
+              </button>
+              <button
+                onClick={() => setActiveTab('ingredients')}
+                className={cn("glowzy-tab flex-1 md:flex-none py-8", activeTab === 'ingredients' ? "glowzy-tab-active" : "glowzy-tab-inactive")}
+              >
+                Thành phần
+              </button>
+              <button
                 onClick={() => setActiveTab('reviews')}
                 className={cn("glowzy-tab flex-1 md:flex-none py-8", activeTab === 'reviews' ? "glowzy-tab-active" : "glowzy-tab-inactive")}
               >
@@ -423,20 +436,42 @@ const ProductDetails = () => {
              {activeTab === 'description' && (
                 <div className="max-w-4xl mx-auto space-y-12">
                    <div className="relative pl-10 border-l-4 border-primary-500">
-                     <p className="text-2xl md:text-3xl font-black text-gray-900 uppercase tracking-tight mb-4 italic">Bảo vệ làn da bạn tuyệt đối.</p>
-                     <p className="text-gray-500 text-lg leading-relaxed font-medium">Khám phá bí mật ngăn ngừa lão hóa và bảo vệ da tuyệt đối với kem chống nắng thế hệ mới. Được thiết kế đặc biệt dành riêng cho làn da người Việt với điều kiện khí hậu nóng ẩm, mang lại lớp nền mượt mà tự nhiên.</p>
+                     <p className="text-2xl md:text-3xl font-black text-gray-900 uppercase tracking-tight mb-4 italic">Thông tin sản phẩm.</p>
+                     <div className="text-gray-500 text-lg leading-relaxed font-medium whitespace-pre-wrap">
+                        {product.description || "Sản phẩm này hiện đang được cập nhật thông tin mô tả chi tiết từ Glowzy. Vui lòng quay lại sau hoặc liên hệ bộ phận hỗ trợ khách hàng để biết thêm thông tin."}
+                     </div>
                    </div>
-                   <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
-                     <div className="bg-gray-50 p-8 rounded-[2rem] border border-gray-100 hover:shadow-lg transition-all hover:bg-white group">
-                        <div className="w-12 h-12 bg-white rounded-xl shadow-sm flex items-center justify-center mb-6 text-primary-500 group-hover:scale-110 transition-transform"><ShieldCheck size={28} /></div>
-                        <h4 className="font-black text-gray-900 uppercase tracking-widest text-xs mb-4">Màng lọc XL-Protect</h4>
-                        <p className="text-gray-500 text-sm leading-relaxed font-medium">Công nghệ độc phá bảo vệ da khỏi tia UVA dài, UVB và ô nhiễm môi trường. Phù hợp cho mọi loại da kể cả da nhạy cảm.</p>
-                     </div>
-                     <div className="bg-gray-50 p-8 rounded-[2rem] border border-gray-100 hover:shadow-lg transition-all hover:bg-white group">
-                        <div className="w-12 h-12 bg-white rounded-xl shadow-sm flex items-center justify-center mb-6 text-primary-500 group-hover:scale-110 transition-transform"><Plus size={28} /></div>
-                        <h4 className="font-black text-gray-900 uppercase tracking-widest text-xs mb-4">Kiểm soát dầu nhờn</h4>
-                        <p className="text-gray-500 text-sm leading-relaxed font-medium">Giúp da khô thoáng tức thì, không gây bết dính và không để lại vệt trắng. Giữ lớp trang điểm bền màu suốt 12 giờ.</p>
-                     </div>
+                </div>
+             )}
+
+             {activeTab === 'instructions' && (
+                <div className="max-w-4xl mx-auto space-y-12">
+                  <div className="bg-gray-50 p-10 rounded-[3rem] border border-gray-100 flex flex-col md:flex-row gap-12 items-start">
+                    <div className="w-20 h-20 bg-white rounded-3xl shadow-xl flex items-center justify-center flex-shrink-0 text-primary-500 border border-primary-50">
+                      <Plus size={40} />
+                    </div>
+                    <div>
+                      <h4 className="text-2xl font-black text-gray-900 uppercase tracking-tight mb-6 italic">Cách sử dụng hiệu quả nhất</h4>
+                      <div className="text-gray-500 text-lg leading-relaxed font-medium whitespace-pre-wrap">
+                        {product.instructions || "1. Làm sạch vùng da cần chăm sóc.\n2. Lấy một lượng vừa đủ sản phẩm.\n3. Thoa đều và massage nhẹ nhàng để thẩm thấu.\n4. Sử dụng hàng ngày để đạt hiệu quả tốt nhất."}
+                      </div>
+                    </div>
+                  </div>
+                </div>
+             )}
+
+             {activeTab === 'ingredients' && (
+                <div className="max-w-4xl mx-auto space-y-12">
+                   <div className="bg-primary-50 px-10 py-12 rounded-[3rem] border border-primary-100">
+                      <div className="flex items-center gap-6 mb-8">
+                         <div className="w-16 h-16 bg-white rounded-2xl shadow-lg flex items-center justify-center text-primary-600 border border-primary-50">
+                            <ShieldCheck size={32} />
+                         </div>
+                         <h4 className="text-2xl font-black text-gray-900 uppercase tracking-tight italic">Danh sách thành phần</h4>
+                      </div>
+                      <div className="bg-white/80 backdrop-blur-sm p-10 rounded-[2rem] border border-white shadow-inner text-gray-600 text-lg leading-relaxed font-semibold whitespace-pre-wrap">
+                        {product.ingredients || "Aqua, Glycerin, Niacinamide, Butylene Glycol, Caprylyl Glycol, Sodium Hyaluronate, Citric Acid, Fragrance, and other skin-safe ingredients."}
+                      </div>
                    </div>
                 </div>
              )}
@@ -473,7 +508,7 @@ const ProductDetails = () => {
                                    />
                                  </div>
                                  <span className="text-[11px] font-bold text-gray-400 w-8 text-right">{count}</span>
-                               </div>
+                                </div>
                              );
                            })}
                          </div>

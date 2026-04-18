@@ -29,6 +29,7 @@ public class ProductMapper {
                                 .variantName(v.getVariantName())
                                 .price(v.getPrice())
                                 .imageUrl(v.getImageUrl())
+                                .stockQuantity(v.getStockQuantity())
                                 .build())
                         .collect(java.util.stream.Collectors.toList()) : new java.util.ArrayList<>())
                 .build();
@@ -67,6 +68,7 @@ public class ProductMapper {
                             .variantName(v.getVariantName())
                             .price(v.getPrice())
                             .imageUrl(v.getImageUrl())
+                            .stockQuantity(v.getStockQuantity())
                             .product(jpaEntity)
                             .build())
                     .collect(java.util.stream.Collectors.toList()));
