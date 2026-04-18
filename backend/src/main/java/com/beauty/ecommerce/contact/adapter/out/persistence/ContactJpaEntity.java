@@ -31,5 +31,8 @@ public class ContactJpaEntity {
     private String phone;
     private String message;
 
+    @Builder.Default
+    private Boolean isRead = false;
+
     private LocalDateTime createdAt;
 }

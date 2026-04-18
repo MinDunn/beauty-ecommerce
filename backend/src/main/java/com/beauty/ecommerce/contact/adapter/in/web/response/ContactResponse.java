@@ -17,5 +17,6 @@ public class ContactResponse {
     private String email;
     private String phone;
     private String message;
+    private Boolean isRead;
     private String createdAt;
 }

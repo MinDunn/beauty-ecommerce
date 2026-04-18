@@ -104,6 +104,17 @@ const cartSlice = createSlice({
       localStorage.removeItem('totalAmount');
     },
 
+    clearSelectedItems(state) {
+        state.items = state.items.filter(item => !item.selected);
+        // Recalculate totals
+        state.totalQuantity = state.items.reduce((sum, item) => sum + item.quantity, 0);
+        state.totalAmount = state.items.reduce((sum, item) => sum + (item.price * item.quantity), 0);
+        
+        localStorage.setItem('cartItems', JSON.stringify(state.items));
+        localStorage.setItem('totalQuantity', JSON.stringify(state.totalQuantity));
+        localStorage.setItem('totalAmount', JSON.stringify(state.totalAmount));
+    },
+
     toggleItemSelection(state, action: PayloadAction<{ id: string; variantName?: string | null }>) {
       const { id, variantName } = action.payload;
       const item = state.items.find(i => i.id === id && i.variantName === variantName);
@@ -135,6 +146,7 @@ export const {
   removeItem, 
   updateQuantity, 
   clearCart, 
+  clearSelectedItems,
   toggleItemSelection, 
   toggleAllSelection, 
   selectOnlyItems 

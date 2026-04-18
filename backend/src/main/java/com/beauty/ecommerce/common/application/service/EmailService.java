@@ -58,4 +58,50 @@ public class EmailService {
             log.error("Unexpected error while sending email", e);
         }
     }
+
+    public void sendForgotPasswordEmail(String email, String fullName, String resetLink) {
+        try {
+            log.info("Preparing to send forgot password email for: {}", email);
+            
+            MimeMessage message = mailSender.createMimeMessage();
+            MimeMessageHelper helper = new MimeMessageHelper(
+                    message,
+                    MimeMessageHelper.MULTIPART_MODE_MIXED_RELATED,
+                    StandardCharsets.UTF_8.name()
+            );
+
+            Context context = new Context();
+            context.setVariable("fullName", fullName);
+            context.setVariable("resetLink", resetLink);
+
+            String html = templateEngine.process("forgot-password", context);
+
+            helper.setFrom(fromEmail);
+            helper.setTo(email);
+            helper.setSubject("Đặt lại mật khẩu - Glowzy Beauty");
+            helper.setText(html, true);
+
+            mailSender.send(message);
+            log.info("Forgot password email sent successfully to {}", email);
+        } catch (Exception e) {
+            log.error("Failed to send forgot password email for: {}", email, e);
+        }
+    }
+
+    public void sendSimpleMessage(String to, String subject, String text) {
+        try {
+            MimeMessage message = mailSender.createMimeMessage();
+            MimeMessageHelper helper = new MimeMessageHelper(message, true);
+            
+            helper.setFrom(fromEmail);
+            helper.setTo(to);
+            helper.setSubject(subject);
+            helper.setText(text);
+
+            mailSender.send(message);
+            log.info("Simple email sent successfully to {}", to);
+        } catch (Exception e) {
+            log.error("Failed to send simple email to: {}", to, e);
+        }
+    }
 }

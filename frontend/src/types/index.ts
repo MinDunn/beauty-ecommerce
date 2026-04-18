@@ -66,6 +66,7 @@ export type Feedback = {
   email: string;
   phone?: string;
   message: string;
+  isRead: boolean;
   createdAt: string;
 };
 

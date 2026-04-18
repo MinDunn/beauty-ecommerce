@@ -5,7 +5,7 @@ import { Table } from "../components/admin/Table";
 import { feedbackService } from "../api/feedbackService";
 import { reviewService, type Review } from "../api/reviewService";
 import { toast } from "react-hot-toast";
-import { MessageSquare, User, Mail, Calendar, Star, Package, MessageCircle } from "lucide-react";
+import { MessageSquare, User, Mail, Calendar, Star, Package, MessageCircle, Trash2, Check } from "lucide-react";
 import { clsx } from "clsx";
 
 export const FeedbackPage = () => {
@@ -14,15 +14,6 @@ export const FeedbackPage = () => {
   const [reviews, setReviews] = useState<Review[]>([]);
   const [loading, setLoading] = useState(true);
   const [activeTab, setActiveTab] = useState<'contacts' | 'reviews'>('contacts');
-
-  useEffect(() => {
-    const params = new URLSearchParams(location.search);
-    if (params.get('tab') === 'reviews') {
-      setActiveTab('reviews');
-    } else {
-      setActiveTab('contacts');
-    }
-  }, [location.search]);
 
   const fetchData = async () => {
     setLoading(true);
@@ -42,13 +33,41 @@ export const FeedbackPage = () => {
   };
 
   useEffect(() => {
+    const params = new URLSearchParams(location.search);
+    if (params.get('tab') === 'reviews') {
+      setActiveTab('reviews');
+    } else {
+      setActiveTab('contacts');
+    }
     fetchData();
-  }, []);
+  }, [location.search]);
+
+  const handleDeleteContact = async (id: number) => {
+    if (!window.confirm('Bạn có chắc chắn muốn xóa phản hồi này không?')) return;
+    
+    try {
+      await feedbackService.deleteFeedback(id);
+      toast.success('Xóa phản hồi thành công');
+      fetchData();
+    } catch (error) {
+      toast.error('Không thể xóa phản hồi');
+    }
+  };
+
+  const handleMarkAsRead = async (id: number) => {
+    try {
+      await feedbackService.markAsRead(id);
+      toast.success('Đã đánh dấu đã đọc');
+      fetchData();
+    } catch (error) {
+      toast.error('Không thể cập nhật trạng thái');
+    }
+  };
 
   const contactTableData = feedbacks.map(fb => ({
     user: (
       <div className="flex flex-col">
-        <span className="text-white font-bold flex items-center gap-2">
+        <span className="text-white font-bold flex items-center gap-2 text-sm">
           <User size={12} className="text-slate-500" /> {fb.name}
         </span>
         <span className="text-slate-500 text-[10px] flex items-center gap-2">
@@ -56,20 +75,40 @@ export const FeedbackPage = () => {
         </span>
       </div>
     ),
-    email: <span className="text-slate-400 text-sm whitespace-nowrap">{fb.email}</span>,
     message: (
       <div className="max-w-md">
-        <p className="text-slate-300 text-sm italic line-clamp-2 bg-slate-800/30 p-3 rounded-xl border border-slate-800">
+        <p className="text-slate-300 text-sm italic line-clamp-2 bg-slate-800/30 p-3 rounded-xl border border-slate-800 leading-relaxed">
           "{fb.message}"
         </p>
       </div>
     ),
     date: (
-      <div className="text-slate-500 text-xs font-black uppercase tracking-widest flex items-center gap-2">
+      <div className="text-slate-500 text-[10px] font-black uppercase tracking-widest flex items-center gap-2">
         <Calendar size={12} />
         {new Date(fb.createdAt).toLocaleDateString('vi-VN')}
       </div>
-    )
+    ),
+    actions: (
+        <div className="flex items-center justify-end gap-2">
+            {!fb.isRead && (
+                <button 
+                onClick={() => handleMarkAsRead(fb.id)}
+                className="p-2.5 bg-emerald-500/10 text-emerald-500 hover:bg-emerald-500 hover:text-white rounded-xl transition-all shadow-inner border border-emerald-500/20"
+                title="Đánh dấu đã đọc"
+                >
+                    <Check size={16} />
+                </button>
+            )}
+            <button 
+                onClick={() => handleDeleteContact(fb.id)}
+                className="p-2.5 bg-slate-800 text-slate-500 hover:bg-rose-500 hover:text-white rounded-xl transition-all shadow-inner"
+                title="Xóa phản hồi"
+            >
+                <Trash2 size={16} />
+            </button>
+        </div>
+    ),
+    rowClassName: !fb.isRead ? "bg-primary-500/[0.03]" : ""
   }));
 
   const reviewTableData = reviews.map(rev => ({
@@ -113,19 +152,19 @@ export const FeedbackPage = () => {
   );
 
   return (
-    <div className="space-y-8">
-      <div className="flex flex-col md:flex-row md:items-end justify-between gap-6">
+    <div className="space-y-8 animate-in fade-in duration-700">
+      <div className="flex flex-col md:flex-row md:items-end justify-between gap-6 border-b border-slate-800 pb-8">
         <div>
-            <h1 className="text-2xl font-black text-white uppercase tracking-tight">Hộp thư phản hồi</h1>
-            <p className="text-slate-500 text-sm mt-1 italic">Lắng nghe ý kiến của khách hàng để cải thiện dịch vụ của Glowzy.</p>
+            <h1 className="text-3xl font-black text-white uppercase tracking-tight underline decoration-primary-500 decoration-4 underline-offset-8">Feedback</h1>
+            <p className="text-slate-500 text-sm mt-5 italic font-medium">Lắng nghe ý kiến của khách hàng để cải thiện dịch vụ của <span className="text-white font-bold">Glowzy</span>.</p>
         </div>
 
-        <div className="flex p-1 bg-slate-900 border border-slate-800 rounded-2xl w-fit">
+        <div className="flex p-1.5 bg-slate-900 border border-slate-800 rounded-2xl w-fit shadow-2xl">
             <button 
                 onClick={() => setActiveTab('contacts')}
                 className={clsx(
-                    "px-6 py-2.5 rounded-xl text-xs font-black uppercase tracking-widest transition-all flex items-center gap-2",
-                    activeTab === 'contacts' ? "bg-primary-500 text-white shadow-lg shadow-primary-500/20" : "text-slate-500 hover:text-white"
+                    "px-8 py-3 rounded-xl text-xs font-black uppercase tracking-widest transition-all flex items-center gap-2",
+                    activeTab === 'contacts' ? "bg-primary-500 text-white shadow-xl shadow-primary-500/20" : "text-slate-500 hover:text-white"
                 )}
             >
                 <MessageSquare size={14} />
@@ -134,8 +173,8 @@ export const FeedbackPage = () => {
             <button 
                 onClick={() => setActiveTab('reviews')}
                 className={clsx(
-                    "px-6 py-2.5 rounded-xl text-xs font-black uppercase tracking-widest transition-all flex items-center gap-2",
-                    activeTab === 'reviews' ? "bg-primary-500 text-white shadow-lg shadow-primary-500/20" : "text-slate-500 hover:text-white"
+                    "px-8 py-3 rounded-xl text-xs font-black uppercase tracking-widest transition-all flex items-center gap-2",
+                    activeTab === 'reviews' ? "bg-primary-500 text-white shadow-xl shadow-primary-500/20" : "text-slate-500 hover:text-white"
                 )}
             >
                 <MessageCircle size={14} />
@@ -152,11 +191,12 @@ export const FeedbackPage = () => {
                   <Table 
                     columns={[
                         { header: "Khách hàng", key: "user" },
-                        { header: "Email", key: "email" },
-                        { header: "Nội dung", key: "message" },
-                        { header: "Thời gian", key: "date" }
+                        { header: "Nội dung phản hồi", key: "message" },
+                        { header: "Thời gian", key: "date" },
+                        { header: "Thao tác", key: "actions", className: "text-right" }
                     ]} 
                     data={contactTableData} 
+                    rowClassName={(item: any) => item.rowClassName}
                     />
               )
           ) : (

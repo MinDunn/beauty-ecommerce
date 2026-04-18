@@ -37,4 +37,18 @@ public class ContactController {
         List<ContactResponse> contacts = contactService.getAllContacts();
         return ResponseEntity.ok(ApiResponse.success(contacts));
     }
+
+    @DeleteMapping("/api/admin/contacts/{id}")
+    public ResponseEntity<ApiResponse<Void>> deleteContact(@PathVariable Long id) {
+        log.info("Admin yêu cầu xóa phản hồi id: {}", id);
+        contactService.deleteContact(id);
+        return ResponseEntity.ok(ApiResponse.success("Xóa phản hồi thành công", null));
+    }
+
+    @PatchMapping("/api/admin/contacts/{id}/read")
+    public ResponseEntity<ApiResponse<Void>> markAsRead(@PathVariable Long id) {
+        log.info("Admin yêu cầu đánh dấu đã đọc phản hồi id: {}", id);
+        contactService.markAsRead(id);
+        return ResponseEntity.ok(ApiResponse.success("Đã đánh dấu là đã đọc", null));
+    }
 }

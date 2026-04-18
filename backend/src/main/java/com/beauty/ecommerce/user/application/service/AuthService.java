@@ -10,7 +10,7 @@ import com.beauty.ecommerce.user.adapter.in.web.request.TokenRefreshRequest;
 import com.beauty.ecommerce.user.adapter.in.web.response.AuthResponse;
 import com.beauty.ecommerce.user.adapter.in.web.response.UserProfileResponse;
 import com.beauty.ecommerce.user.adapter.out.persistence.*;
-import com.beauty.ecommerce.common.service.EmailService;
+import com.beauty.ecommerce.common.application.service.EmailService;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
@@ -85,6 +85,11 @@ public class AuthService {
         if (user.getIsActive() == null || !user.getIsActive()) {
             log.warn("Cố gắng đăng nhập vào tài khoản bị khóa: {}", request.getEmail());
             throw new BadRequestException("Tài khoản của bạn đã bị khóa. Vui lòng liên hệ quản trị viên.");
+        }
+
+        if (user.getProvider() != null && !user.getProvider().equals("LOCAL")) {
+            log.warn("Cố gắng đăng nhập bằng mật khẩu cho tài khoản Social: {}", request.getEmail());
+            throw new BadRequestException("Tài khoản này được liên kết với " + user.getProvider() + ". Vui lòng đăng nhập qua mạng xã hội.");
         }
 
         authenticationManager.authenticate(
@@ -254,13 +259,9 @@ public class AuthService {
 
         passwordResetTokenRepository.save(resetToken);
 
-        // Gửi email giả lập
+        // Gửi email HTML chuyên nghiệp
         String resetLink = "http://localhost:5173/reset-password?token=" + token;
-        emailService.sendSimpleMessage(
-                user.getEmail(),
-                "Đặt lại mật khẩu - Glowzy Beauty",
-                "Chào " + user.getFullName() + ",\n\nBạn đã yêu cầu đặt lại mật khẩu. Vui lòng click vào link sau:\n" + resetLink + "\n\nLink này có hiệu lực trong 24 giờ."
-        );
+        emailService.sendForgotPasswordEmail(user.getEmail(), user.getFullName(), resetLink);
     }
 
     @Transactional

@@ -26,6 +26,7 @@ public class ContactService {
                 .email(request.getEmail())
                 .phone(request.getPhone())
                 .message(request.getMessage())
+                .isRead(false)
                 .createdAt(LocalDateTime.now())
                 .build();
 
@@ -40,6 +41,19 @@ public class ContactService {
                 .collect(Collectors.toList());
     }
 
+    public void deleteContact(Long id) {
+        log.info("Admin đang xóa phản hồi id: {}", id);
+        contactRepository.deleteById(id);
+    }
+
+    public void markAsRead(Long id) {
+        log.info("Admin đánh dấu đã đọc phản hồi id: {}", id);
+        ContactJpaEntity contact = contactRepository.findById(id)
+                .orElseThrow(() -> new RuntimeException("Không tìm thấy phản hồi"));
+        contact.setIsRead(true);
+        contactRepository.save(contact);
+    }
+
     private ContactResponse mapToResponse(ContactJpaEntity entity) {
         return ContactResponse.builder()
                 .id(entity.getId())
@@ -47,6 +61,7 @@ public class ContactService {
                 .email(entity.getEmail())
                 .phone(entity.getPhone())
                 .message(entity.getMessage())
+                .isRead(entity.getIsRead())
                 .createdAt(entity.getCreatedAt().toString() + "Z")
                 .build();
     }

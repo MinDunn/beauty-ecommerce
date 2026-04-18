@@ -22,7 +22,7 @@ import { cn } from '../utils/cn';
 import toast from 'react-hot-toast';
 import couponService from '../api/couponService';
 import type { CouponData } from '../api/couponService';
-import { clearCart, updateQuantity, removeItem } from '../store/slices/cartSlice';
+import { clearSelectedItems, updateQuantity, removeItem } from '../store/slices/cartSlice';
 import { orderService } from '../api/orderService';
 import { paymentService } from '../api/paymentService';
 import authService from '../api/authService';
@@ -211,7 +211,7 @@ const Checkout = () => {
       }
       
       toast.success('Đặt hàng thành công! Cảm ơn bạn đã tin dùng Glowzy.', { id: loadingToast });
-      dispatch(clearCart());
+      dispatch(clearSelectedItems());
       navigate('/order-success', { state: { orderId: response.id } });
     } catch (error: any) {
       const errMsg = error.response?.data?.message || 'Có lỗi xảy ra khi xử lý đặt hàng';
