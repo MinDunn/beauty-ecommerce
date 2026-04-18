@@ -13,6 +13,11 @@ const Category = () => {
   const [products, setProducts] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
   const [categoryName, setCategoryName] = useState('Khám phá Sản phẩm');
+  useEffect(() => {
+    if (!slug) {
+      setCategoryName('Tất cả sản phẩm');
+    }
+  }, [slug]);
   const [currentPage, setCurrentPage] = useState(0);
   const [totalPages, setTotalPages] = useState(0);
   const [totalElements, setTotalElements] = useState(0);
@@ -58,6 +63,7 @@ const Category = () => {
   }, [slug]);
 
   const fetchProducts = async () => {
+    if (slug && categories.length === 0) return;
     setLoading(true);
     try {
       // Map slug to categoryId
@@ -107,6 +113,10 @@ const Category = () => {
       setLoading(false);
     }
   };
+
+  useEffect(() => {
+    setCurrentPage(0);
+  }, [sortBy]);
 
   useEffect(() => {
     fetchProducts();

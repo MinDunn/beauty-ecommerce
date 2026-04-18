@@ -37,6 +37,7 @@ public class AdminProductRequest {
         private String variantName;
         private java.math.BigDecimal price;
         private String imageUrl;
+        private Integer stockQuantity;
         private Integer imageIndex; // Index in the general images list
     }
 }

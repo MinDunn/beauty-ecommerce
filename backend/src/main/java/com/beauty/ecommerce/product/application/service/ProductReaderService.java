@@ -61,6 +61,7 @@ public class ProductReaderService implements GetProductUseCase {
         };
 
         // Note: We use the sort from pageable if provided, otherwise default to createdAt DESC
+        log.info("Thực hiện truy vấn với Sort: {}", pageable.getSort());
         Page<ProductJpaEntity> entities = productRepository.findAll(spec, pageable);
         
         List<Product> domainProducts = entities.getContent().stream()

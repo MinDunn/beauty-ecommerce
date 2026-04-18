@@ -42,6 +42,7 @@ public class AdminProductController {
                                 .variantName(v.getVariantName())
                                 .price(v.getPrice())
                                 .imageUrl(v.getImageUrl())
+                                .stockQuantity(v.getStockQuantity())
                                 .imageIndex(v.getImageIndex())
                                 .build())
                         .collect(java.util.stream.Collectors.toList()) : null)
@@ -75,6 +76,7 @@ public class AdminProductController {
                                 .variantName(v.getVariantName())
                                 .price(v.getPrice())
                                 .imageUrl(v.getImageUrl())
+                                .stockQuantity(v.getStockQuantity())
                                 .imageIndex(v.getImageIndex())
                                 .build())
                         .collect(java.util.stream.Collectors.toList()) : null)
@@ -110,6 +112,7 @@ public class AdminProductController {
                                 .variantName(v.getVariantName())
                                 .price(v.getPrice())
                                 .imageUrl(v.getImageUrl())
+                                .stockQuantity(v.getStockQuantity())
                                 .build())
                         .collect(java.util.stream.Collectors.toList()) : new java.util.ArrayList<>())
                 .build();

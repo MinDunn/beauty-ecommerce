@@ -8,13 +8,7 @@ import {
   X, 
   PhoneCall, 
   MapPin,
-  ChevronDown,
-  User,
-  Sparkles,
-  Flower2,
-  Wind,
-  Smile,
-  Zap
+  User
 } from 'lucide-react';
 import type { RootState } from '../../store';
 import { logout as logoutAction } from '../../store/slices/authSlice';
@@ -178,14 +172,14 @@ export const Header = () => {
       <nav className="hidden lg:block border-t border-gray-100">
         <div className="container mx-auto px-4">
           <div className="flex items-center">
-            <div className="relative group/cat">
+            <Link to="/category" className="relative group/cat">
               <button 
-                className="flex items-center space-x-2 bg-primary-500 text-white px-6 py-3 font-bold text-sm uppercase tracking-wider rounded-t-xl"
+                className="flex items-center space-x-2 bg-primary-500 text-white px-6 py-3 font-bold text-sm uppercase tracking-wider rounded-t-xl hover:bg-primary-600 transition-colors"
               >
                 <Menu size={18} />
                 <span>Danh mục sản phẩm</span>
               </button>
-            </div>
+            </Link>
             <div className="flex items-center space-x-8 ml-8">
               {navLinks.map((link) => {
                 const isActive = location.pathname === link.href;

@@ -16,6 +16,7 @@ export type Product = {
     variantName: string;
     price: number;
     imageUrl?: string;
+    stockQuantity?: number;
   }[];
   createdAt?: string;
 };

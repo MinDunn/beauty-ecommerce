@@ -53,6 +53,7 @@ public interface ManageProductUseCase {
         private String variantName;
         private java.math.BigDecimal price;
         private String imageUrl;
+        private Integer stockQuantity;
         private Integer imageIndex;
     }
 }

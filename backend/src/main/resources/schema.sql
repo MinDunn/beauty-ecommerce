@@ -143,7 +143,3 @@ VALUES ('Viên Uống DHC Vitamin C', 'Hỗ trợ tăng sức đề kháng và l
 INSERT IGNORE INTO products (name, description, original_price, current_price, stock_quantity, image_url, category_id, created_at) 
 VALUES ('Dầu Cá Blackmores Fish Oil', 'Bổ sung Omega-3 cho tim mạch và trí não.', 550000, 450000, 30, 'blackmores_fishoil.png', 5, DATE_SUB(NOW(), INTERVAL 7 DAY));
 
--- Sample Reviews
-INSERT IGNORE INTO reviews (user_id, product_id, rating_star, comment, created_at) VALUES (1, 1, 5, 'Rất tốt, thấm nhanh và không gây bết dính!', NOW());
-INSERT IGNORE INTO reviews (user_id, product_id, rating_star, comment, created_at) VALUES (1, 1, 4, 'Bảo vệ da tốt, mùi hơi nồng nhẹ.', NOW());
-INSERT IGNORE INTO reviews (user_id, product_id, rating_star, comment, created_at) VALUES (1, 4, 5, 'Màu son quá đẹp luôn mọi người ơi!', NOW());

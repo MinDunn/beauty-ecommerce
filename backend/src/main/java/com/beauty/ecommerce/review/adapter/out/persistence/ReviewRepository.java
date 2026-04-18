@@ -15,5 +15,11 @@ public interface ReviewRepository extends JpaRepository<ReviewJpaEntity, Long> {
     Double findAverageRatingByProductId(Long productId);
 
     @Query("SELECT r.productId, AVG(r.ratingStar) FROM ReviewJpaEntity r WHERE r.productId IN :productIds GROUP BY r.productId")
-    List<Object[]> findAverageRatingsByProductIds(List<Long> productIds);
+    List<Object[]> findAverageRatingsByProductIds(java.util.List<Long> productIds);
+
+    @Query("SELECT r.productId, COUNT(r.id) as reviewCount FROM ReviewJpaEntity r " +
+           "WHERE r.ratingStar = 5 AND r.createdAt >= :startDate " +
+           "GROUP BY r.productId " +
+           "ORDER BY reviewCount DESC")
+    List<Object[]> findTopRatedProducts(java.time.LocalDateTime startDate, org.springframework.data.domain.Pageable pageable);
 }
