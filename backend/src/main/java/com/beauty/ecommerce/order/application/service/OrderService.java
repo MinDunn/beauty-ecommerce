@@ -10,6 +10,7 @@ import com.beauty.ecommerce.order.domain.entity.OrderStatus;
 import com.beauty.ecommerce.order.domain.entity.PaymentMethod;
 import com.beauty.ecommerce.order.domain.entity.PaymentStatus;
 import com.beauty.ecommerce.common.application.service.ActivityLogService;
+import com.beauty.ecommerce.common.application.service.EmailService;
 import com.beauty.ecommerce.product.application.port.out.UpdateProductStockPort;
 import com.beauty.ecommerce.product.application.service.CouponService;
 import com.beauty.ecommerce.product.adapter.out.persistence.CouponJpaEntity;
@@ -36,6 +37,7 @@ public class OrderService implements OrderUseCase {
     private final ActivityLogService activityLogService;
     private final CouponService couponService;
     private final com.beauty.ecommerce.payment.application.service.MoMoService moMoService;
+    private final EmailService emailService;
 
     @Override
     @Transactional
@@ -141,6 +143,11 @@ public class OrderService implements OrderUseCase {
 
         activityLogService.logActivity(user.getId(), email, "PLACE_ORDER", "Đặt đơn hàng mới #" + savedOrder.getId() + " (Tổng tiền: " + totalPrice + "đ)");
 
+        // Send Email if COD
+        if (command.getPaymentMethod() == PaymentMethod.COD) {
+            emailService.sendOrderConfirmationEmail(savedOrder, email);
+        }
+
         return savedOrder;
     }
 
@@ -189,6 +196,11 @@ public class OrderService implements OrderUseCase {
 
         activityLogService.logActivity(order.getUserId(), "SYSTEM", "COMPLETE_PAYMENT", 
                 "Hoàn tất thanh toán cho đơn hàng #" + orderId + ". Tồn kho đã được cập nhật.");
+
+        // Send Email for online payment success
+        userRepository.findById(order.getUserId()).ifPresent(user -> {
+            emailService.sendOrderConfirmationEmail(order, user.getEmail());
+        });
     }
 
     @Override

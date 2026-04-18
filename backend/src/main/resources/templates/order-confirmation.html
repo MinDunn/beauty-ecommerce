@@ -1,0 +1,161 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="UTF-8">
+    <title>Xác nhận đơn hàng</title>
+    <style>
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            line-height: 1.6;
+            color: #333;
+            margin: 0;
+            padding: 0;
+        }
+        .container {
+            max-width: 600px;
+            margin: 20px auto;
+            border: 1px solid #eee;
+            border-radius: 10px;
+            overflow: hidden;
+            box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+        }
+        .header {
+            background: linear-gradient(135deg, #ff6b6b, #ff8e8e);
+            color: white;
+            padding: 30px;
+            text-align: center;
+        }
+        .header h1 {
+            margin: 0;
+            font-size: 24px;
+            text-transform: uppercase;
+            letter-spacing: 2px;
+        }
+        .content {
+            padding: 30px;
+        }
+        .order-info {
+            background-color: #f9f9f9;
+            padding: 20px;
+            border-radius: 8px;
+            margin-bottom: 20px;
+        }
+        .order-info p {
+            margin: 5px 0;
+        }
+        .order-info strong {
+            color: #ff6b6b;
+        }
+        .table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-bottom: 20px;
+        }
+        .table th {
+            text-align: left;
+            border-bottom: 2px solid #ff6b6b;
+            padding: 10px;
+            color: #ff6b6b;
+        }
+        .table td {
+            padding: 10px;
+            border-bottom: 1px solid #eee;
+        }
+        .product-img {
+            width: 50px;
+            height: 50px;
+            object-fit: cover;
+            border-radius: 4px;
+        }
+        .total-section {
+            text-align: right;
+            font-size: 18px;
+            margin-top: 20px;
+        }
+        .total-price {
+            color: #ff6b6b;
+            font-weight: bold;
+            font-size: 22px;
+        }
+        .footer {
+            background-color: #333;
+            color: #999;
+            padding: 20px;
+            text-align: center;
+            font-size: 12px;
+        }
+        .footer a {
+            color: #ff6b6b;
+            text-decoration: none;
+        }
+        .shipping-info {
+            margin-top: 20px;
+            border-top: 1px dashed #ccc;
+            padding-top: 20px;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>BEAUTY E-COMMERCE</h1>
+            <p>Cảm ơn bạn đã tin tưởng lựa chọn chúng tôi!</p>
+        </div>
+        <div class="content">
+            <h2>Xác nhận đơn hàng thành công!</h2>
+            <p>Xin chào <span th:text="${order.receiverName}">Khách hàng</span>,</p>
+            <p>Đơn hàng của bạn đã được tiếp nhận và đang trong quá trình xử lý.</p>
+            
+            <div class="order-info">
+                <p>Mã đơn hàng: <strong th:text="${'#' + order.id}">#12345</strong></p>
+                <p>Ngày đặt: <span th:text="${#temporals.format(order.orderDate, 'dd/MM/yyyy HH:mm')}">18/04/2026</span></p>
+                <p>Trạng thái thanh toán: <span th:text="${order.paymentStatus}">Chưa thanh toán</span></p>
+                <p>Phương thức: <span th:text="${order.paymentMethod}">COD</span></p>
+            </div>
+
+            <h3>Chi tiết sản phẩm:</h3>
+            <table class="table">
+                <thead>
+                    <tr>
+                        <th>Sản phẩm</th>
+                        <th>SL</th>
+                        <th>Giá</th>
+                        <th>Tổng</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <tr th:each="item : ${order.items}">
+                        <td>
+                            <div style="display: flex; align-items: center;">
+                                <img th:if="${item.productImageUrl != null}" th:src="${item.productImageUrl}" class="product-img" style="margin-right: 10px;"/>
+                                <div>
+                                    <div th:text="${item.productName}">Tên sản phẩm</div>
+                                    <small th:if="${item.variantName != null}" th:text="${'Loại: ' + item.variantName}" style="color: #666;"></small>
+                                </div>
+                            </div>
+                        </td>
+                        <td th:text="${item.quantity}">1</td>
+                        <td th:text="${#numbers.formatDecimal(item.price, 0, 'COMMA', 0, 'POINT') + 'đ'}">100,000đ</td>
+                        <td th:text="${#numbers.formatDecimal(item.price * item.quantity, 0, 'COMMA', 0, 'POINT') + 'đ'}">100,000đ</td>
+                    </tr>
+                </tbody>
+            </table>
+
+            <div class="total-section">
+                Tổng cộng: <span class="total-price" th:text="${#numbers.formatDecimal(order.totalPrice, 0, 'COMMA', 0, 'POINT') + 'đ'}">100,000đ</span>
+            </div>
+
+            <div class="shipping-info">
+                <h3>Thông tin giao hàng:</h3>
+                <p><strong>Người nhận:</strong> <span th:text="${order.receiverName}">Họ tên</span></p>
+                <p><strong>Số điện thoại:</strong> <span th:text="${order.receiverPhone}">0123456789</span></p>
+                <p><strong>Địa chỉ:</strong> <span th:text="${order.shippingAddress}">Địa chỉ cụ thể</span></p>
+            </div>
+        </div>
+        <div class="footer">
+            <p>&copy; 2026 Beauty E-commerce. All rights reserved.</p>
+            <p>Nếu bạn có bất kỳ câu hỏi nào, vui lòng liên hệ <a href="mailto:support@beauty.com">support@beauty.com</a></p>
+        </div>
+    </div>
+</body>
+</html>
