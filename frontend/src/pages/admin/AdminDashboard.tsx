@@ -13,7 +13,6 @@ import {
   ChevronDown,
   RefreshCcw,
   Eye,
-  Heart,
   Star,
   type LucideIcon
 } from "lucide-react";
