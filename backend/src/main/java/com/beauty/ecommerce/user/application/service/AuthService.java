@@ -20,6 +20,7 @@ import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import com.beauty.ecommerce.user.adapter.in.web.request.SocialLoginRequest;
 import java.time.Instant;
 import java.time.LocalDateTime;
 import java.util.UUID;
@@ -39,6 +40,9 @@ public class AuthService {
 
     @Value("${jwt.refresh-expiration}")
     private Long refreshTokenDurationMs;
+
+    @Value("${GOOGLE_CLIENT_ID:35104546037-2jrr5q2gcan7g5ag73b9vaekbsr69nsj.apps.googleusercontent.com}")
+    private String googleClientId;
 
     @Transactional
     public AuthResponse register(RegisterUserRequest request) {
@@ -100,6 +104,53 @@ public class AuthService {
                 .role(user.getRole())
                 .build();
     }
+
+    @Transactional
+    public AuthResponse loginWithGoogle(SocialLoginRequest request) {
+        log.info("Đang xử lý đăng nhập bằng Google cho email: {}", request.getEmail());
+
+        String email = request.getEmail();
+        String name = request.getFullName();
+        String pictureUrl = request.getPictureUrl();
+        String googleId = request.getGoogleId();
+
+        UserJpaEntity user = userRepository.findByEmail(email).orElseGet(() -> {
+            log.info("Tạo người dùng mới từ Google: {}", email);
+            UserJpaEntity newUser = UserJpaEntity.builder()
+                    .email(email)
+                    .fullName(name)
+                    .avatarUrl(pictureUrl)
+                    .provider("GOOGLE")
+                    .providerId(googleId)
+                    .role("USER")
+                    .createdAt(LocalDateTime.now())
+                    .isActive(true)
+                    .build();
+            return userRepository.save(newUser);
+        });
+
+        // Nếu user đã tồn tại nhưng chưa có providerId (đăng ký local trước đó)
+        if (user.getProviderId() == null) {
+            user.setProvider("GOOGLE");
+            user.setProviderId(googleId);
+            if (user.getAvatarUrl() == null) {
+                user.setAvatarUrl(pictureUrl);
+            }
+            userRepository.save(user);
+        }
+
+        String accessToken = jwtUtil.generateAccessToken(user.getEmail(), user.getRole(), user.getId());
+        String refreshToken = createRefreshToken(user).getToken();
+
+        return AuthResponse.builder()
+                .accessToken(accessToken)
+                .refreshToken(refreshToken)
+                .email(user.getEmail())
+                .fullName(user.getFullName())
+                .role(user.getRole())
+                .build();
+    }
+
 
     @Transactional
     public AuthResponse refreshToken(TokenRefreshRequest request) {

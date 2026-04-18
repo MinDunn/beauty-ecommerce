@@ -33,6 +33,9 @@ public class UserJpaEntity {
     private String address;
     private String avatarUrl;
     private String role; // USER, ADMIN
+
+    private String provider; // LOCAL, GOOGLE
+    private String providerId;
     
     @jakarta.persistence.Column(name = "is_active", nullable = false)
     @Builder.Default

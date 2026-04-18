@@ -7,6 +7,7 @@ import com.beauty.ecommerce.user.adapter.in.web.request.LoginUserRequest;
 import com.beauty.ecommerce.user.adapter.in.web.request.RegisterUserRequest;
 import com.beauty.ecommerce.user.adapter.in.web.request.ResetPasswordRequest;
 import com.beauty.ecommerce.user.adapter.in.web.request.TokenRefreshRequest;
+import com.beauty.ecommerce.user.adapter.in.web.request.SocialLoginRequest;
 import com.beauty.ecommerce.user.adapter.in.web.request.UpdateProfileRequest;
 import com.beauty.ecommerce.user.adapter.in.web.response.AuthResponse;
 import com.beauty.ecommerce.user.adapter.in.web.response.UserProfileResponse;
@@ -42,6 +43,13 @@ public class AuthController {
         log.info("Yêu cầu đăng nhập: {}", request.getEmail());
         AuthResponse response = authService.login(request);
         return ResponseEntity.ok(ApiResponse.success("Đăng nhập thành công", response));
+    }
+
+    @PostMapping("/auth/google")
+    public ResponseEntity<ApiResponse<AuthResponse>> loginWithGoogle(@Valid @RequestBody SocialLoginRequest request) {
+        log.info("Yêu cầu đăng nhập bằng Google");
+        AuthResponse response = authService.loginWithGoogle(request);
+        return ResponseEntity.ok(ApiResponse.success("Đăng nhập bằng Google thành công", response));
     }
 
     @GetMapping("/users/profile")

@@ -43,7 +43,7 @@ public class SecurityConfig {
                         // Public endpoints
                         .requestMatchers("/api/auth/register", "/api/auth/login", "/api/auth/refresh", 
                                        "/api/auth/forgot-password", "/api/auth/reset-password",
-                                       "/api/payment/momo-ipn").permitAll()
+                                       "/api/auth/google", "/api/payment/momo-ipn").permitAll()
                         .requestMatchers(HttpMethod.GET, "/api/products/**").permitAll()
                         .requestMatchers(HttpMethod.GET, "/api/categories/**").permitAll()
                         .requestMatchers(HttpMethod.GET, "/api/reviews/**").permitAll()

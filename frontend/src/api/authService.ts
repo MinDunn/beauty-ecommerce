@@ -25,6 +25,9 @@ export const authService = {
   resetPassword: (data: ResetPasswordRequest) => 
     axiosInstance.post<ApiResponse<void>>('/auth/reset-password', data),
 
+  loginWithGoogle: (credential: string) =>
+    axiosInstance.post<ApiResponse<any>>('/auth/google', { credential }),
+
   getProfile: () => 
     axiosInstance.get<ApiResponse<UserProfile>>('/users/profile'),
 
