@@ -6,7 +6,8 @@ import { productService } from "../api/productService";
 import { categoryService } from "../api/categoryService";
 import { inventoryService } from "../api/inventoryService";
 import { toast } from "react-hot-toast";
-import { Plus, Save, Package, DollarSign, Tag, Image as ImageIcon, Loader2, Edit2, Trash2, Search, Warehouse, X } from "lucide-react";
+import { Plus, Save, Package, DollarSign, Tag, Image as ImageIcon, Loader2, Edit2, Trash2, Search, Warehouse, X, AlertCircle } from "lucide-react";
+import { cn } from "../utils/cn";
 
 const getNowLocalDatetime = () => {
   const now = new Date();
@@ -25,6 +26,9 @@ export const Products = () => {
   const [categories, setCategories] = useState<Category[]>([]);
   const [editingProduct, setEditingProduct] = useState<Product | null>(null);
   const [searchQuery, setSearchQuery] = useState("");
+  const [filterCategory, setFilterCategory] = useState<string>("all");
+  const [filterStock, setFilterStock] = useState<"all" | "low" | "out">("all");
+  const [filterSale, setFilterSale] = useState<boolean>(false);
 
   // Bulk restock state
   const [showBulkRestockModal, setShowBulkRestockModal] = useState(false);
@@ -60,7 +64,7 @@ export const Products = () => {
   const fetchProducts = async () => {
     setIsLoading(true);
     try {
-      const data = await productService.searchProducts({ size: 100 });
+      const data = await productService.searchProducts({ size: 1000 });
       setProducts(data.content);
     } catch (error) {
       toast.error("Không thể tải danh sách sản phẩm");
@@ -80,24 +84,34 @@ export const Products = () => {
         "Nước hoa"
       ];
       
-      // Sort: Home categories first in specific order, then other categories alphabetically
-      const sortedCategories = [...data].sort((a, b) => {
+      // Build hierarchical list: Parent -> Children
+      const parents = data.filter((c: Category) => !c.parentId).sort((a: Category, b: Category) => {
         const indexA = homeCategoryOrder.indexOf(a.name);
         const indexB = homeCategoryOrder.indexOf(b.name);
-        
         if (indexA !== -1 && indexB !== -1) return indexA - indexB;
         if (indexA !== -1) return -1;
         if (indexB !== -1) return 1;
-        
         return a.name.localeCompare(b.name);
       });
+
+      const finalSorted: Category[] = [];
+      parents.forEach((parent: Category) => {
+        finalSorted.push(parent);
+        const children = data.filter((c: Category) => c.parentId === parent.id)
+                             .sort((a: Category, b: Category) => a.name.localeCompare(b.name));
+        finalSorted.push(...children);
+      });
+
+      // Add any orphaned children (if any)
+      const orphaned = data.filter((c: Category) => c.parentId && !parents.find((p: Category) => p.id === c.parentId));
+      finalSorted.push(...orphaned);
       
-      setCategories(sortedCategories);
+      setCategories(finalSorted);
       
       // If we are adding a new product and no category is selected, select the first one
       setFormData(prev => {
-        if (!prev.categoryId && sortedCategories.length > 0) {
-          return { ...prev, categoryId: sortedCategories[0].id.toString() };
+        if (!prev.categoryId && finalSorted.length > 0) {
+          return { ...prev, categoryId: finalSorted[0].id.toString() };
         }
         return prev;
       });
@@ -335,10 +349,17 @@ export const Products = () => {
     });
   };
 
-  const filteredProducts = products.filter(p =>
-    p.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
-    (p.categoryName || "").toLowerCase().includes(searchQuery.toLowerCase())
-  );
+  const filteredProducts = products.filter(p => {
+    const matchesSearch = p.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
+                         (p.categoryName || "").toLowerCase().includes(searchQuery.toLowerCase());
+    const matchesCategory = filterCategory === "all" || String(p.categoryId) === filterCategory;
+    const matchesStock = filterStock === "all" || 
+                        (filterStock === "low" && p.stockQuantity > 0 && p.stockQuantity < 10) ||
+                        (filterStock === "out" && p.stockQuantity <= 0);
+    const matchesSale = !filterSale || (p.originalPrice || 0) > (p.currentPrice || 0);
+
+    return matchesSearch && matchesCategory && matchesStock && matchesSale;
+  });
 
   const tableData = filteredProducts.map(p => ({
     name: (
@@ -478,12 +499,84 @@ export const Products = () => {
         </div>
       </div>
 
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+      {/* Advanced Filter Bar */}
+      <div className="bg-slate-900/50 border border-slate-800 p-4 rounded-3xl flex flex-wrap items-center gap-4 shadow-lg">
+        <div className="flex items-center gap-2 bg-slate-800/50 p-1.5 rounded-2xl border border-slate-700">
+           <button 
+             onClick={() => setFilterStock("all")}
+             className={cn("px-4 py-2 rounded-xl text-[10px] font-black uppercase tracking-widest transition-all", filterStock === "all" ? "bg-primary-500 text-white shadow-lg shadow-primary-500/20" : "text-slate-400 hover:text-white")}
+           >
+             Tất cả
+           </button>
+           <button 
+             onClick={() => setFilterStock("low")}
+             className={cn("px-4 py-2 rounded-xl text-[10px] font-black uppercase tracking-widest transition-all", filterStock === "low" ? "bg-amber-500 text-white shadow-lg shadow-amber-500/20" : "text-slate-400 hover:text-amber-500")}
+           >
+             Sắp hết hàng
+           </button>
+           <button 
+             onClick={() => setFilterStock("out")}
+             className={cn("px-4 py-2 rounded-xl text-[10px] font-black uppercase tracking-widest transition-all", filterStock === "out" ? "bg-rose-500 text-white shadow-lg shadow-rose-500/20" : "text-slate-400 hover:text-rose-500")}
+           >
+             Hết hàng
+           </button>
+        </div>
+
+        <div className="h-8 w-[1px] bg-slate-800 hidden md:block" />
+
+        <select 
+          value={filterCategory}
+          onChange={(e) => setFilterCategory(e.target.value)}
+          className="bg-slate-800 border border-slate-700 text-slate-200 px-4 py-2.5 rounded-2xl outline-none focus:border-primary-500 transition-all font-bold text-xs min-w-[180px]"
+        >
+          <option value="all">Tất cả danh mục</option>
+          {categories.map(c => (
+            <option key={c.id} value={c.id}>{c.parentId ? `↳ ${c.name}` : c.name}</option>
+          ))}
+        </select>
+
+        <button 
+          onClick={() => setFilterSale(!filterSale)}
+          className={cn(
+            "px-5 py-2.5 rounded-2xl text-[10px] font-black uppercase tracking-widest transition-all border flex items-center gap-2",
+            filterSale 
+              ? "bg-rose-500/10 border-rose-500/50 text-rose-500 shadow-lg shadow-rose-500/10" 
+              : "bg-slate-800 border-slate-700 text-slate-400 hover:border-rose-500/50 hover:text-rose-500"
+          )}
+        >
+          <Tag size={14} />
+          Đang giảm giá
+        </button>
+
+        <div className="flex-1" />
+        
+        <button 
+          onClick={() => {
+            setSearchQuery("");
+            setFilterCategory("all");
+            setFilterStock("all");
+            setFilterSale(false);
+          }}
+          className="text-[10px] font-black text-slate-500 uppercase tracking-widest hover:text-white transition-colors flex items-center gap-2 px-4"
+        >
+          <X size={14} /> Xóa bộ lọc
+        </button>
+      </div>
+
+      <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
         <div className="bg-slate-900 border border-slate-800 p-6 rounded-[2rem] flex items-center gap-4 shadow-xl">
           <div className="p-4 rounded-2xl bg-primary-500/10 text-primary-500"><Package size={28} /></div>
           <div>
-            <p className="text-[10px] text-slate-500 uppercase font-black tracking-widest">Tổng sản phẩm</p>
-            <p className="text-2xl font-black text-white">{products.length}</p>
+            <p className="text-[10px] text-slate-500 uppercase font-black tracking-widest">Hiển thị</p>
+            <p className="text-2xl font-black text-white">{filteredProducts.length} <span className="text-xs text-slate-600">/ {products.length}</span></p>
+          </div>
+        </div>
+        
+        <div className="bg-slate-900 border border-slate-800 p-6 rounded-[2rem] flex items-center gap-4 shadow-xl">
+          <div className="p-4 rounded-2xl bg-rose-500/10 text-rose-500"><AlertCircle size={28} /></div>
+          <div>
+            <p className="text-[10px] text-slate-500 uppercase font-black tracking-widest">Hết hàng</p>
+            <p className="text-2xl font-black text-white">{products.filter(p => p.stockQuantity <= 0).length}</p>
           </div>
         </div>
       </div>
