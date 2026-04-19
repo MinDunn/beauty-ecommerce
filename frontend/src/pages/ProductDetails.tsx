@@ -12,6 +12,7 @@ import wishlistService from '../api/wishlistService';
 import reviewService from '../api/reviewService';
 import { cartService } from '../api/cartService';
 import type { Review } from '../api/reviewService';
+import { SEO } from '../components/common/SEO';
 
 const resolveProductImage = (image?: string) => {
   if (!image) return 'https://placehold.co/600x600/f8fafc/64748b?text=Glowzy+Beauty';
@@ -250,8 +251,41 @@ const ProductDetails = () => {
 
   if (!product) return null;
 
+  // Build JSON-LD Structured Data for Google
+  const productSchema = {
+    "@context": "https://schema.org/",
+    "@type": "Product",
+    "name": product.name,
+    "image": product.images,
+    "description": product.description || `Mua ${product.name} tại Glowzy. - Mỹ phẩm chính hãng từ thương hiệu ${product.brand}.`,
+    "brand": {
+      "@type": "Brand",
+      "name": product.brand
+    },
+    "offers": {
+      "@type": "Offer",
+      "url": window.location.href,
+      "priceCurrency": "VND",
+      "price": product.price,
+      "availability": "https://schema.org/InStock",
+      "itemCondition": "https://schema.org/NewCondition"
+    },
+    "aggregateRating": product.reviewsCount > 0 ? {
+      "@type": "AggregateRating",
+      "ratingValue": product.rating,
+      "reviewCount": product.reviewsCount
+    } : undefined
+  };
+
   return (
     <div className="bg-white min-h-screen pb-20">
+      <SEO 
+        title={product.name}
+        description={product.description?.substring(0, 160) || `Khám phá ngay ${product.name} chính hãng từ ${product.brand} tại Glowzy.`}
+        image={mainImage}
+        type="product"
+        schema={productSchema}
+      />
       <div className="bg-gray-50 py-4 border-b border-gray-100">
         <div className="container mx-auto px-4 max-w-7xl">
           <div className="flex items-center space-x-2 text-xs text-gray-400 font-bold uppercase tracking-widest whitespace-nowrap overflow-x-auto hide-scrollbar">

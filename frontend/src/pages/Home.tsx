@@ -1,9 +1,13 @@
 import { HeroBanner } from '../components/home/HeroBanner';
 import { ProductGrid } from '../components/home/ProductGrid';
+import { SEO } from '../components/common/SEO';
 
 const Home = () => {
   return (
     <main className="w-full min-h-screen bg-white pb-20">
+      <SEO 
+        description="Glowzy. - Thiên đường mỹ phẩm cao cấp chính hãng. Khám phá bí quyết chăm sóc sắc đẹp từ các thương hiệu hàng đầu thế giới."
+      />
       <HeroBanner />
       <ProductGrid 
         title="Flash Sale Hôm Nay ⚡" 

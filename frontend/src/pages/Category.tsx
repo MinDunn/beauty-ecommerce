@@ -6,6 +6,7 @@ import { Filter, ChevronDown, Loader2 } from 'lucide-react';
 import { productService } from '../api/productService';
 import { categoryService } from '../api/categoryService';
 import { cn } from '../utils/cn';
+import { SEO } from '../components/common/SEO';
 
 const Category = () => {
   const { slug } = useParams<{ slug: string }>();
@@ -182,6 +183,10 @@ const Category = () => {
 
   return (
     <div className="bg-white min-h-screen pb-20">
+      <SEO 
+        title={categoryName}
+        description={onSaleParam ? "Tổng hợp tất cả các sản phẩm đang có chương trình giảm giá cực sốc tại Glowzy." : (slug && categoryDescriptions[slug] ? categoryDescriptions[slug] : `Khám phá bộ sưu tập ${categoryName} chính hãng tại Glowzy.`)}
+      />
       <div className="bg-primary-50 py-12 mb-8 border-b border-primary-100">
         <div className="container mx-auto px-4 max-w-7xl">
             <div className="flex items-center space-x-2 text-xs md:text-sm text-primary-600 mb-4 font-bold uppercase tracking-widest">
