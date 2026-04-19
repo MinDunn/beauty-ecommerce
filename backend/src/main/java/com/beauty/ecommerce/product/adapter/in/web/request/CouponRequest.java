@@ -27,4 +27,14 @@ public class CouponRequest {
     private Boolean isActive = true;
 
     private Long categoryId;
+
+    private BigDecimal maxDiscountAmount;
+
+    private Integer minQuantity;
+
+    private Boolean isNewUserOnly;
+
+    private BigDecimal minSpentAmount;
+
+    private String description;
 }

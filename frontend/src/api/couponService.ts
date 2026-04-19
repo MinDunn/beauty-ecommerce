@@ -12,12 +12,22 @@ export interface CouponData {
   usageLimit?: number;
   usageCount?: number;
   categoryId?: number;
+  maxDiscountAmount?: number;
+  minQuantity?: number;
+  isNewUserOnly?: boolean;
+  minSpentAmount?: number;
+  description?: string;
 }
 
 export const couponService = {
-  validate: (code: string, orderValue: number, categoryIds?: (number | string)[]) => 
-    axiosInstance.get<ApiResponse<CouponData>>(`/coupons/validate`, {
-      params: { code, orderValue, categoryIds: categoryIds?.join(',') }
+  validate: (code: string, orderValue: number, categoryIds?: (number | string)[], totalQuantity?: number) => 
+    axiosInstance.get<ApiResponse<CouponData & { discountAmount: number }>>(`/coupons/validate`, {
+      params: { 
+        code, 
+        orderValue, 
+        categoryIds: categoryIds?.join(','),
+        totalQuantity
+      }
     }),
 
   getAllCoupons: async () => {

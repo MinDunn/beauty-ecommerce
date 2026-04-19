@@ -33,7 +33,12 @@ export const Coupons = () => {
     minOrderAmount: 0,
     usageLimit: 100,
     isActive: true,
-    categoryId: undefined
+    categoryId: undefined,
+    maxDiscountAmount: undefined,
+    minQuantity: 0,
+    isNewUserOnly: false,
+    minSpentAmount: 0,
+    description: ''
   });
   const [isSubmitting, setIsSubmitting] = useState(false);
   
@@ -71,7 +76,11 @@ export const Coupons = () => {
       setEditingCoupon(coupon);
       setFormData({
         ...coupon,
-        expiryDate: coupon.expiryDate ? coupon.expiryDate.split('T')[0] : ''
+        expiryDate: coupon.expiryDate ? coupon.expiryDate.split('T')[0] : '',
+        minSpentAmount: coupon.minSpentAmount || 0,
+        minQuantity: coupon.minQuantity || 0,
+        isNewUserOnly: coupon.isNewUserOnly || false,
+        description: coupon.description || ''
       });
     } else {
       setEditingCoupon(null);
@@ -82,7 +91,12 @@ export const Coupons = () => {
         minOrderAmount: 0,
         usageLimit: 100,
         isActive: true,
-        categoryId: undefined
+        categoryId: undefined,
+        maxDiscountAmount: undefined,
+        minQuantity: 0,
+        isNewUserOnly: false,
+        minSpentAmount: 0,
+        description: ''
       });
     }
     setIsModalOpen(true);
@@ -178,10 +192,10 @@ export const Coupons = () => {
           <table className="w-full text-left border-collapse">
             <thead>
               <tr className="bg-slate-800/50">
-                <th className="px-8 py-5 text-[10px] font-black text-slate-400 uppercase tracking-[0.2em]">Mã</th>
+                <th className="px-8 py-5 text-[10px] font-black text-slate-400 uppercase tracking-[0.2em]">Mã & Mô tả</th>
                 <th className="px-8 py-5 text-[10px] font-black text-slate-400 uppercase tracking-[0.2em]">Giảm giá</th>
+                <th className="px-8 py-5 text-[10px] font-black text-slate-400 uppercase tracking-[0.2em]">Điều kiện</th>
                 <th className="px-8 py-5 text-[10px] font-black text-slate-400 uppercase tracking-[0.2em]">Lượt dùng</th>
-                <th className="px-8 py-5 text-[10px] font-black text-slate-400 uppercase tracking-[0.2em]">Hạn dùng</th>
                 <th className="px-8 py-5 text-[10px] font-black text-slate-400 uppercase tracking-[0.2em]">Trạng thái</th>
                 <th className="px-8 py-5 text-[10px] font-black text-slate-400 uppercase tracking-[0.2em] text-right">Thao tác</th>
               </tr>
@@ -213,6 +227,7 @@ export const Coupons = () => {
                     <td className="px-8 py-6">
                       <div className="flex flex-col">
                         <span className="text-sm font-black text-white group-hover:text-primary-500 transition-colors">{coupon.code}</span>
+                        <span className="text-[9px] text-slate-500 font-medium italic line-clamp-1 mt-1">{coupon.description || 'Không có mô tả'}</span>
                         {coupon.categoryId && (
                           <span className="text-[8px] font-black text-primary-500/80 uppercase tracking-tighter mt-1 flex items-center gap-1">
                             <Tag size={8} /> 
@@ -222,9 +237,33 @@ export const Coupons = () => {
                       </div>
                     </td>
                     <td className="px-8 py-6">
-                      <span className="text-xs font-black text-slate-300">
-                        {coupon.discountType === 'PERCENTAGE' ? `${coupon.discountValue}%` : `${coupon.discountValue?.toLocaleString()}đ`}
-                      </span>
+                      <div className="flex flex-col">
+                        <span className="text-xs font-black text-slate-300">
+                          {coupon.discountType === 'PERCENTAGE' ? `${coupon.discountValue}%` : `${coupon.discountValue?.toLocaleString()}đ`}
+                        </span>
+                        {coupon.maxDiscountAmount && coupon.discountType === 'PERCENTAGE' && (
+                          <span className="text-[8px] text-slate-500 font-bold uppercase mt-1 italic">Tối đa {coupon.maxDiscountAmount.toLocaleString()}đ</span>
+                        )}
+                      </div>
+                    </td>
+                    <td className="px-8 py-6">
+                       <div className="space-y-1">
+                          {coupon.minOrderAmount ? (
+                            <div className="text-[9px] text-slate-400 font-bold uppercase tracking-tighter">🛒 ≥ {coupon.minOrderAmount.toLocaleString()}đ</div>
+                          ) : null}
+                          {coupon.minQuantity ? (
+                            <div className="text-[9px] text-slate-400 font-bold uppercase tracking-tighter">📦 ≥ {coupon.minQuantity} món</div>
+                          ) : null}
+                          {coupon.isNewUserOnly ? (
+                            <div className="text-[9px] text-primary-400 font-black uppercase tracking-tighter">✨ Chỉ khách mới</div>
+                          ) : null}
+                          {coupon.minSpentAmount ? (
+                            <div className="text-[9px] text-amber-500/80 font-black uppercase tracking-tighter">💎 Tích lũy ≥ {coupon.minSpentAmount.toLocaleString()}đ</div>
+                          ) : null}
+                          {!coupon.minOrderAmount && !coupon.minQuantity && !coupon.isNewUserOnly && !coupon.minSpentAmount && (
+                            <span className="text-[9px] text-slate-600 font-black uppercase tracking-tighter">Không điều kiện</span>
+                          )}
+                       </div>
                     </td>
                     <td className="px-8 py-6">
                       <div className="flex flex-col justify-center">
@@ -238,11 +277,6 @@ export const Coupons = () => {
                           />
                         </div>
                       </div>
-                    </td>
-                    <td className="px-8 py-6">
-                      <span className="text-xs text-slate-400 font-bold">
-                        {coupon.expiryDate ? new Date(coupon.expiryDate).toLocaleDateString('vi-VN') : 'Vô thời hạn'}
-                      </span>
                     </td>
                     <td className="px-8 py-6">
                       <span className={`px-2.5 py-1 rounded-lg text-[9px] font-black uppercase tracking-widest flex items-center gap-1.5 w-fit ${
@@ -291,9 +325,9 @@ export const Coupons = () => {
               initial={{ opacity: 0, scale: 0.95, y: 20 }}
               animate={{ opacity: 1, scale: 1, y: 0 }}
               exit={{ opacity: 0, scale: 0.95, y: 20 }}
-              className="relative w-full max-w-2xl bg-slate-900 border border-slate-800 rounded-[2.5rem] shadow-2xl overflow-hidden"
+              className="relative w-full max-w-3xl bg-slate-900 border border-slate-800 rounded-[2.5rem] shadow-2xl overflow-hidden"
             >
-              <div className="p-8 md:p-10">
+              <div className="p-8 md:p-10 max-h-[90vh] overflow-y-auto custom-scrollbar">
                 <div className="flex items-center gap-4 mb-8">
                   <div className="w-12 h-12 bg-primary-500/10 rounded-2xl flex items-center justify-center text-primary-500">
                     <Ticket size={24} />
@@ -304,7 +338,7 @@ export const Coupons = () => {
                   </div>
                 </div>
 
-                <form onSubmit={handleSubmit} className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                <form onSubmit={handleSubmit} className="grid grid-cols-1 md:grid-cols-2 gap-x-8 gap-y-6">
                   <div className="space-y-2">
                     <label className="text-[10px] font-black text-slate-500 uppercase tracking-widest ml-1">Mã giảm giá</label>
                     <input 
@@ -328,6 +362,17 @@ export const Coupons = () => {
                         <option key={cat.id} value={cat.id}>{cat.name}</option>
                       ))}
                     </select>
+                  </div>
+
+                  <div className="space-y-2 md:col-span-2">
+                    <label className="text-[10px] font-black text-slate-500 uppercase tracking-widest ml-1">Mô tả điều kiện</label>
+                    <textarea 
+                      rows={2}
+                      value={formData.description}
+                      onChange={(e) => setFormData({...formData, description: e.target.value})}
+                      className="w-full px-6 py-4 bg-slate-800 border border-slate-700 rounded-2xl text-white font-bold outline-none focus:border-primary-500 transition-all resize-none"
+                      placeholder="VD: Giảm 20% cho đơn từ 200k, tối đa 50k..."
+                    />
                   </div>
 
                   <div className="space-y-2">
@@ -364,13 +409,47 @@ export const Coupons = () => {
                     />
                   </div>
 
+                  {formData.discountType === 'PERCENTAGE' && (
+                    <div className="space-y-2">
+                      <label className="text-[10px] font-black text-slate-500 uppercase tracking-widest ml-1">Mức giảm tối đa (đ)</label>
+                      <input 
+                        type="number" 
+                        value={formData.maxDiscountAmount || ''}
+                        onChange={(e) => setFormData({...formData, maxDiscountAmount: e.target.value ? Number(e.target.value) : undefined})}
+                        className="w-full px-6 py-4 bg-slate-800 border border-slate-700 rounded-2xl text-white font-bold outline-none focus:border-primary-500 transition-all border-dashed border-primary-500/30"
+                        placeholder="Để trống nếu không giới hạn"
+                      />
+                    </div>
+                  )}
+
                   <div className="space-y-2">
-                    <label className="text-[10px] font-black text-slate-500 uppercase tracking-widest ml-1">Đơn hàng tối thiểu (đ)</label>
+                    <label className="text-[10px) font-black text-slate-500 uppercase tracking-widest ml-1">Đơn hàng tối thiểu (đ)</label>
                     <input 
                       type="number" 
                       value={formData.minOrderAmount}
                       onChange={(e) => setFormData({...formData, minOrderAmount: Number(e.target.value)})}
                       className="w-full px-6 py-4 bg-slate-800 border border-slate-700 rounded-2xl text-white font-bold outline-none focus:border-primary-500 transition-all"
+                    />
+                  </div>
+
+                  <div className="space-y-2">
+                    <label className="text-[10px] font-black text-slate-500 uppercase tracking-widest ml-1">Số lượng SP tối thiểu</label>
+                    <input 
+                      type="number" 
+                      value={formData.minQuantity}
+                      onChange={(e) => setFormData({...formData, minQuantity: Number(e.target.value)})}
+                      className="w-full px-6 py-4 bg-slate-800 border border-slate-700 rounded-2xl text-white font-bold outline-none focus:border-primary-500 transition-all"
+                    />
+                  </div>
+
+                  <div className="space-y-2">
+                    <label className="text-[10px] font-black text-slate-500 uppercase tracking-widest ml-1">Chi tiêu tích lũy tối thiểu (đ)</label>
+                    <input 
+                      type="number" 
+                      value={formData.minSpentAmount}
+                      onChange={(e) => setFormData({...formData, minSpentAmount: Number(e.target.value)})}
+                      className="w-full px-6 py-4 bg-slate-800 border border-slate-700 rounded-2xl text-white font-bold outline-none focus:border-primary-500 transition-all"
+                      placeholder="VD: 1,000,000..."
                     />
                   </div>
 
@@ -385,7 +464,7 @@ export const Coupons = () => {
                   </div>
 
                   <div className="space-y-2">
-                    <label className="text-[10px] font-black text-slate-500 uppercase tracking-widest ml-1">Giới hạn sử dụng</label>
+                    <label className="text-[10px] font-black text-slate-500 uppercase tracking-widest ml-1">Giới hạn sử dụng (Tổng)</label>
                     <input 
                       type="number" 
                       value={formData.usageLimit}
@@ -394,21 +473,38 @@ export const Coupons = () => {
                     />
                   </div>
 
-                  <div className="space-y-2">
-                    <label className="text-[10px] font-black text-slate-500 uppercase tracking-widest ml-1">Kích hoạt</label>
-                    <button 
-                      type="button"
-                      onClick={() => setFormData({...formData, isActive: !formData.isActive})}
-                      className={`w-full flex items-center justify-between px-6 py-4 rounded-2xl border font-bold text-sm transition-all ${
-                        formData.isActive ? 'bg-emerald-500/10 border-emerald-500/50 text-emerald-500' : 'bg-slate-800 border-slate-700 text-slate-400'
-                      }`}
-                    >
-                      <span>{formData.isActive ? 'Đang kích hoạt' : 'Đang tạm dừng'}</span>
-                      {formData.isActive ? <Unlock size={18} /> : <Lock size={18} />}
-                    </button>
+                  <div className="space-y-4">
+                    <div className="flex gap-4">
+                      <div className="flex-1 space-y-2">
+                        <label className="text-[10px] font-black text-slate-500 uppercase tracking-widest ml-1">Chỉ khách mới</label>
+                        <button 
+                          type="button"
+                          onClick={() => setFormData({...formData, isNewUserOnly: !formData.isNewUserOnly})}
+                          className={`w-full flex items-center justify-between px-6 py-4 rounded-2xl border font-bold text-xs transition-all ${
+                            formData.isNewUserOnly ? 'bg-primary-500/10 border-primary-500/50 text-primary-500' : 'bg-slate-800 border-slate-700 text-slate-400'
+                          }`}
+                        >
+                          <span>{formData.isNewUserOnly ? 'Bật' : 'Tắt'}</span>
+                          <CheckCircle size={16} className={formData.isNewUserOnly ? 'opacity-100' : 'opacity-20'} />
+                        </button>
+                      </div>
+                      <div className="flex-1 space-y-2">
+                        <label className="text-[10px] font-black text-slate-500 uppercase tracking-widest ml-1">Kích hoạt</label>
+                        <button 
+                          type="button"
+                          onClick={() => setFormData({...formData, isActive: !formData.isActive})}
+                          className={`w-full flex items-center justify-between px-6 py-4 rounded-2xl border font-bold text-xs transition-all ${
+                            formData.isActive ? 'bg-emerald-500/10 border-emerald-500/50 text-emerald-500' : 'bg-slate-800 border-slate-700 text-slate-400'
+                          }`}
+                        >
+                          <span>{formData.isActive ? 'Đang chạy' : 'Sẵn sàng'}</span>
+                          {formData.isActive ? <Unlock size={16} /> : <Lock size={16} />}
+                        </button>
+                      </div>
+                    </div>
                   </div>
 
-                  <div className="md:col-span-2 flex gap-4 pt-4">
+                  <div className="md:col-span-2 flex gap-4 pt-6 border-t border-slate-800 mt-4">
                     <button 
                       type="button"
                       onClick={() => setIsModalOpen(false)}
@@ -419,14 +515,16 @@ export const Coupons = () => {
                     <button 
                       type="submit"
                       disabled={isSubmitting}
-                      className="flex-[2] py-4 bg-primary-500 text-white font-black rounded-2xl hover:bg-primary-600 shadow-lg shadow-primary-500/20 transition-all uppercase tracking-widest text-xs flex items-center justify-center gap-2"
+                      className="flex-[2] py-4 bg-primary-500 text-white font-black rounded-2xl hover:bg-primary-600 shadow-xl shadow-primary-500/20 transition-all uppercase tracking-widest text-xs flex items-center justify-center gap-2"
                     >
                       {isSubmitting ? (
-                        <div className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin" />
+                        <div className="w-5 h-5 border-2 border-white/30 border-t-white rounded-full animate-spin" />
                       ) : (
-                        <CheckCircle size={16} />
+                        <div className="flex items-center gap-2">
+                           <Tag size={18} />
+                           <span>{editingCoupon ? 'Cập nhật Voucher' : 'Phát hành Voucher'}</span>
+                        </div>
                       )}
-                      <span>{editingCoupon ? 'Cập nhật ngay' : 'Tạo mã voucher'}</span>
                     </button>
                   </div>
                 </form>

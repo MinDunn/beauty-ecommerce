@@ -123,7 +123,7 @@ const Checkout = () => {
   
   // Coupon state
   const [couponCode, setCouponCode] = useState('');
-  const [appliedCoupon, setAppliedCoupon] = useState<CouponData | null>(null);
+  const [appliedCoupon, setAppliedCoupon] = useState<(CouponData & { discountAmount?: number }) | null>(null);
   const [isApplying, setIsApplying] = useState(false);
 
   // Summary Calculations
@@ -132,9 +132,17 @@ const Checkout = () => {
   const discount = useMemo(() => {
     if (!appliedCoupon) return 0;
     
+    // Use Server-calculated discountAmount if available, otherwise fallback to local calculation
+    if (appliedCoupon.discountAmount !== undefined) {
+      return appliedCoupon.discountAmount;
+    }
+
     let calcDiscount = 0;
     if (appliedCoupon.discountType === 'PERCENTAGE') {
       calcDiscount = (subTotal * appliedCoupon.discountValue) / 100;
+      if (appliedCoupon.maxDiscountAmount && calcDiscount > appliedCoupon.maxDiscountAmount) {
+        calcDiscount = appliedCoupon.maxDiscountAmount;
+      }
     } else {
       calcDiscount = appliedCoupon.discountValue;
     }
@@ -149,8 +157,13 @@ const Checkout = () => {
     const loadingToast = toast.loading('Đang kiểm tra mã...');
     try {
       const categoryIds = selectedItems.map(item => item.categoryId).filter(id => id !== undefined) as number[];
-      const resp = await couponService.validate(couponCode, subTotal, categoryIds);
-      setAppliedCoupon(resp.data.data);
+      const totalQuantity = selectedItems.reduce((sum, item) => sum + item.quantity, 0);
+      const resp = await couponService.validate(couponCode, subTotal, categoryIds, totalQuantity);
+      
+      // The API now returns the calculated discountAmount which accounts for maxDiscountAmount
+      const couponData = resp.data.data;
+      setAppliedCoupon(couponData);
+      
       toast.success('Áp dụng mã giảm giá thành công!', { id: loadingToast });
     } catch (error: unknown) {
       const axiosError = error as AxiosError<{ message: string }>;

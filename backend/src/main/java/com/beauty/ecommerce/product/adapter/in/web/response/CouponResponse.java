@@ -18,4 +18,9 @@ public class CouponResponse {
     private Integer usageLimit;
     private Integer usageCount;
     private Long categoryId;
+    private BigDecimal maxDiscountAmount;
+    private Integer minQuantity;
+    private Boolean isNewUserOnly;
+    private BigDecimal minSpentAmount;
+    private String description;
 }

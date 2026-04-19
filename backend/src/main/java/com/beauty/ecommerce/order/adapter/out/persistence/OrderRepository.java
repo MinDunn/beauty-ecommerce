@@ -11,4 +11,9 @@ public interface OrderRepository extends JpaRepository<OrderJpaEntity, Long> {
     List<OrderJpaEntity> findAllByOrderByOrderDateDesc();
     
     List<OrderJpaEntity> findByStatusAndPaymentMethodAndOrderDateBefore(String status, String paymentMethod, java.time.LocalDateTime cutoffTime);
+
+    long countByUser_Id(Long userId);
+
+    @org.springframework.data.jpa.repository.Query("SELECT SUM(o.totalPrice) FROM OrderJpaEntity o WHERE o.user.id = :userId AND (o.status = 'DELIVERED' OR o.status = 'COMPLETED')")
+    java.math.BigDecimal sumTotalSpentByUserId(Long userId);
 }

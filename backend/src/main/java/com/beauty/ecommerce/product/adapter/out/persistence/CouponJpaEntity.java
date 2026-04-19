@@ -51,4 +51,21 @@ public class CouponJpaEntity {
 
     @Column(name = "category_id")
     private Long categoryId;
+
+    @Column(name = "max_discount_amount")
+    private BigDecimal maxDiscountAmount;
+
+    @Column(name = "min_quantity")
+    @Builder.Default
+    private Integer minQuantity = 0;
+
+    @Column(name = "is_new_user_only")
+    @Builder.Default
+    private Boolean isNewUserOnly = false;
+
+    @Column(name = "min_spent_amount")
+    private BigDecimal minSpentAmount;
+
+    @Column(name = "description")
+    private String description;
 }

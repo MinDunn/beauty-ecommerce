@@ -91,7 +91,8 @@ public class OrderService implements OrderUseCase {
                 .filter(java.util.Objects::nonNull)
                 .collect(java.util.stream.Collectors.toList());
 
-            CouponJpaEntity coupon = couponService.validateCoupon(couponCode, totalPrice.doubleValue(), categoryIds);
+            int totalItemCount = cartItems.stream().mapToInt(CartItem::getQuantity).sum();
+            CouponJpaEntity coupon = couponService.validateCoupon(couponCode, totalPrice.doubleValue(), categoryIds, totalItemCount, user.getId());
             BigDecimal discount = BigDecimal.ZERO;
             if ("PERCENTAGE".equalsIgnoreCase(coupon.getDiscountType())) {
                 discount = totalPrice.multiply(coupon.getDiscountValue()).divide(new BigDecimal(100));

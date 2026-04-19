@@ -18,9 +18,10 @@ import java.time.LocalDateTime;
 public class CouponService {
 
     private final CouponRepository couponRepository;
+    private final com.beauty.ecommerce.order.adapter.out.persistence.OrderRepository orderRepository;
 
-    public CouponJpaEntity validateCoupon(String code, Double orderValue, java.util.List<Long> categoryIds) {
-        log.info("Xác thực mã giảm giá: {} cho đơn hàng: {}. Danh sách danh mục: {}", code, orderValue, categoryIds);
+    public CouponJpaEntity validateCoupon(String code, Double orderValue, java.util.List<Long> categoryIds, Integer totalItemCount, Long userId) {
+        log.info("Xác thực mã giảm giá: {} cho đơn hàng: {}. Số lượng: {}. UserID: {}", code, orderValue, totalItemCount, userId);
         CouponJpaEntity coupon = couponRepository.findByCode(code)
                 .orElseThrow(() -> new ResourceNotFoundException("Mã giảm giá không tồn tại"));
 
@@ -37,13 +38,41 @@ public class CouponService {
         }
 
         if (coupon.getMinOrderAmount() != null && BigDecimal.valueOf(orderValue).compareTo(coupon.getMinOrderAmount()) < 0) {
-            throw new BadRequestException("Đơn hàng chưa đạt giá trị tối thiểu để áp dụng mã này");
+            throw new BadRequestException("Đơn hàng chưa đạt giá trị tối thiểu " + coupon.getMinOrderAmount().longValue() + "đ để áp dụng mã này");
+        }
+
+        // Kiểm tra số lượng sản phẩm tối thiểu
+        if (coupon.getMinQuantity() != null && totalItemCount < coupon.getMinQuantity()) {
+            throw new BadRequestException("Bạn cần mua ít nhất " + coupon.getMinQuantity() + " sản phẩm để sử dụng mã này");
         }
 
         // Kiểm tra danh mục nếu mã có giới hạn
         if (coupon.getCategoryId() != null) {
             if (categoryIds == null || !categoryIds.contains(coupon.getCategoryId())) {
                 throw new BadRequestException("Mã giảm giá này không áp dụng cho các sản phẩm trong giỏ hàng của bạn");
+            }
+        }
+
+        // Kiểm tra điều kiện khách hàng mới
+        if (Boolean.TRUE.equals(coupon.getIsNewUserOnly())) {
+            if (userId == null) {
+                throw new BadRequestException("Vui lòng đăng nhập để sử dụng mã dành cho khách hàng mới");
+            }
+            long orderCount = orderRepository.countByUser_Id(userId);
+            if (orderCount > 0) {
+                throw new BadRequestException("Mã giảm giá này chỉ dành cho đơn hàng đầu tiên của bạn");
+            }
+        }
+
+        // Kiểm tra điều kiện chi tiêu tối thiểu trong quá khứ
+        if (coupon.getMinSpentAmount() != null && coupon.getMinSpentAmount().compareTo(BigDecimal.ZERO) > 0) {
+            if (userId == null) {
+                throw new BadRequestException("Vui lòng đăng nhập để kiểm tra điều kiện chi tiêu tích lũy");
+            }
+            BigDecimal totalSpent = orderRepository.sumTotalSpentByUserId(userId);
+            if (totalSpent == null) totalSpent = BigDecimal.ZERO;
+            if (totalSpent.compareTo(coupon.getMinSpentAmount()) < 0) {
+                throw new BadRequestException("Bạn cần tích lũy chi tiêu ít nhất " + coupon.getMinSpentAmount().longValue() + "đ để sử dụng mã này. Hiện tại bạn mới đạt " + totalSpent.longValue() + "đ");
             }
         }
 
@@ -83,6 +112,11 @@ public class CouponService {
                 .usageLimit(request.getUsageLimit() != null ? request.getUsageLimit() : 100)
                 .isActive(request.getIsActive() != null ? request.getIsActive() : true)
                 .categoryId(request.getCategoryId())
+                .maxDiscountAmount(request.getMaxDiscountAmount())
+                .minQuantity(request.getMinQuantity() != null ? request.getMinQuantity() : 0)
+                .isNewUserOnly(request.getIsNewUserOnly() != null ? request.getIsNewUserOnly() : false)
+                .minSpentAmount(request.getMinSpentAmount())
+                .description(request.getDescription())
                 .build();
         
         return mapToResponse(couponRepository.save(coupon));
@@ -100,6 +134,11 @@ public class CouponService {
         coupon.setUsageLimit(request.getUsageLimit());
         coupon.setIsActive(request.getIsActive());
         coupon.setCategoryId(request.getCategoryId());
+        coupon.setMaxDiscountAmount(request.getMaxDiscountAmount());
+        coupon.setMinQuantity(request.getMinQuantity());
+        coupon.setIsNewUserOnly(request.getIsNewUserOnly());
+        coupon.setMinSpentAmount(request.getMinSpentAmount());
+        coupon.setDescription(request.getDescription());
         
         return mapToResponse(couponRepository.save(coupon));
     }
@@ -123,6 +162,11 @@ public class CouponService {
                 .usageLimit(coupon.getUsageLimit())
                 .usageCount(coupon.getUsageCount())
                 .categoryId(coupon.getCategoryId())
+                .maxDiscountAmount(coupon.getMaxDiscountAmount())
+                .minQuantity(coupon.getMinQuantity())
+                .isNewUserOnly(coupon.getIsNewUserOnly())
+                .minSpentAmount(coupon.getMinSpentAmount())
+                .description(coupon.getDescription())
                 .build();
     }
 }
