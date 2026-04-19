@@ -12,24 +12,26 @@ const SearchResultPage = () => {
   const [isMobileFilterOpen, setIsMobileFilterOpen] = useState(false);
   
   // Filter states
-  const [selectedBrands, setSelectedBrands] = useState<string[]>([]);
   const [selectedPriceRange, setSelectedPriceRange] = useState<string | null>(null);
   const [selectedSkinTypes, setSelectedSkinTypes] = useState<string[]>([]);
+  const [selectedOnSale, setSelectedOnSale] = useState(false);
 
-  const handleFilterChange = (type: 'brand' | 'price' | 'skinType', value: string) => {
-     if (type === 'brand') {
-        setSelectedBrands(prev => prev.includes(value) ? prev.filter(b => b !== value) : [...prev, value]);
-     } else if (type === 'price') {
+  const handleFilterChange = (type: 'price' | 'skinType' | 'offer' | 'rating', value: any) => {
+     if (type === 'price') {
         setSelectedPriceRange(prev => prev === value ? null : value);
      } else if (type === 'skinType') {
         setSelectedSkinTypes(prev => prev.includes(value) ? prev.filter(s => s !== value) : [...prev, value]);
+     } else if (type === 'offer') {
+       setSelectedOnSale(prev => !prev);
+     } else if (type === 'rating') {
+       // Logic for rating filter if needed
      }
   };
 
   const clearFilters = () => {
-    setSelectedBrands([]);
     setSelectedPriceRange(null);
     setSelectedSkinTypes([]);
+    setSelectedOnSale(false);
   };
 
   const [products, setProducts] = useState<any[]>([]);
@@ -107,9 +109,9 @@ const SearchResultPage = () => {
              <FilterSidebar 
               isMobileOpen={isMobileFilterOpen} 
               setIsMobileOpen={setIsMobileFilterOpen}
-              selectedBrands={selectedBrands}
               selectedPriceRange={selectedPriceRange}
               selectedSkinTypes={selectedSkinTypes}
+              selectedOnSale={selectedOnSale}
               onFilterChange={handleFilterChange}
               onReset={clearFilters}
              />

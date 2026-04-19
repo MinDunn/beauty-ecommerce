@@ -99,7 +99,7 @@ export const ProductCard = ({ id, name, price, originalPrice, image, badge, bran
             "absolute top-4 left-4 text-white text-[10px] font-black uppercase px-2.5 py-1.5 rounded-lg z-10 shadow-lg transition-transform group-hover:scale-110",
             badge ? "bg-red-500 shadow-red-500/20" : "bg-primary-600 shadow-primary-600/20"
           )}>
-            {badge || "NEW"}
+            {badge || "MỚI"}
           </span>
         )}
         

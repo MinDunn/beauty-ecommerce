@@ -34,12 +34,16 @@ import { InventoryReceiptsPage } from './pages/admin/InventoryReceiptsPage';
 import { Activities } from './pages/Activities';
 import { useAuth } from './hooks/useAuth';
 
+import { useState } from 'react';
+
 function AdminLayout({ logout }: { logout: () => void }) {
+  const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
+
   return (
-    <div className="flex bg-[#020617] min-h-screen font-sans selection:bg-primary-500/30">
-      <Sidebar />
+    <div className="flex bg-[#020617] min-h-screen font-sans selection:bg-primary-500/30 overflow-x-hidden">
+      <Sidebar isOpen={isMobileMenuOpen} onClose={() => setIsMobileMenuOpen(false)} />
       <div className="flex-1 flex flex-col min-w-0 md:pl-72">
-        <AdminHeader logout={logout} />
+        <AdminHeader logout={logout} onToggleMenu={() => setIsMobileMenuOpen(true)} />
         <main className="flex-1 p-6 md:p-10 overflow-x-hidden">
           <Routes>
             <Route path="" element={<AdminDashboard />} />

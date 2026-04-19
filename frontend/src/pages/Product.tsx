@@ -163,7 +163,7 @@ export const Products = () => {
         categoryId: product.categoryId?.toString() || "",
         instructions: product.instructions || "",
         ingredients: product.ingredients || "",
-        skinType: (product as any).skinType || "",
+        skinType: product.skinType || "",
         variants: product.variants?.map((v: any) => ({
           variantName: v.variantName,
           price: (v.price ?? 0).toString(),
@@ -187,6 +187,7 @@ export const Products = () => {
     }
 
     setIsSaving(true);
+    console.log("DEBUG: Saving Product Data:", formData);
     try {
       const variantsWithIndex = formData.variants.map(v => {
         return {
@@ -391,6 +392,11 @@ export const Products = () => {
       </div>
     ),
     category: categories.find(c => String(c.id) === String(p.categoryId))?.name || "Đang tải...",
+    skinType: (
+      <span className="px-3 py-1 rounded-full text-[10px] font-black uppercase tracking-tight bg-primary-500/10 text-primary-500 border border-primary-500/20">
+        {p.skinType || "---"}
+      </span>
+    ),
     stock: (
       <div className="relative group/stock inline-block">
         <span className={`px-3 py-1 rounded-full text-[10px] font-black uppercase tracking-tight cursor-help ${p.stockQuantity < 10 ? "bg-rose-500/10 text-rose-500" : "bg-emerald-500/10 text-emerald-500"
@@ -596,6 +602,7 @@ export const Products = () => {
               columns={[
                 { header: "Tên sản phẩm", key: "name" },
                 { header: "Giá hiện tại", key: "price" },
+                { header: "Loại da", key: "skinType" },
                 { header: "Danh mục", key: "category" },
                 { header: "Số lượng", key: "stock" },
                 { header: "Thao tác", key: "actions" }

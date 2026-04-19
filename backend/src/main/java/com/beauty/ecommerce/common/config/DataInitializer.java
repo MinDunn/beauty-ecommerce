@@ -7,6 +7,7 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.boot.CommandLineRunner;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.security.crypto.password.PasswordEncoder;
+import org.springframework.jdbc.core.JdbcTemplate;
 
 import java.time.LocalDateTime;
 
@@ -17,10 +18,13 @@ public class DataInitializer implements CommandLineRunner {
 
     private final UserRepository userRepository;
     private final PasswordEncoder passwordEncoder;
+    private final JdbcTemplate jdbcTemplate;
 
     @Override
     public void run(String... args) {
         try {
+            log.info("Bắt đầu kiểm tra cấu trúc Database...");
+            ensureSkinTypeColumnExists();
             log.info("Bắt đầu khởi tạo dữ liệu mẫu...");
             initializeUsers();
             initializeCategoriesAndProducts();
@@ -69,5 +73,17 @@ public class DataInitializer implements CommandLineRunner {
 
     private void initializeCategoriesAndProducts() {
         log.info("Bỏ qua khởi tạo danh mục tự động (để tránh trùng lặp dữ liệu)...");
+    }
+
+    private void ensureSkinTypeColumnExists() {
+        log.info("Kiểm tra và tạo cột skin_type nếu chưa tồn tại...");
+        try {
+            // MySQL 8.0.19+ supports ADD COLUMN IF NOT EXISTS, but for better compatibility:
+            jdbcTemplate.execute("ALTER TABLE products ADD COLUMN skin_type VARCHAR(50)");
+            log.info("Đã tạo cột skin_type thành công.");
+        } catch (Exception e) {
+            // If column already exists, MySQL throws an error we can safely ignore
+            log.info("Cột skin_type đã tồn tại hoặc có lỗi (bỏ qua): {}", e.getMessage());
+        }
     }
 }

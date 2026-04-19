@@ -4,7 +4,7 @@ import { cn } from '../../utils/cn';
 
 interface FilterSectionProps {
   title: string;
-  type: 'brand' | 'price' | 'skinType' | 'offer' | 'rating';
+  type: 'price' | 'skinType' | 'offer' | 'rating';
   items: { id: string | number; label: string | React.ReactNode; count?: number }[];
   selectedItems: any;
   onToggle: (type: any, value: any) => void;
@@ -75,9 +75,9 @@ interface FilterSidebarProps {
   isMobileOpen: boolean;
   setIsMobileOpen: (v: boolean) => void;
   selectedPriceRange: string | null;
+  selectedSkinTypes: string[];
   selectedOnSale: boolean;
-  selectedSkinType: string | null;
-  onFilterChange: (type: 'brand' | 'price' | 'skinType' | 'offer' | 'rating', value: any) => void;
+  onFilterChange: (type: 'price' | 'skinType' | 'offer' | 'rating', value: any) => void;
   onReset: () => void;
   isSkincare?: boolean;
 }
@@ -86,8 +86,8 @@ export const FilterSidebar = ({
   isMobileOpen, 
   setIsMobileOpen,
   selectedPriceRange,
+  selectedSkinTypes,
   selectedOnSale,
-  selectedSkinType,
   onFilterChange,
   onReset,
   isSkincare
@@ -157,7 +157,7 @@ export const FilterSidebar = ({
               title="Loại da" 
               type="skinType"
               items={skinTypeFilters} 
-              selectedItems={selectedSkinType}
+              selectedItems={selectedSkinTypes}
               onToggle={onFilterChange}
             />
           )}

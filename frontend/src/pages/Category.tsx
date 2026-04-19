@@ -201,12 +201,12 @@ const Category = () => {
       <div className="container mx-auto px-4 max-w-7xl">
         <div className="flex flex-col lg:flex-row gap-8 items-start">
           <div className="lg:w-1/4 lg:sticky lg:top-24 w-full">
-             <FilterSidebar 
+            <FilterSidebar 
               isMobileOpen={isMobileFilterOpen} 
               setIsMobileOpen={setIsMobileFilterOpen}
               selectedPriceRange={selectedPriceRange}
+              selectedSkinTypes={selectedSkinType ? [selectedSkinType] : []}
               selectedOnSale={selectedOnSale}
-              selectedSkinType={selectedSkinType}
               onFilterChange={handleFilterChange}
               onReset={clearFilters}
               isSkincare={

@@ -1,40 +1,40 @@
 import { useState, useEffect } from 'react';
 import { ArrowRight, ChevronLeft, ChevronRight } from 'lucide-react';
 
+const STATIC_BANNERS = [
+  {
+    id: 1,
+    image: "https://innovativehub.com.vn/wp-content/uploads/2021/11/nganh-my-pham-viet-nam.jpg",
+    title: "Beauty & Green",
+    campaign: "Green Skincare Trends",
+    subtitle: "Glowzy mang đến giải pháp làm đẹp thuần chay, an toàn và hiệu quả tuyệt đối cho làn da của phụ nữ Việt.",
+  },
+  {
+    id: 2,
+    image: "https://bazaarvietnam.vn/wp-content/uploads/2020/03/xu-huong-lam-dep-xanh-harpers-bazaar-6.jpg",
+    title: "Skincare Trend 2020",
+    campaign: "Green Beauty Evolution",
+    subtitle: "Khám phá những sản phẩm dưỡng da dẫn đầu xu hướng thế giới với thành phần từ tự nhiên tinh khiết.",
+  }
+];
+
 export const HeroBanner = () => {
   const [currentSlide, setCurrentSlide] = useState(0);
-
-  const banners = [
-    {
-      id: 1,
-      image: '/images/hero-skincare-v1.jpg',
-      title: 'Chăm Sóc Da Chuyên Sâu',
-      campaign: 'Summer Sale',
-      subtitle: 'Làn da khỏe mạnh là nền tảng của vẻ đẹp bền vững. Đánh thức vẻ đẹp tự nhiên với liệu trình chăm sóc da từ chuyên gia.',
-    },
-    {
-      id: 2,
-      image: '/images/hero-skincare-v2.png',
-      title: 'Thế Giới Trang Điểm',
-      campaign: 'New Trend 2026',
-      subtitle: 'Khám phá bộ sưu tập mỹ phẩm thời thượng, giúp bạn tự tin tỏa sáng mọi góc nhìn và tôn vinh phong cách riêng.',
-    },
-  ];
 
   // Auto-play logic
   useEffect(() => {
     const timer = setInterval(() => {
-      setCurrentSlide((prev) => (prev === banners.length - 1 ? 0 : prev + 1));
+      setCurrentSlide((prev) => (prev === STATIC_BANNERS.length - 1 ? 0 : prev + 1));
     }, 5000);
     return () => clearInterval(timer);
-  }, [banners.length]);
+  }, []);
 
   const nextSlide = () => {
-    setCurrentSlide((prev) => (prev === banners.length - 1 ? 0 : prev + 1));
+    setCurrentSlide((prev) => (prev === STATIC_BANNERS.length - 1 ? 0 : prev + 1));
   };
 
   const prevSlide = () => {
-    setCurrentSlide((prev) => (prev === 0 ? banners.length - 1 : prev - 1));
+    setCurrentSlide((prev) => (prev === 0 ? STATIC_BANNERS.length - 1 : prev - 1));
   };
 
   return (
@@ -42,21 +42,21 @@ export const HeroBanner = () => {
       
       {/* Slides Container */}
       <div className="relative w-full h-full">
-        {banners.map((slide, index) => (
+        {STATIC_BANNERS.map((slide, index) => (
           <div
             key={slide.id}
             className={`absolute inset-0 transition-opacity duration-1000 ease-in-out ${
               index === currentSlide ? 'opacity-100 z-10' : 'opacity-0 z-0'
             }`}
           >
-            {/* Background Image - no zoom/filter to preserve sharpness */}
+            {/* Background Image */}
             <img
               src={slide.image}
               alt={slide.title}
               className="w-full h-full object-cover"
             />
             
-            {/* Minimal left shadow - just enough to keep text readable */}
+            {/* Overlay and Text */}
             <div className="absolute inset-0 bg-gradient-to-r from-black/30 via-black/5 to-transparent flex items-center">
               <div className="px-6 md:px-16 w-full max-w-2xl">
                 <div 
@@ -112,7 +112,7 @@ export const HeroBanner = () => {
 
       {/* Navigation Dots */}
       <div className="absolute bottom-8 left-1/2 -translate-x-1/2 flex items-center space-x-3 z-20">
-        {banners.map((_, index) => (
+        {STATIC_BANNERS.map((_, index) => (
           <button
             key={index}
             onClick={() => setCurrentSlide(index)}

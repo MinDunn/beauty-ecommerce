@@ -27,6 +27,7 @@ public class ProductResponse {
     private Long categoryId;
     private String instructions;
     private String ingredients;
+    private String skinType;
     private LocalDateTime createdAt;
     private Double averageRating;
 

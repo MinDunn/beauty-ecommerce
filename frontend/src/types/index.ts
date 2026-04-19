@@ -18,6 +18,7 @@ export type Product = {
     imageUrl?: string;
     stockQuantity?: number;
   }[];
+  skinType?: string;
   createdAt?: string;
 };
 

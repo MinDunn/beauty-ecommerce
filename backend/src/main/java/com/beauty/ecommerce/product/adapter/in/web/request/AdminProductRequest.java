@@ -27,6 +27,7 @@ public class AdminProductRequest {
     
     private String instructions;
     private String ingredients;
+    private String skinType;
     private String imageUrl;
     
     private java.util.List<String> existingImages;

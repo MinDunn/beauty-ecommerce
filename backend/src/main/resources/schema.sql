@@ -33,6 +33,10 @@ CREATE TABLE IF NOT EXISTS products (
     stock_quantity INT DEFAULT 0,
     image_url VARCHAR(500),
     category_id BIGINT,
+    instructions TEXT,
+    ingredients TEXT,
+    skin_type VARCHAR(50),
+    view_count BIGINT DEFAULT 0,
     created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
     FOREIGN KEY (category_id) REFERENCES categories(id)
 );
@@ -140,3 +144,11 @@ VALUES ('Tẩy Tế Bào Chết St.Ives Scrub', 'Lấy đi tế bào chết, cho
 
 -- PERFUME (replaces SUPPLEMENTS)
 
+-- =============================================
+-- Safe column additions (run on every startup, errors are ignored by Spring)
+-- These ensure missing columns exist even on existing databases
+-- =============================================
+ALTER TABLE products ADD COLUMN IF NOT EXISTS instructions TEXT;
+ALTER TABLE products ADD COLUMN IF NOT EXISTS ingredients TEXT;
+ALTER TABLE products ADD COLUMN IF NOT EXISTS skin_type VARCHAR(50);
+ALTER TABLE products ADD COLUMN IF NOT EXISTS view_count BIGINT DEFAULT 0;

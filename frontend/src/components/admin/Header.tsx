@@ -1,5 +1,5 @@
 import { useState, useEffect, useRef } from "react";
-import { LogOut, Bell, Search, X, Loader2, ChevronDown } from "lucide-react";
+import { LogOut, Bell, Search, X, Loader2, ChevronDown, Menu } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
 import { useNavigate } from "react-router-dom";
 import { adminService } from "../../api/adminService";
@@ -17,7 +17,7 @@ type AdminNotification = {
   route: string;
 };
 
-export const Header = ({ logout }: { logout: () => void }) => {
+export const Header = ({ logout, onToggleMenu }: { logout: () => void, onToggleMenu?: () => void }) => {
   const [showNotifications, setShowNotifications] = useState(false);
   const [showUserMenu, setShowUserMenu] = useState(false);
   const [searchQuery, setSearchQuery] = useState("");
@@ -159,6 +159,13 @@ export const Header = ({ logout }: { logout: () => void }) => {
   return (
     <header className="h-20 bg-[#0f172a] border-b border-slate-800 flex items-center justify-between px-8 sticky top-0 z-50">
       <div className="flex items-center gap-4">
+        <button 
+          onClick={onToggleMenu}
+          className="p-2 -ml-2 text-slate-400 hover:text-white hover:bg-slate-800 rounded-lg md:hidden transition-colors"
+          title="Mở menu"
+        >
+          <Menu size={24} />
+        </button>
         <div className="relative group">
           <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-500 w-4 h-4 group-focus-within:text-primary-500 transition-colors" />
           <input 

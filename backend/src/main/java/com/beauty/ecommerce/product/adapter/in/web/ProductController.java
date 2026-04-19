@@ -187,6 +187,7 @@ public class ProductController {
                 .categoryId(product.getCategoryId())
                 .instructions(product.getInstructions())
                 .ingredients(product.getIngredients())
+                .skinType(product.getSkinType())
                 .createdAt(product.getCreatedAt())
                 .averageRating(avgRating)
                 .build();

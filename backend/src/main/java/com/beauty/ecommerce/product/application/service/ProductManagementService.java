@@ -51,6 +51,7 @@ public class ProductManagementService implements ManageProductUseCase {
                 .categoryId(command.getCategoryId())
                 .instructions(command.getInstructions())
                 .ingredients(command.getIngredients())
+                .skinType(command.getSkinType())
                 .imageUrl(mainImageUrl)
                 .images(galleryImages)
                 .variants(command.getVariants() != null ? command.getVariants().stream()
@@ -102,6 +103,7 @@ public class ProductManagementService implements ManageProductUseCase {
         productEntity.setCategoryId(command.getCategoryId());
         productEntity.setInstructions(command.getInstructions());
         productEntity.setIngredients(command.getIngredients());
+        productEntity.setSkinType(command.getSkinType());
 
         // Handle images updates
         java.util.List<String> finalImageUrls = new java.util.ArrayList<>();
@@ -180,6 +182,7 @@ public class ProductManagementService implements ManageProductUseCase {
                 .categoryId(entity.getCategoryId())
                 .instructions(entity.getInstructions())
                 .ingredients(entity.getIngredients())
+                .skinType(entity.getSkinType())
                 .createdAt(entity.getCreatedAt())
                 .images(entity.getImages() != null ? entity.getImages().stream()
                         .map(ProductImageJpaEntity::getImageUrl)
