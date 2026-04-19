@@ -21,16 +21,36 @@ public class AdminOrderController {
     private final OrderUseCase orderUseCase;
 
     @GetMapping
-    public ResponseEntity<List<OrderResponse>> getAllOrders() {
-        List<OrderResponse> response = orderUseCase.getAllOrders().stream()
+    public ResponseEntity<List<OrderResponse>> getAllOrders(
+            @RequestParam(required = false) String search,
+            @RequestParam(required = false) OrderStatus status) {
+        List<OrderResponse> response = orderUseCase.getAllOrders(search, status).stream()
                 .map(this::mapToResponse)
                 .collect(Collectors.toList());
         return ResponseEntity.ok(response);
     }
 
+    @PutMapping("/bulk-status")
+    public ResponseEntity<Void> updateOrdersStatus(@RequestBody BulkStatusRequest request) {
+        orderUseCase.updateOrdersStatus(request.getIds(), request.getStatus());
+        return ResponseEntity.ok().build();
+    }
+
+    @lombok.Data
+    public static class BulkStatusRequest {
+        private List<Long> ids;
+        private OrderStatus status;
+    }
+
     @PutMapping("/{id}/status")
     public ResponseEntity<Void> updateOrderStatus(@PathVariable Long id, @RequestParam OrderStatus status) {
         orderUseCase.updateOrderStatus(id, status);
+        return ResponseEntity.ok().build();
+    }
+
+    @PutMapping("/{id}/confirm-payment")
+    public ResponseEntity<Void> confirmPayment(@PathVariable Long id) {
+        orderUseCase.completePayment(id, null);
         return ResponseEntity.ok().build();
     }
 
@@ -52,6 +72,8 @@ public class AdminOrderController {
                 .orderDate(order.getOrderDate())
                 .totalPrice(order.getTotalPrice())
                 .status(order.getStatus())
+                .paymentMethod(order.getPaymentMethod() != null ? order.getPaymentMethod().name() : "UNKNOWN")
+                .paymentStatus(order.getPaymentStatus() != null ? order.getPaymentStatus().name() : "UNPAID")
                 .receiverName(order.getReceiverName())
                 .receiverPhone(order.getReceiverPhone())
                 .shippingAddress(order.getShippingAddress())

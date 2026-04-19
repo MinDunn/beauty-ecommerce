@@ -25,7 +25,6 @@ import couponService from '../api/couponService';
 import type { CouponData } from '../api/couponService';
 import { clearSelectedItems, updateQuantity, removeItem } from '../store/slices/cartSlice';
 import { orderService } from '../api/orderService';
-import { paymentService } from '../api/paymentService';
 import authService from '../api/authService';
 import { updateUser } from '../store/slices/authSlice';
 import { cartService } from '../api/cartService';
@@ -201,18 +200,18 @@ const Checkout = () => {
 
       const response = await orderService.placeOrder(orderData);
       
-      if (paymentMethod === 'momo') {
-        const momoResp = await paymentService.createMomoPayment(response.id);
-        if (momoResp.payUrl) {
-           toast.success('Đang chuyển sang cổng MoMo...', { id: loadingToast });
-           window.location.href = momoResp.payUrl;
-           return;
-        }
-      }
-      
+      // Bỏ qua thanh toán tự động, chuyển thẳng tới trang thành công với thông tin đơn hàng
       toast.success('Đặt hàng thành công! Cảm ơn bạn đã tin dùng Glowzy.', { id: loadingToast });
       dispatch(clearSelectedItems());
-      navigate('/order-success', { state: { orderId: response.id } });
+      
+      // Chuyển hướng tới trang thành công, truyền orderId và thông tin thanh toán
+      navigate('/order-success', { 
+        state: { 
+          orderId: response.id,
+          paymentMethod: paymentMethod,
+          totalAmount: total
+        } 
+      });
     } catch (error: any) {
       const errMsg = error.response?.data?.message || 'Có lỗi xảy ra khi xử lý đặt hàng';
       toast.error(errMsg, { id: loadingToast });

@@ -8,8 +8,9 @@ import java.util.List;
 public interface OrderUseCase {
     Order placeOrder(PlaceOrderCommand command);
     List<Order> getOrderHistory(String email);
-    List<Order> getAllOrders();
+    List<Order> getAllOrders(String query, OrderStatus status);
     void updateOrderStatus(Long orderId, OrderStatus status);
+    void updateOrdersStatus(List<Long> orderIds, OrderStatus status);
     void updatePaymentStatus(Long orderId, PaymentStatus status);
     void completePayment(Long orderId, String transId);
     Order lookupOrder(Long orderId);

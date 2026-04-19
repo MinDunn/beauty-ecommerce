@@ -26,8 +26,8 @@ export const orderService = {
     });
     return response.data;
   },
-  adminGetAllOrders: async () => {
-    const response = await axiosInstance.get('/admin/orders');
+  adminGetAllOrders: async (params?: { search?: string; status?: string }) => {
+    const response = await axiosInstance.get('/admin/orders', { params });
     return response.data;
   },
   adminUpdateOrderStatus: async (id: number, status: string) => {
@@ -35,11 +35,17 @@ export const orderService = {
       params: { status }
     });
   },
+  adminBulkUpdateStatus: async (ids: number[], status: string) => {
+    await axiosInstance.put('/admin/orders/bulk-status', { ids, status });
+  },
   adminApproveCancellation: async (id: number) => {
     await axiosInstance.put(`/admin/orders/${id}/approve-cancel`);
   },
   adminRejectCancellation: async (id: number) => {
     await axiosInstance.put(`/admin/orders/${id}/reject-cancel`);
+  },
+  adminConfirmPayment: async (id: number) => {
+    await axiosInstance.put(`/admin/orders/${id}/confirm-payment`);
   }
 };
 

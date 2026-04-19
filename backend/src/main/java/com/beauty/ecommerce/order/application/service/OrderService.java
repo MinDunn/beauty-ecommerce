@@ -176,13 +176,43 @@ public class OrderService implements OrderUseCase {
     }
 
     @Override
-    public List<Order> getAllOrders() {
-        return orderPort.findAll();
+    public List<Order> getAllOrders(String query, OrderStatus status) {
+        List<Order> orders = orderPort.findAll();
+        
+        return orders.stream()
+                .filter(order -> status == null || order.getStatus() == status)
+                .filter(order -> {
+                    if (query == null || query.trim().isEmpty()) return true;
+                    String q = query.toLowerCase().trim();
+                    boolean matchId = order.getId().toString().contains(q);
+                    boolean matchCustomer = order.getReceiverName() != null && order.getReceiverName().toLowerCase().contains(q);
+                    return matchId || matchCustomer;
+                })
+                .collect(Collectors.toList());
     }
 
     @Override
+    @Transactional
+    public void updateOrdersStatus(List<Long> orderIds, OrderStatus status) {
+        for (Long id : orderIds) {
+            updateOrderStatus(id, status);
+        }
+    }
+
+    @Override
+    @Transactional
     public void updateOrderStatus(Long orderId, OrderStatus status) {
+        Order order = orderPort.findById(orderId)
+                .orElseThrow(() -> new RuntimeException("Order not found: " + orderId));
+        
         orderPort.updateStatus(orderId, status);
+        
+        // Auto-confirm payment for COD orders when delivered
+        if (status == OrderStatus.DELIVERED && order.getPaymentMethod() == PaymentMethod.COD) {
+            orderPort.updatePaymentStatus(orderId, PaymentStatus.PAID);
+            activityLogService.logActivity(null, "SYSTEM", "AUTO_PAYMENT_CONFIRM", "Tự động xác nhận thanh toán cho đơn COD #" + orderId + " khi hoàn thành.");
+        }
+        
         activityLogService.logActivity(null, "ADMIN", "UPDATE_ORDER_STATUS", "Cập nhật trạng thái đơn hàng #" + orderId + " thành " + status);
     }
 
