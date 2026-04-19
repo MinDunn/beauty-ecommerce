@@ -11,6 +11,10 @@ import org.springframework.transaction.annotation.Transactional;
 
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
+import java.util.stream.Collectors;
 
 @Service
 @RequiredArgsConstructor
@@ -110,6 +114,7 @@ public class CouponService {
                 .discountValue(request.getDiscountValue())
                 .minOrderAmount(request.getMinOrderAmount())
                 .expiryDate(request.getExpiryDate())
+                .startDate(request.getStartDate() != null ? request.getStartDate() : LocalDateTime.now())
                 .usageLimit(request.getUsageLimit() != null ? request.getUsageLimit() : 100)
                 .isActive(request.getIsActive() != null ? request.getIsActive() : true)
                 .categoryId(request.getCategoryId())
@@ -134,6 +139,9 @@ public class CouponService {
         coupon.setDiscountValue(request.getDiscountValue());
         coupon.setMinOrderAmount(request.getMinOrderAmount());
         coupon.setExpiryDate(request.getExpiryDate());
+        if (request.getStartDate() != null) {
+            coupon.setStartDate(request.getStartDate());
+        }
         coupon.setUsageLimit(request.getUsageLimit());
         coupon.setIsActive(request.getIsActive());
         coupon.setCategoryId(request.getCategoryId());
@@ -164,6 +172,7 @@ public class CouponService {
                 .discountType(coupon.getDiscountType())
                 .minOrderAmount(coupon.getMinOrderAmount())
                 .expiryDate(coupon.getExpiryDate())
+                .startDate(coupon.getStartDate())
                 .isActive(coupon.getIsActive())
                 .usageLimit(coupon.getUsageLimit())
                 .usageCount(coupon.getUsageCount())
@@ -174,5 +183,21 @@ public class CouponService {
                 .minSpentAmount(coupon.getMinSpentAmount())
                 .description(coupon.getDescription())
                 .build();
+    }
+
+    // Public Methods for Voucher Center
+    public Map<String, List<com.beauty.ecommerce.product.adapter.in.web.response.CouponResponse>> getPublicVouchers() {
+        LocalDateTime now = LocalDateTime.now();
+        LocalDateTime deadline = now.plusHours(24);
+
+        Map<String, List<com.beauty.ecommerce.product.adapter.in.web.response.CouponResponse>> vouchers = new HashMap<>();
+        
+        vouchers.put("all", couponRepository.findAllActive(now).stream().map(this::mapToResponse).collect(Collectors.toList()));
+        vouchers.put("percentage", couponRepository.findAllActive(now).stream().filter(c -> "PERCENTAGE".equals(c.getDiscountType())).map(this::mapToResponse).collect(Collectors.toList()));
+        vouchers.put("fixed", couponRepository.findAllActive(now).stream().filter(c -> "FIXED".equals(c.getDiscountType())).map(this::mapToResponse).collect(Collectors.toList()));
+        vouchers.put("comingSoon", couponRepository.findComingSoon(now).stream().map(this::mapToResponse).collect(Collectors.toList()));
+        vouchers.put("expiringSoon", couponRepository.findExpiringSoon(now, deadline).stream().map(this::mapToResponse).collect(Collectors.toList()));
+
+        return vouchers;
     }
 }

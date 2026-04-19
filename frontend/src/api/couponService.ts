@@ -17,6 +17,7 @@ export interface CouponData {
   isNewUserOnly?: boolean;
   minSpentAmount?: number;
   description?: string;
+  startDate?: string;
 }
 
 export const couponService = {
@@ -29,6 +30,11 @@ export const couponService = {
         totalQuantity
       }
     }),
+
+  getPublicVouchers: async (): Promise<Record<string, CouponData[]>> => {
+    const response = await axiosInstance.get<ApiResponse<Record<string, CouponData[]>>>('/coupons');
+    return response.data.data;
+  },
 
   getAllCoupons: async () => {
     const response = await axiosInstance.get<ApiResponse<CouponData[]>>('/admin/coupons');

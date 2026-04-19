@@ -33,7 +33,7 @@ import { Coupons } from './pages/admin/Coupons';
 import { InventoryReceiptsPage } from './pages/admin/InventoryReceiptsPage';
 import { Activities } from './pages/Activities';
 import { useAuth } from './hooks/useAuth';
-
+import { VoucherWidget } from './components/checkout/VoucherWidget';
 import { useState } from 'react';
 
 function AdminLayout({ logout }: { logout: () => void }) {
@@ -121,6 +121,7 @@ function App() {
           }
         />
       </Routes>
+      {!isAdmin && <VoucherWidget />}
     </Router>
   );
 }

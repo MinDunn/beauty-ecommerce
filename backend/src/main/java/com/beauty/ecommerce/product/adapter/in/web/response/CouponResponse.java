@@ -14,6 +14,7 @@ public class CouponResponse {
     private String discountType;
     private BigDecimal minOrderAmount;
     private LocalDateTime expiryDate;
+    private LocalDateTime startDate;
     private Boolean isActive;
     private Integer usageLimit;
     private Integer usageCount;

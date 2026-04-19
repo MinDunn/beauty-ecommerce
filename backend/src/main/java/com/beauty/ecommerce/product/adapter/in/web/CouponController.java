@@ -8,6 +8,8 @@ import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
+import java.util.Map;
+import java.util.List;
 
 @RestController
 @RequestMapping("/api")
@@ -17,6 +19,12 @@ public class CouponController {
 
     private final CouponService couponService;
     private final com.beauty.ecommerce.user.adapter.out.persistence.UserRepository userRepository;
+
+    @GetMapping("/coupons")
+    public ResponseEntity<ApiResponse<Map<String, List<CouponResponse>>>> getPublicVouchers() {
+        log.info("Khách hàng yêu cầu danh sách mã giảm giá công khai");
+        return ResponseEntity.ok(ApiResponse.success(couponService.getPublicVouchers()));
+    }
 
     @GetMapping("/coupons/validate")
     public ResponseEntity<ApiResponse<java.util.Map<String, Object>>> validateCoupon(

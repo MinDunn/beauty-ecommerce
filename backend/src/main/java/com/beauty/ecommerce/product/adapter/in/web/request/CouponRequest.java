@@ -21,6 +21,7 @@ public class CouponRequest {
     private BigDecimal minOrderAmount;
 
     private LocalDateTime expiryDate;
+    private LocalDateTime startDate;
 
     private Integer usageLimit;
 

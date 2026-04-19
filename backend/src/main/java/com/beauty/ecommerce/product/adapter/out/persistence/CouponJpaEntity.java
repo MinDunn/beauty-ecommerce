@@ -33,6 +33,10 @@ public class CouponJpaEntity {
     @Column(name = "expiry_date")
     private LocalDateTime expiryDate;
 
+    @Column(name = "start_date")
+    @Builder.Default
+    private LocalDateTime startDate = LocalDateTime.now();
+
     @Column(name = "is_active", nullable = false)
     @Builder.Default
     private Boolean isActive = true;
