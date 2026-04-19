@@ -37,6 +37,7 @@ public class AuthService {
     private final JwtUtil jwtUtil;
     private final AuthenticationManager authenticationManager;
     private final EmailService emailService;
+    private final com.beauty.ecommerce.common.application.service.ActivityLogService activityLogService;
 
     @Value("${jwt.refresh-expiration}")
     private Long refreshTokenDurationMs;
@@ -60,6 +61,7 @@ public class AuthService {
                 .build();
 
         userRepository.save(user);
+        activityLogService.logActivity(user.getId(), user.getEmail(), com.beauty.ecommerce.common.application.service.ActivityLogService.GROUP_ACCOUNT, "REGISTER", "Đăng ký tài khoản mới: " + user.getEmail());
 
         String accessToken = jwtUtil.generateAccessToken(user.getEmail(), user.getRole(), user.getId());
         String refreshToken = createRefreshToken(user).getToken();
@@ -98,6 +100,8 @@ public class AuthService {
 
         String accessToken = jwtUtil.generateAccessToken(user.getEmail(), user.getRole(), user.getId());
         String refreshToken = createRefreshToken(user).getToken();
+
+        activityLogService.logActivity(user.getId(), user.getEmail(), com.beauty.ecommerce.common.application.service.ActivityLogService.GROUP_ACCOUNT, "LOGIN", "Đăng nhập hệ thống (Local)");
 
         return AuthResponse.builder()
                 .accessToken(accessToken)
@@ -146,6 +150,8 @@ public class AuthService {
 
         String accessToken = jwtUtil.generateAccessToken(user.getEmail(), user.getRole(), user.getId());
         String refreshToken = createRefreshToken(user).getToken();
+
+        activityLogService.logActivity(user.getId(), user.getEmail(), com.beauty.ecommerce.common.application.service.ActivityLogService.GROUP_ACCOUNT, "LOGIN_GOOGLE", "Đăng nhập hệ thống bằng Google");
 
         return AuthResponse.builder()
                 .accessToken(accessToken)
@@ -226,6 +232,7 @@ public class AuthService {
         if (request.getAvatarUrl() != null) user.setAvatarUrl(request.getAvatarUrl());
 
         userRepository.save(user);
+        activityLogService.logActivity(user.getId(), email, com.beauty.ecommerce.common.application.service.ActivityLogService.GROUP_ACCOUNT, "UPDATE_PROFILE", "Người dùng cập nhật thông tin cá nhân.");
         return getProfile(email);
     }
 
@@ -258,6 +265,7 @@ public class AuthService {
                 .build();
 
         passwordResetTokenRepository.save(resetToken);
+        activityLogService.logActivity(user.getId(), email, com.beauty.ecommerce.common.application.service.ActivityLogService.GROUP_ACCOUNT, "FORGOT_PASSWORD", "Yêu cầu khôi phục mật khẩu.");
 
         // Gửi email HTML chuyên nghiệp
         String resetLink = "http://localhost:5173/reset-password?token=" + token;
@@ -281,6 +289,7 @@ public class AuthService {
 
         // Xóa token sau khi sử dụng thành công
         passwordResetTokenRepository.delete(resetToken);
+        activityLogService.logActivity(user.getId(), user.getEmail(), com.beauty.ecommerce.common.application.service.ActivityLogService.GROUP_ACCOUNT, "RESET_PASSWORD", "Đặt lại mật khẩu thành công bằng token.");
         log.info("Đặt lại mật khẩu thành công cho người dùng: {}", user.getEmail());
     }
 
@@ -290,6 +299,7 @@ public class AuthService {
         UserJpaEntity user = userRepository.findByEmail(email)
                 .orElseThrow(() -> new ResourceNotFoundException("Không tìm thấy người dùng"));
         refreshTokenRepository.deleteByUser(user);
+        activityLogService.logActivity(user.getId(), email, com.beauty.ecommerce.common.application.service.ActivityLogService.GROUP_ACCOUNT, "LOGOUT", "Người dùng đã đăng xuất khỏi hệ thống.");
     }
 
     @Transactional
@@ -304,5 +314,7 @@ public class AuthService {
 
         user.setPassword(passwordEncoder.encode(newPassword));
         userRepository.save(user);
+
+        activityLogService.logActivity(user.getId(), email, com.beauty.ecommerce.common.application.service.ActivityLogService.GROUP_ACCOUNT, "CHANGE_PASSWORD", "Người dùng đã đổi mật khẩu thành công.");
     }
 }

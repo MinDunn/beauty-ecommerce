@@ -19,6 +19,7 @@ public class CouponService {
 
     private final CouponRepository couponRepository;
     private final com.beauty.ecommerce.order.adapter.out.persistence.OrderRepository orderRepository;
+    private final com.beauty.ecommerce.common.application.service.ActivityLogService activityLogService;
 
     public CouponJpaEntity validateCoupon(String code, Double orderValue, java.util.List<Long> categoryIds, Integer totalItemCount, Long userId) {
         log.info("Xác thực mã giảm giá: {} cho đơn hàng: {}. Số lượng: {}. UserID: {}", code, orderValue, totalItemCount, userId);
@@ -119,7 +120,9 @@ public class CouponService {
                 .description(request.getDescription())
                 .build();
         
-        return mapToResponse(couponRepository.save(coupon));
+        CouponJpaEntity savedCoupon = couponRepository.save(coupon);
+        activityLogService.logActivity(null, "ADMIN", com.beauty.ecommerce.common.application.service.ActivityLogService.GROUP_SYSTEM, "CREATE_COUPON", "Tạo mới mã giảm giá: " + savedCoupon.getCode());
+        return mapToResponse(savedCoupon);
     }
 
     public com.beauty.ecommerce.product.adapter.in.web.response.CouponResponse updateCoupon(Long id, com.beauty.ecommerce.product.adapter.in.web.request.CouponRequest request) {
@@ -140,7 +143,9 @@ public class CouponService {
         coupon.setMinSpentAmount(request.getMinSpentAmount());
         coupon.setDescription(request.getDescription());
         
-        return mapToResponse(couponRepository.save(coupon));
+        CouponJpaEntity updatedCoupon = couponRepository.save(coupon);
+        activityLogService.logActivity(null, "ADMIN", com.beauty.ecommerce.common.application.service.ActivityLogService.GROUP_SYSTEM, "UPDATE_COUPON", "Cập nhật mã giảm giá: " + updatedCoupon.getCode());
+        return mapToResponse(updatedCoupon);
     }
 
     public void deleteCoupon(Long id) {
@@ -148,6 +153,7 @@ public class CouponService {
             throw new ResourceNotFoundException("Mã giảm giá không tồn tại");
         }
         couponRepository.deleteById(id);
+        activityLogService.logActivity(null, "ADMIN", com.beauty.ecommerce.common.application.service.ActivityLogService.GROUP_SYSTEM, "DELETE_COUPON", "Xóa mã giảm giá ID: " + id);
     }
 
     private com.beauty.ecommerce.product.adapter.in.web.response.CouponResponse mapToResponse(CouponJpaEntity coupon) {

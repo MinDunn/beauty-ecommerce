@@ -24,6 +24,7 @@ public class UserService {
 
     private final UserRepository userRepository;
     private final PasswordEncoder passwordEncoder;
+    private final com.beauty.ecommerce.common.application.service.ActivityLogService activityLogService;
 
     public List<AdminUserResponse> getAllUsers() {
         return userRepository.findAll().stream()
@@ -48,6 +49,7 @@ public class UserService {
                 .build();
 
         user = userRepository.save(user);
+        activityLogService.logActivity(null, "ADMIN", com.beauty.ecommerce.common.application.service.ActivityLogService.GROUP_ACCOUNT, "CREATE_USER", "Admin tạo người dùng mới: " + user.getEmail());
         return mapToAdminResponse(user);
     }
 
@@ -69,6 +71,7 @@ public class UserService {
         if (request.getAddress() != null) user.setAddress(request.getAddress());
 
         user = userRepository.save(user);
+        activityLogService.logActivity(null, "ADMIN", com.beauty.ecommerce.common.application.service.ActivityLogService.GROUP_ACCOUNT, "UPDATE_USER", "Admin cập nhật thông tin người dùng: " + user.getEmail());
         return mapToAdminResponse(user);
     }
 
@@ -84,7 +87,8 @@ public class UserService {
         
         log.info("Cập nhật trạng thái người dùng {}: {}", userId, isActive ? "Mở khóa" : "Khóa");
         user.setIsActive(isActive);
-        userRepository.save(user);
+        user = userRepository.save(user);
+        activityLogService.logActivity(null, "ADMIN", com.beauty.ecommerce.common.application.service.ActivityLogService.GROUP_ACCOUNT, isActive ? "UNLOCK_USER" : "LOCK_USER", (isActive ? "Mở khóa" : "Khóa") + " tài khoản người dùng: " + user.getEmail());
     }
 
     private AdminUserResponse mapToAdminResponse(UserJpaEntity user) {

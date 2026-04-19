@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
-import { useSelector, useDispatch } from 'react-redux';
+import { useSelector } from 'react-redux';
 import { 
   Search, 
   ShoppingCart, 
@@ -13,24 +13,23 @@ import {
   ChevronDown
 } from 'lucide-react';
 import type { RootState } from '../../store';
-import { logout as logoutAction } from '../../store/slices/authSlice';
+import { useAuth } from '../../hooks/useAuth';
 import { cn } from '../../utils/cn';
 import { OrderLookupModal } from '../modals/OrderLookupModal';
 import { categoryService } from '../../api/categoryService';
 
 export const Header = () => {
+  const { isAuthenticated, user, logout } = useAuth();
+  const { totalQuantity } = useSelector((state: RootState) => state.cart);
+  const navigate = useNavigate();
+
   const [isMenuOpen, setIsMenuOpen] = useState(false);
   const [isOrderLookupOpen, setIsOrderLookupOpen] = useState(false);
   const [searchQuery, setSearchQuery] = useState('');
   const [expandedCategoryId, setExpandedCategoryId] = useState<number | null>(null);
-  
-  const { isAuthenticated, user } = useSelector((state: RootState) => state.auth);
-  const { totalQuantity } = useSelector((state: RootState) => state.cart);
-  const dispatch = useDispatch();
-  const navigate = useNavigate();
 
-  const handleLogout = () => {
-    dispatch(logoutAction());
+  const handleLogout = async () => {
+    await logout();
     navigate('/');
   };
 

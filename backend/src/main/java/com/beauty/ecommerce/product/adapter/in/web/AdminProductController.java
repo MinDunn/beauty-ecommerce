@@ -18,6 +18,7 @@ import org.springframework.web.multipart.MultipartFile;
 public class AdminProductController {
 
     private final ManageProductUseCase manageProductUseCase;
+    private final com.beauty.ecommerce.common.application.service.ActivityLogService activityLogService;
 
     @PostMapping(consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
     public ResponseEntity<ProductResponse> createProduct(
@@ -50,6 +51,7 @@ public class AdminProductController {
                 .build();
                 
         Product product = manageProductUseCase.createProduct(command, images);
+        activityLogService.logActivity(null, "ADMIN", com.beauty.ecommerce.common.application.service.ActivityLogService.GROUP_SYSTEM, "CREATE_PRODUCT", "Admin tạo sản phẩm mới: " + product.getName() + " (ID: " + product.getId() + ")");
         return ResponseEntity.status(HttpStatus.CREATED).body(mapToResponse(product));
     }
 
@@ -85,12 +87,14 @@ public class AdminProductController {
                 .build();
                 
         Product product = manageProductUseCase.updateProduct(id, command, images);
+        activityLogService.logActivity(null, "ADMIN", com.beauty.ecommerce.common.application.service.ActivityLogService.GROUP_SYSTEM, "UPDATE_PRODUCT", "Admin cập nhật sản phẩm: " + product.getName() + " (ID: " + product.getId() + ")");
         return ResponseEntity.ok(mapToResponse(product));
     }
 
     @DeleteMapping("/{id}")
     public ResponseEntity<Void> deleteProduct(@PathVariable Long id) {
         manageProductUseCase.deleteProduct(id);
+        activityLogService.logActivity(null, "ADMIN", com.beauty.ecommerce.common.application.service.ActivityLogService.GROUP_SYSTEM, "DELETE_PRODUCT", "Admin xóa sản phẩm ID: " + id);
         return ResponseEntity.noContent().build();
     }
 

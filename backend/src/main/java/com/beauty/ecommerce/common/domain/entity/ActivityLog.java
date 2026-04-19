@@ -27,8 +27,14 @@ public class ActivityLog {
     @Column(name = "action_type")
     private String actionType; // e.g., ADD_TO_CART, PAYMENT, LOGIN
 
+    @Column(name = "action_group")
+    private String actionGroup; // e.g., ACCOUNT, SHOPPING, SYSTEM
+
     @Column(columnDefinition = "TEXT")
     private String description;
+
+    @Column(name = "ip_address")
+    private String ipAddress;
 
     @Column(name = "created_at")
     private LocalDateTime createdAt;

@@ -161,7 +161,7 @@ public class OrderService implements OrderUseCase {
             cartPort.delete(email, item.getProductId(), item.getVariantName());
         }
 
-        activityLogService.logActivity(user.getId(), email, "PLACE_ORDER", "Đặt đơn hàng mới #" + savedOrder.getId() + " (Tổng tiền: " + totalPrice + "đ)");
+        activityLogService.logActivity(user.getId(), email, ActivityLogService.GROUP_SHOPPING, "PLACE_ORDER", "Đặt đơn hàng mới #" + savedOrder.getId() + " (Tổng tiền: " + totalPrice + "đ)");
 
         // Send Email if COD
         if (command.getPaymentMethod() == PaymentMethod.COD) {
@@ -211,10 +211,10 @@ public class OrderService implements OrderUseCase {
         // Auto-confirm payment for COD orders when delivered
         if (status == OrderStatus.DELIVERED && order.getPaymentMethod() == PaymentMethod.COD) {
             orderPort.updatePaymentStatus(orderId, PaymentStatus.PAID);
-            activityLogService.logActivity(null, "SYSTEM", "AUTO_PAYMENT_CONFIRM", "Tự động xác nhận thanh toán cho đơn COD #" + orderId + " khi hoàn thành.");
+            activityLogService.logActivity(null, "SYSTEM", ActivityLogService.GROUP_SYSTEM, "AUTO_PAYMENT_CONFIRM", "Tự động xác nhận thanh toán cho đơn COD #" + orderId + " khi hoàn thành.");
         }
         
-        activityLogService.logActivity(null, "ADMIN", "UPDATE_ORDER_STATUS", "Cập nhật trạng thái đơn hàng #" + orderId + " thành " + status);
+        activityLogService.logActivity(null, "ADMIN", ActivityLogService.GROUP_SYSTEM, "UPDATE_ORDER_STATUS", "Cập nhật trạng thái đơn hàng #" + orderId + " thành " + status);
     }
 
     @Override
@@ -244,7 +244,7 @@ public class OrderService implements OrderUseCase {
             orderPort.updatePaymentTransactionId(orderId, transId);
         }
 
-        activityLogService.logActivity(order.getUserId(), "SYSTEM", "COMPLETE_PAYMENT", 
+        activityLogService.logActivity(order.getUserId(), "SYSTEM", ActivityLogService.GROUP_SYSTEM, "COMPLETE_PAYMENT", 
                 "Hoàn tất thanh toán cho đơn hàng #" + orderId + ". Tồn kho đã được cập nhật.");
 
         // Send Email for online payment success
@@ -283,7 +283,7 @@ public class OrderService implements OrderUseCase {
         orderPort.updateStatus(orderId, OrderStatus.CANCELLATION_REQUESTED);
         
         String logMessage = "Khách hàng gửi yêu cầu hủy đơn hàng #" + orderId + (reason != null ? ". Lý do: " + reason : "");
-        activityLogService.logActivity(user.getId(), email, "CANCEL_ORDER_REQUEST", logMessage);
+        activityLogService.logActivity(user.getId(), email, ActivityLogService.GROUP_SHOPPING, "CANCEL_ORDER_REQUEST", logMessage);
     }
 
     @Override
@@ -315,7 +315,7 @@ public class OrderService implements OrderUseCase {
         // 3. Finalize Status
         orderPort.updateStatus(orderId, OrderStatus.CANCELLED);
         
-        activityLogService.logActivity(order.getUserId(), "ADMIN", "APPROVE_CANCELLATION", 
+        activityLogService.logActivity(order.getUserId(), "ADMIN", ActivityLogService.GROUP_SYSTEM, "APPROVE_CANCELLATION", 
                 "Admin đã phê duyệt yêu cầu hủy đơn hàng #" + orderId);
     }
 
@@ -332,7 +332,7 @@ public class OrderService implements OrderUseCase {
         // Revert to CONFIRMED or PENDING based on logic, here we use CONFIRMED as a safe middle ground
         orderPort.updateStatus(orderId, OrderStatus.CONFIRMED);
         
-        activityLogService.logActivity(order.getUserId(), "ADMIN", "REJECT_CANCELLATION", 
+        activityLogService.logActivity(order.getUserId(), "ADMIN", ActivityLogService.GROUP_SYSTEM, "REJECT_CANCELLATION", 
                 "Admin đã từ chối yêu cầu hủy đơn hàng #" + orderId);
     }
 }

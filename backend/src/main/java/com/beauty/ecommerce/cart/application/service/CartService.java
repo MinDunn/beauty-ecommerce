@@ -24,7 +24,7 @@ public class CartService implements CartUseCase {
     @Override
     public void addToCart(String email, Long productId, Integer quantity, String variantName) {
         cartPort.save(email, productId, quantity, variantName);
-        activityLogService.logActivity(null, email, "ADD_TO_CART", "Thêm sản phẩm ID " + productId + (variantName != null ? " (" + variantName + ")" : "") + " vào giỏ hàng (Số lượng: " + quantity + ")");
+        activityLogService.logActivity(null, email, ActivityLogService.GROUP_SHOPPING, "ADD_TO_CART", "Thêm sản phẩm ID " + productId + (variantName != null ? " (" + variantName + ")" : "") + " vào giỏ hàng (Số lượng: " + quantity + ")");
     }
 
     @Override
@@ -35,7 +35,7 @@ public class CartService implements CartUseCase {
     @Override
     public void removeFromCart(String email, Long productId, String variantName) {
         cartPort.delete(email, productId, variantName);
-        activityLogService.logActivity(null, email, "REMOVE_FROM_CART", "Xóa sản phẩm ID " + productId + (variantName != null ? " (" + variantName + ")" : "") + " khỏi giỏ hàng");
+        activityLogService.logActivity(null, email, ActivityLogService.GROUP_SHOPPING, "REMOVE_FROM_CART", "Xóa sản phẩm ID " + productId + (variantName != null ? " (" + variantName + ")" : "") + " khỏi giỏ hàng");
     }
 
     @Override

@@ -28,9 +28,33 @@ public class DataInitializer implements CommandLineRunner {
             log.info("Bắt đầu khởi tạo dữ liệu mẫu...");
             initializeUsers();
             initializeCategoriesAndProducts();
+            fixActivityLogGroups();
             log.info("Hoàn tất khởi tạo dữ liệu mẫu.");
         } catch (Exception e) {
             log.error("Lỗi khi khởi tạo dữ liệu mẫu: {}. Ứng dụng vẫn sẽ tiếp tục chạy.", e.getMessage());
+        }
+    }
+
+    private void fixActivityLogGroups() {
+        log.info("Đang chuẩn hóa phân nhóm cho nhật ký hoạt động cũ...");
+        try {
+            // Chuyển các log mua sắm về đúng nhóm
+            jdbcTemplate.execute("UPDATE activity_logs SET action_group = 'SHOPPING' " +
+                    "WHERE action_group IN ('MUA SẮM', 'SYSTEM') " +
+                    "AND action_type IN ('ADD_TO_CART', 'REMOVE_FROM_CART', 'CLEAR_CART', 'PLACE_ORDER', 'CANCEL_ORDER_REQUEST', 'APPROVE_CANCELLATION', 'REJECT_CANCELLATION')");
+            
+            // Chuyển các log tài khoản về đúng nhóm
+            jdbcTemplate.execute("UPDATE activity_logs SET action_group = 'ACCOUNT' " +
+                    "WHERE action_group IN ('TÀI KHOẢN', 'SYSTEM') " +
+                    "AND action_type IN ('LOGIN', 'LOGIN_GOOGLE', 'REGISTER', 'CHANGE_PASSWORD', 'LOCK_USER', 'UNLOCK_USER')");
+            
+            // Chuẩn hóa nhóm hệ thống
+            jdbcTemplate.execute("UPDATE activity_logs SET action_group = 'SYSTEM' " +
+                    "WHERE action_group = 'HỆ THỐNG'");
+            
+            log.info("Đã chuẩn hóa dữ liệu nhật ký thành công.");
+        } catch (Exception e) {
+            log.warn("Không thể chuẩn hóa nhật ký hoạt động (có thể bảng chưa tồn tại): {}", e.getMessage());
         }
     }
 

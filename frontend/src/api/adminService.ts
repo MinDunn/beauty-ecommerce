@@ -23,11 +23,13 @@ export interface DashboardStats {
 
 export interface ActivityLog {
   id: number;
-  action: string;
-  module: string;
-  username: string;
-  details: string;
-  timestamp: string;
+  userId: number | null;
+  userEmail: string;
+  actionType: string;
+  actionGroup: string;
+  description: string;
+  ipAddress: string;
+  createdAt: string;
 }
 
 export const adminService = {
@@ -35,8 +37,17 @@ export const adminService = {
     const response = await axiosInstance.get<ApiResponse<DashboardStats>>(`/admin/dashboard/stats?days=${days}`);
     return response.data.data;
   },
-  getRecentActivities: async (): Promise<ActivityLog[]> => {
-    const response = await axiosInstance.get<ApiResponse<ActivityLog[]>>('/admin/activities');
+  getRecentActivities: async (group?: string, query?: string): Promise<ActivityLog[]> => {
+    let url = '/admin/activities';
+    const params = new URLSearchParams();
+    if (group && group !== 'ALL') params.append('group', group);
+    if (query && query.trim()) params.append('query', query.trim());
+    
+    if (params.toString()) {
+      url += `?${params.toString()}`;
+    }
+    
+    const response = await axiosInstance.get<ApiResponse<ActivityLog[]>>(url);
     return response.data.data;
   },
   exportReport: async () => {
