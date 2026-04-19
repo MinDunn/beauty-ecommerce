@@ -41,7 +41,7 @@ public class AuthService {
     @Value("${jwt.refresh-expiration}")
     private Long refreshTokenDurationMs;
 
-    @Value("${GOOGLE_CLIENT_ID:35104546037-2jrr5q2gcan7g5ag73b9vaekbsr69nsj.apps.googleusercontent.com}")
+    @Value("${GOOGLE_CLIENT_ID:your-google-client-id}")
     private String googleClientId;
 
     @Transactional

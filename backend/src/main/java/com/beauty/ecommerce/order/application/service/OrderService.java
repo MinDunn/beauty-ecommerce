@@ -38,6 +38,7 @@ public class OrderService implements OrderUseCase {
     private final CouponService couponService;
     private final com.beauty.ecommerce.payment.application.service.MoMoService moMoService;
     private final EmailService emailService;
+    private final com.beauty.ecommerce.product.application.port.out.LoadProductPort loadProductPort;
 
     @Override
     @Transactional
@@ -63,6 +64,16 @@ public class OrderService implements OrderUseCase {
 
         if (cartItems.isEmpty()) {
             throw new RuntimeException("No items selected for order");
+        }
+
+        // Pre-check stock availability for all items
+        for (CartItem item : cartItems) {
+            com.beauty.ecommerce.product.domain.entity.Product product = loadProductPort.loadProductById(item.getProductId())
+                .orElseThrow(() -> new RuntimeException("Sản phẩm không tồn tại: " + item.getProductName()));
+            
+            if (product.getStockQuantity() < item.getQuantity()) {
+                throw new RuntimeException("Sản phẩm '" + item.getProductName() + "' đã hết hàng hoặc không đủ số lượng.");
+            }
         }
 
         BigDecimal totalPrice = cartItems.stream()

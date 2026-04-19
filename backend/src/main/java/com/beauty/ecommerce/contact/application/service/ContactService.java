@@ -61,8 +61,8 @@ public class ContactService {
                 .email(entity.getEmail())
                 .phone(entity.getPhone())
                 .message(entity.getMessage())
-                .isRead(entity.getIsRead())
-                .createdAt(entity.getCreatedAt().toString() + "Z")
+                .isRead(entity.getIsRead() != null ? entity.getIsRead() : false)
+                .createdAt(entity.getCreatedAt() != null ? entity.getCreatedAt().toString() + "Z" : "")
                 .build();
     }
 }
