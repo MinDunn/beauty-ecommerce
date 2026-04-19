@@ -31,7 +31,7 @@ public class ProductReaderService implements GetProductUseCase {
     private final ReviewRepository reviewRepository;
 
     @Override
-    public Page<Product> getAllProducts(Long categoryId, BigDecimal minPrice, BigDecimal maxPrice, String keyword, String sortBy, Pageable pageable) {
+    public Page<Product> getAllProducts(Long categoryId, BigDecimal minPrice, BigDecimal maxPrice, String keyword, String sortBy, Boolean onSale, Pageable pageable) {
         log.info("Đang lấy danh sách sản phẩm với bộ lọc và phân trang");
         
         Specification<ProductJpaEntity> spec = (root, query, cb) -> {
@@ -55,6 +55,10 @@ public class ProductReaderService implements GetProductUseCase {
                         cb.like(cb.lower(root.get("name")), lk),
                         cb.like(cb.lower(root.get("description")), lk)
                 ));
+            }
+
+            if (onSale != null && onSale) {
+                predicates.add(cb.lessThan(root.get("currentPrice"), root.get("originalPrice")));
             }
 
             return cb.and(predicates.toArray(new Predicate[0]));

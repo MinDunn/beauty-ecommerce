@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { useParams, Link } from 'react-router-dom';
+import { useParams, Link, useLocation } from 'react-router-dom';
 import { FilterSidebar } from '../components/category/FilterSidebar';
 import { ProductCard } from '../components/ui/ProductCard';
 import { Filter, ChevronDown, Loader2 } from 'lucide-react';
@@ -9,19 +9,28 @@ import { cn } from '../utils/cn';
 
 const Category = () => {
   const { slug } = useParams<{ slug: string }>();
+  const location = useLocation();
+  const queryParams = new URLSearchParams(location.search);
+  const onSaleParam = queryParams.get('onSale') === 'true';
+  const sortParamFromUrl = queryParams.get('sort');
   const [categories, setCategories] = useState<any[]>([]);
   const [products, setProducts] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
   const [categoryName, setCategoryName] = useState('Khám phá Sản phẩm');
   useEffect(() => {
-    if (!slug) {
+    if (onSaleParam) {
+      setCategoryName('Khuyến mãi HOT Deal');
+    } else if (sortParamFromUrl === 'latest') {
+      setCategoryName('Hàng mới về');
+      setSortBy('newest');
+    } else if (!slug) {
       setCategoryName('Tất cả sản phẩm');
     }
-  }, [slug]);
+  }, [slug, onSaleParam, sortParamFromUrl]);
   const [currentPage, setCurrentPage] = useState(0);
   const [totalPages, setTotalPages] = useState(0);
   const [totalElements, setTotalElements] = useState(0);
-  const [sortBy, setSortBy] = useState('newest');
+  const [sortBy, setSortBy] = useState(sortParamFromUrl === 'latest' ? 'newest' : 'newest');
   const [isMobileFilterOpen, setIsMobileFilterOpen] = useState(false);
   
   // Price range mapping
@@ -30,7 +39,7 @@ const Category = () => {
     'makeup': 'Son môi, phấn nền, chì kẻ mắt, má hồng và bộ sưu tập trang điểm thời thượng.',
     'haircare': 'Dầu gội, dầu xả, tinh dầu dưỡng và các sản phẩm tạo kiểu tóc chuyên nghiệp.',
     'bodycare': 'Sữa tắm, dưỡng thể, tẩy tế bào chết và chăm sóc da toàn thân mịn màng.',
-    'supplements': 'Vitamin, collagen và các thực phẩm bổ sung hỗ trợ sức khỏe và sắc đẹp từ bên trong.'
+    'perfume': 'Nước hoa nam, nữ, unisex và các dòng tinh dầu thơm cao cấp chính hãng.'
   };
 
   // Filter states
@@ -51,7 +60,7 @@ const Category = () => {
             (slug === 'makeup' && c.name === 'Trang điểm') ||
             (slug === 'haircare' && c.name === 'Chăm sóc tóc') ||
             (slug === 'bodycare' && c.name === 'Chăm sóc cơ thể') ||
-            (slug === 'supplements' && c.name === 'Thực phẩm chức năng')
+            (slug === 'perfume' && c.name === 'Nước hoa')
           );
           if (cat) setCategoryName(cat.name);
         }
@@ -75,7 +84,7 @@ const Category = () => {
           (slug === 'makeup' && c.name === 'Trang điểm') ||
           (slug === 'haircare' && c.name === 'Chăm sóc tóc') ||
           (slug === 'bodycare' && c.name === 'Chăm sóc cơ thể') ||
-          (slug === 'supplements' && c.name === 'Thực phẩm chức năng')
+          (slug === 'perfume' && c.name === 'Nước hoa')
         );
         if (cat) categoryId = cat.id;
       }
@@ -100,6 +109,7 @@ const Category = () => {
         minPrice,
         maxPrice,
         sortBy: sortParam,
+        onSale: onSaleParam,
         page: currentPage,
         size: 9
       });
@@ -120,7 +130,7 @@ const Category = () => {
 
   useEffect(() => {
     fetchProducts();
-  }, [slug, selectedBrands, selectedPriceRange, selectedSkinTypes, currentPage, sortBy, categories]);
+  }, [slug, selectedBrands, selectedPriceRange, selectedSkinTypes, currentPage, sortBy, categories, onSaleParam]);
 
   const handleFilterChange = (type: 'brand' | 'price' | 'skinType', value: string) => {
      setCurrentPage(0);
@@ -163,7 +173,7 @@ const Category = () => {
               {categoryName}
             </h1>
             <p className="text-primary-700 font-medium max-w-xl text-sm md:text-base italic">
-              {slug && categoryDescriptions[slug] ? categoryDescriptions[slug] : "Khám phá bộ sưu tập hàng trăm sản phẩm chính hãng với mức giá siêu ưu đãi từ Glowzy."}
+              {onSaleParam ? "Tổng hợp tất cả các sản phẩm đang có chương trình giảm giá cực sốc tại Glowzy." : (slug && categoryDescriptions[slug] ? categoryDescriptions[slug] : "Khám phá bộ sưu tập hàng trăm sản phẩm chính hãng với mức giá siêu ưu đãi từ Glowzy.")}
             </p>
         </div>
       </div>

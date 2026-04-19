@@ -99,7 +99,7 @@ INSERT IGNORE INTO categories (id, name, description) VALUES (1, 'Trang điểm'
 INSERT IGNORE INTO categories (id, name, description) VALUES (2, 'Chăm sóc da', 'Các sản phẩm chăm sóc da chuyên sâu');
 INSERT IGNORE INTO categories (id, name, description) VALUES (3, 'Chăm sóc tóc', 'Các sản phẩm cho mái tóc chắc khỏe');
 INSERT IGNORE INTO categories (id, name, description) VALUES (4, 'Chăm sóc cơ thể', 'Sản phẩm chăm sóc cơ thể dịu nhẹ');
-INSERT IGNORE INTO categories (id, name, description) VALUES (5, 'Thực phẩm chức năng', 'Bổ sung vitamin và khoáng chất');
+INSERT IGNORE INTO categories (id, name, description) VALUES (5, 'Nước hoa', 'Nước hoa nam, nữ, unisex và tinh dầu thơm cao cấp');
 
 -- Sample Products
 -- SKINCARE
@@ -136,10 +136,5 @@ VALUES ('Sữa Dưỡng Thể Vaseline Gluta-Hya', 'Dưỡng sáng da chuyên s�
 INSERT IGNORE INTO products (name, description, original_price, current_price, stock_quantity, image_url, category_id, created_at) 
 VALUES ('Tẩy Tế Bào Chết St.Ives Scrub', 'Lấy đi tế bào chết, cho làn da mịn màng.', 180000, 155000, 110, 'st_ives_scrub.png', 4, DATE_SUB(NOW(), INTERVAL 6 DAY));
 
--- SUPPLEMENTS
-INSERT IGNORE INTO products (name, description, original_price, current_price, stock_quantity, image_url, category_id, created_at) 
-VALUES ('Viên Uống DHC Vitamin C', 'Hỗ trợ tăng sức đề kháng và làm sáng da.', 250000, 195000, 100, 'dhc_vitamin_c.png', 5, NOW());
-
-INSERT IGNORE INTO products (name, description, original_price, current_price, stock_quantity, image_url, category_id, created_at) 
-VALUES ('Dầu Cá Blackmores Fish Oil', 'Bổ sung Omega-3 cho tim mạch và trí não.', 550000, 450000, 30, 'blackmores_fishoil.png', 5, DATE_SUB(NOW(), INTERVAL 7 DAY));
+-- PERFUME (replaces SUPPLEMENTS)
 

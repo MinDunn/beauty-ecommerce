@@ -38,6 +38,7 @@ public class ProductController {
             @RequestParam(required = false) BigDecimal maxPrice,
             @RequestParam(required = false) String keyword,
             @RequestParam(required = false, defaultValue = "latest") String sortBy,
+            @RequestParam(required = false) Boolean onSale,
             @RequestParam(required = false, defaultValue = "0") int page,
             @RequestParam(required = false, defaultValue = "10") int size
     ) {
@@ -97,7 +98,7 @@ public class ProductController {
         }
 
         Pageable pageable = PageRequest.of(page, size, sort);
-        Page<Product> productPage = productUseCase.getAllProducts(categoryId, minPrice, maxPrice, keyword, sortBy, pageable);
+        Page<Product> productPage = productUseCase.getAllProducts(categoryId, minPrice, maxPrice, keyword, sortBy, onSale, pageable);
         
         // Giải quyết N+1 bằng cách lấy rating hàng loạt
         List<Long> productIds = productPage.getContent().stream()

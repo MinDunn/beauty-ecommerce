@@ -71,7 +71,7 @@ class ProductServiceTest {
         when(productMapper.mapToDomainEntity(any(ProductJpaEntity.class)))
                 .thenReturn(domainProduct);
 
-        Page<Product> result = productService.getAllProducts(1L, null, null, "son", "latest", Pageable.unpaged());
+        Page<Product> result = productService.getAllProducts(1L, null, null, "son", "latest", null, Pageable.unpaged());
 
         assertNotNull(result);
         assertEquals(1, result.getContent().size());

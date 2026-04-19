@@ -7,6 +7,7 @@ const categories = [
   { id: 5, name: 'Kem dưỡng', icon: '🧁', color: 'bg-pink-50 text-pink-500' },
   { id: 6, name: 'Chống nắng', icon: '☀️', color: 'bg-yellow-50 text-yellow-500' },
   { id: 8, name: 'Chăm sóc cơ thể', icon: '🛀', color: 'bg-orange-50 text-orange-500' },
+  { id: 9, name: 'Nước hoa', icon: '✨', color: 'bg-indigo-50 text-indigo-500' },
 ];
 
 export const CategoryNav = () => {

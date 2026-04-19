@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { Link, useNavigate, useLocation } from 'react-router-dom';
+import { Link, useNavigate } from 'react-router-dom';
 import { useSelector, useDispatch } from 'react-redux';
 import { 
   Search, 
@@ -9,7 +9,8 @@ import {
   PhoneCall, 
   MapPin,
   User,
-  Heart
+  Heart,
+  ChevronDown
 } from 'lucide-react';
 import type { RootState } from '../../store';
 import { logout as logoutAction } from '../../store/slices/authSlice';
@@ -25,7 +26,6 @@ export const Header = () => {
   const { totalQuantity } = useSelector((state: RootState) => state.cart);
   const dispatch = useDispatch();
   const navigate = useNavigate();
-  const location = useLocation();
 
   const handleLogout = () => {
     dispatch(logoutAction());
@@ -40,12 +40,19 @@ export const Header = () => {
     }
   };
 
-  const navLinks = [
+  const mainNavLinks = [
+    { name: 'Trang chủ', href: '/' },
+    { name: 'Hàng mới về', href: '/category?sort=latest' },
+    { name: 'HOT deal', href: '/category?onSale=true' },
+    { name: 'Khuyến mãi', href: '/category?onSale=true' },
+  ];
+
+  const categoryLinks = [
     { name: 'Chăm sóc da', href: '/category/skincare' },
     { name: 'Trang điểm', href: '/category/makeup' },
     { name: 'Chăm sóc tóc', href: '/category/haircare' },
     { name: 'Chăm sóc cơ thể', href: '/category/bodycare' },
-    { name: 'Thực phẩm chức năng', href: '/category/supplements' },
+    { name: 'Nước hoa', href: '/category/perfume' },
   ];
 
   return (
@@ -180,30 +187,43 @@ export const Header = () => {
       <nav className="hidden lg:block border-t border-gray-100">
         <div className="container mx-auto px-4">
           <div className="flex items-center">
-            <Link to="/category" className="relative group/cat">
-              <button 
-                className="flex items-center space-x-2 bg-primary-500 text-white px-6 py-3 font-bold text-sm uppercase tracking-wider rounded-t-xl hover:bg-primary-600 transition-colors"
+            {/* Mega Menu Category Trigger */}
+            <div className="relative group/cat">
+              <Link 
+                to="/category" 
+                className="flex items-center space-x-2 bg-primary-500 text-white px-8 py-3.5 font-bold text-sm uppercase tracking-wider rounded-t-xl hover:bg-primary-600 transition-all duration-300"
               >
                 <Menu size={18} />
                 <span>Danh mục sản phẩm</span>
-              </button>
-            </Link>
-            <div className="flex items-center space-x-8 ml-8">
-              {navLinks.map((link) => {
-                const isActive = location.pathname === link.href;
-                return (
-                  <Link 
-                    key={link.name} 
-                    to={link.href} 
-                    className={cn(
-                      "text-sm font-bold uppercase tracking-wide transition-colors",
-                      isActive ? "text-primary-500" : "text-gray-700 hover:text-primary-500"
-                    )}
-                  >
-                    {link.name}
-                  </Link>
-                );
-              })}
+                <ChevronDown size={14} className="ml-1 group-hover/cat:rotate-180 transition-transform duration-300" />
+              </Link>
+              
+              {/* Dropdown Menu */}
+              <div className="absolute top-full left-0 w-64 bg-white border border-gray-100 shadow-2xl rounded-b-2xl opacity-0 invisible group-hover/cat:opacity-100 group-hover/cat:visible transition-all duration-300 z-[100] transform translate-y-2 group-hover/cat:translate-y-0 overflow-hidden">
+                <div className="py-2">
+                  {categoryLinks.map((link) => (
+                    <Link 
+                      key={link.name}
+                      to={link.href}
+                      className="block px-6 py-4 text-sm font-bold text-gray-700 hover:bg-primary-50 hover:text-primary-600 transition-all border-l-4 border-transparent hover:border-primary-500"
+                    >
+                      {link.name}
+                    </Link>
+                  ))}
+                </div>
+              </div>
+            </div>
+
+            <div className="flex items-center space-x-12 ml-12">
+              {mainNavLinks.map((link) => (
+                <Link 
+                  key={link.name} 
+                  to={link.href} 
+                  className="text-sm font-bold uppercase tracking-widest text-gray-700 hover:text-primary-500 transition-colors"
+                >
+                  {link.name}
+                </Link>
+              ))}
             </div>
           </div>
         </div>
@@ -230,11 +250,22 @@ export const Header = () => {
             </button>
           </div>
           <div className="flex flex-col space-y-4">
-            {navLinks.map((link) => (
+            {mainNavLinks.map((link) => (
               <Link 
                 key={link.name} 
                 to={link.href} 
-                className="text-lg font-bold text-gray-800 border-b border-gray-100 pb-2"
+                className="text-lg font-bold text-primary-600 border-b border-gray-100 pb-2"
+                onClick={() => setIsMenuOpen(false)}
+              >
+                {link.name}
+              </Link>
+            ))}
+            <div className="pt-4 pb-2 text-xs font-black uppercase text-gray-400 tracking-widest">Danh mục sản phẩm</div>
+            {categoryLinks.map((link) => (
+              <Link 
+                key={link.name} 
+                to={link.href} 
+                className="text-base font-bold text-gray-800 border-b border-gray-50 pb-2 pl-4"
                 onClick={() => setIsMenuOpen(false)}
               >
                 {link.name}

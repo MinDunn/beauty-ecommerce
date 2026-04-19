@@ -38,8 +38,11 @@ export const Products = () => {
     description: "",
     originalPrice: "",
     salePrice: "",
+    discountValue: "",
+    discountType: "FIXED" as "FIXED" | "PERCENT",
     stockQuantity: "",
     imageUrl: "",
+    additionalImages: [] as string[],
     categoryId: "",
     instructions: "",
     ingredients: "",
@@ -74,7 +77,7 @@ export const Products = () => {
         "Trang điểm",
         "Chăm sóc tóc",
         "Chăm sóc cơ thể",
-        "Thực phẩm chức năng"
+        "Nước hoa"
       ];
       const categoryByName = new Map(data.map((category: Category) => [category.name, category]));
       const orderedCategories = homeCategoryOrder
@@ -99,8 +102,11 @@ export const Products = () => {
         description: product.description || "",
         originalPrice: (product.originalPrice ?? 0).toString(),
         salePrice: (product.currentPrice ?? 0).toString(),
+        discountValue: ((product.originalPrice || 0) - (product.currentPrice || 0)).toString(),
+        discountType: "FIXED",
         stockQuantity: (product.stockQuantity ?? 0).toString(),
         imageUrl: product.imageUrl || "",
+        additionalImages: product.images?.filter((img: string) => img !== product.imageUrl) || [],
         categoryId: product.categoryId?.toString() || "",
         instructions: product.instructions || "",
         ingredients: product.ingredients || "",
@@ -279,8 +285,11 @@ export const Products = () => {
       description: "",
       originalPrice: "",
       salePrice: "",
+      discountValue: "0",
+      discountType: "FIXED",
       stockQuantity: "",
       imageUrl: "",
+      additionalImages: [],
       categoryId: categories[0]?.id?.toString() || "",
       instructions: "",
       ingredients: "",

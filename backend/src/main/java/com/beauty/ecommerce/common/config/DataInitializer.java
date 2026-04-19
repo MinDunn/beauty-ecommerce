@@ -89,8 +89,8 @@ public class DataInitializer implements CommandLineRunner {
         CategoryJpaEntity bodycare = categoryRepository.findByName("Chăm sóc cơ thể")
                 .orElseGet(() -> categoryRepository.save(CategoryJpaEntity.builder().name("Chăm sóc cơ thể").description("Sữa tắm, dưỡng thể, tẩy tế bào chết...").build()));
 
-        CategoryJpaEntity supplements = categoryRepository.findByName("Thực phẩm chức năng")
-                .orElseGet(() -> categoryRepository.save(CategoryJpaEntity.builder().name("Thực phẩm chức năng").description("Vitamin, collagen, sản phẩm hỗ trợ sức khỏe sắc đẹp...").build()));
+        CategoryJpaEntity perfume = categoryRepository.findByName("Nước hoa")
+                .orElseGet(() -> categoryRepository.save(CategoryJpaEntity.builder().name("Nước hoa").description("Nước hoa nam, nữ, unisex và tinh dầu thơm cao cấp...").build()));
 
 
     }
