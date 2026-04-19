@@ -48,4 +48,7 @@ public class CouponJpaEntity {
     @Column(name = "usage_count")
     @Builder.Default
     private Integer usageCount = 0;
+
+    @Column(name = "category_id")
+    private Long categoryId;
 }

@@ -83,7 +83,15 @@ public class OrderService implements OrderUseCase {
         // Apply Coupon
         String couponCode = command.getCouponCode();
         if (couponCode != null && !couponCode.trim().isEmpty()) {
-            CouponJpaEntity coupon = couponService.validateCoupon(couponCode, totalPrice.doubleValue());
+            java.util.List<Long> categoryIds = cartItems.stream()
+                .map(item -> {
+                    com.beauty.ecommerce.product.domain.entity.Product product = loadProductPort.loadProductById(item.getProductId()).orElse(null);
+                    return product != null ? product.getCategoryId() : null;
+                })
+                .filter(java.util.Objects::nonNull)
+                .collect(java.util.stream.Collectors.toList());
+
+            CouponJpaEntity coupon = couponService.validateCoupon(couponCode, totalPrice.doubleValue(), categoryIds);
             BigDecimal discount = BigDecimal.ZERO;
             if ("PERCENTAGE".equalsIgnoreCase(coupon.getDiscountType())) {
                 discount = totalPrice.multiply(coupon.getDiscountValue()).divide(new BigDecimal(100));

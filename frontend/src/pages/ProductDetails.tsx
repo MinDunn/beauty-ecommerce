@@ -74,7 +74,8 @@ const ProductDetails = () => {
         instructions: data.instructions,
         ingredients: data.ingredients,
         images: images,
-        variants: data.variants || []
+        variants: data.variants || [],
+        categoryId: data.categoryId
       };
       
       setProduct(mappedProduct);
@@ -168,7 +169,8 @@ const ProductDetails = () => {
       image: mainImage,
       brand: product.brand,
       quantity: quantity,
-      variantName: selectedVariant?.variantName || null
+      variantName: selectedVariant?.variantName || null,
+      categoryId: product.categoryId
     };
 
     dispatch(addItem(payload));
@@ -221,8 +223,8 @@ const ProductDetails = () => {
       toast.success('Cảm ơn bạn đã gửi đánh giá!');
       setNewReview({ rating: 5, comment: '' });
       fetchReviews();
-    } catch (error: unknown) {
-      const errMsg = error instanceof Error ? (error as any).response?.data?.message || error.message : 'Có lỗi xảy ra';
+    } catch (error: any) {
+      const errMsg = error.response?.data?.message || error.message || 'Có lỗi xảy ra';
       toast.error(errMsg);
     } finally {
       setIsSubmittingReview(false);

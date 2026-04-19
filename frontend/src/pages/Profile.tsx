@@ -7,17 +7,19 @@ import { cn } from '../utils/cn';
 import authService from '../api/authService';
 import type { UserProfile } from '../api/authService';
 import toast from 'react-hot-toast';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, useLocation } from 'react-router-dom';
 import wishlistService from '../api/wishlistService';
 import orderService from '../api/orderService';
 import type { Order } from '../types';
 import { ProductCard } from '../components/ui/ProductCard';
 import { addItem, selectOnlyItems } from '../store/slices/cartSlice';
+// // import { SEO } from '../components/common/SEO';
 
 const Profile = () => {
   const { user } = useSelector((state: RootState) => state.auth);
   const dispatch = useDispatch();
   const navigate = useNavigate();
+  const location = useLocation();
   const fileInputRef = useRef<HTMLInputElement>(null);
   
   const [activeTab, setActiveTab] = useState('info');
@@ -37,6 +39,15 @@ const Profile = () => {
     newPassword: '',
     confirmPassword: ''
   });
+  
+  // Handle tab from query param
+  useEffect(() => {
+    const params = new URLSearchParams(location.search);
+    const tab = params.get('tab');
+    if (tab && ['info', 'orders', 'wishlist', 'security', 'settings'].includes(tab)) {
+      setActiveTab(tab);
+    }
+  }, [location]);
 
   useEffect(() => {
     fetchProfile();
@@ -93,7 +104,9 @@ const Profile = () => {
       const resp = await authService.uploadAvatar(file);
       const newAvatarUrl = resp.data.data;
       setProfile(prev => prev ? { ...prev, avatarUrl: newAvatarUrl } : null);
-      dispatch(updateUser({ avatarUrl: newAvatarUrl }));
+      if (dispatch) {
+          (dispatch as any)(updateUser({ avatarUrl: newAvatarUrl }));
+      }
       toast.success('Cập nhật ảnh đại diện thành công!', { id: loadingToast });
     } catch {
       toast.error('Tải ảnh thất bại', { id: loadingToast });
@@ -498,6 +511,7 @@ const Profile = () => {
 
   return (
     <div className="bg-gray-50 min-h-screen py-12">
+      {/* <SEO title="Hồ sơ cá nhân" description="Quản lý thông tin tài khoản, đơn hàng và danh sách yêu thích của bạn tại Glowzy." /> */}
       <div className="container mx-auto px-4 max-w-6xl">
         <div className="flex flex-col lg:flex-row gap-8">
           

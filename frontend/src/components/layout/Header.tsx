@@ -8,7 +8,8 @@ import {
   X, 
   PhoneCall, 
   MapPin,
-  User
+  User,
+  Heart
 } from 'lucide-react';
 import type { RootState } from '../../store';
 import { logout as logoutAction } from '../../store/slices/authSlice';
@@ -155,6 +156,13 @@ export const Header = () => {
               </div>
             ) : null}
           </div>
+
+          <Link to="/profile?tab=wishlist" className="hidden md:flex flex-col items-center group">
+            <div className="relative">
+              <Heart size={24} className="text-gray-700 group-hover:text-primary-500 transition-colors" />
+            </div>
+            <span className="text-[10px] mt-1 font-bold text-gray-500 uppercase tracking-widest group-hover:text-primary-500">Yêu thích</span>
+          </Link>
 
           <Link to="/cart" className="relative flex flex-col items-center group">
             <div className="relative">

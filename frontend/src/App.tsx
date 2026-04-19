@@ -22,12 +22,14 @@ import BeautyGuide from './pages/BeautyGuide';
 import Privacy from './pages/policies/Privacy';
 
 import { Sidebar } from './components/admin/Sidebar';
-import { Header } from './components/admin/Header';
+import { Header as AdminHeader } from './components/admin/Header';
 import { Products } from './pages/Product';
 import { Orders } from './pages/Orders';
 import { FeedbackPage } from './pages/Feedback';
 import { AdminDashboard } from './pages/admin/AdminDashboard';
 import { UserManagement } from './pages/admin/UserManagement';
+import { Categories } from './pages/admin/Categories';
+import { Coupons } from './pages/admin/Coupons';
 import { InventoryReceiptsPage } from './pages/admin/InventoryReceiptsPage';
 import { Activities } from './pages/Activities';
 import { useAuth } from './hooks/useAuth';
@@ -37,11 +39,13 @@ function AdminLayout({ logout }: { logout: () => void }) {
     <div className="flex bg-[#020617] min-h-screen font-sans selection:bg-primary-500/30">
       <Sidebar />
       <div className="flex-1 flex flex-col min-w-0 md:pl-72">
-        <Header logout={logout} />
+        <AdminHeader logout={logout} />
         <main className="flex-1 p-6 md:p-10 overflow-x-hidden">
           <Routes>
             <Route path="" element={<AdminDashboard />} />
             <Route path="products" element={<Products />} />
+            <Route path="categories" element={<Categories />} />
+            <Route path="coupons" element={<Coupons />} />
             <Route path="orders" element={<Orders />} />
             <Route path="inventory-receipts" element={<InventoryReceiptsPage />} />
             <Route path="users" element={<UserManagement />} />

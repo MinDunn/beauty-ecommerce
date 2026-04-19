@@ -2,17 +2,42 @@ import axiosInstance from './axiosInstance';
 import type { ApiResponse } from '../types/api';
 
 export interface CouponData {
+  id?: number;
   code: string;
   discountValue: number;
   discountType: 'PERCENTAGE' | 'FIXED';
-  maxDiscount?: number;
+  minOrderAmount?: number;
+  expiryDate?: string;
+  isActive?: boolean;
+  usageLimit?: number;
+  usageCount?: number;
+  categoryId?: number;
 }
 
 export const couponService = {
-  validate: (code: string, orderValue: number) => 
+  validate: (code: string, orderValue: number, categoryIds?: (number | string)[]) => 
     axiosInstance.get<ApiResponse<CouponData>>(`/coupons/validate`, {
-      params: { code, orderValue }
-    })
+      params: { code, orderValue, categoryIds: categoryIds?.join(',') }
+    }),
+
+  getAllCoupons: async () => {
+    const response = await axiosInstance.get<ApiResponse<CouponData[]>>('/admin/coupons');
+    return response.data.data;
+  },
+
+  createCoupon: async (data: CouponData) => {
+    const response = await axiosInstance.post<ApiResponse<CouponData>>('/admin/coupons', data);
+    return response.data.data;
+  },
+
+  updateCoupon: async (id: number, data: CouponData) => {
+    const response = await axiosInstance.put<ApiResponse<CouponData>>(`/admin/coupons/${id}`, data);
+    return response.data.data;
+  },
+
+  deleteCoupon: async (id: number) => {
+    await axiosInstance.delete(`/admin/coupons/${id}`);
+  }
 };
 
 export default couponService;

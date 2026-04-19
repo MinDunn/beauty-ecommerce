@@ -18,7 +18,7 @@ import {
 } from "lucide-react";
 
 import { motion, AnimatePresence } from "framer-motion";
-import { adminService } from "../../api/adminService";
+import { adminService, type DashboardStats } from "../../api/adminService";
 import { toast } from "react-hot-toast";
 import { useNavigate } from "react-router-dom";
 import {
@@ -63,7 +63,7 @@ const StatCard = ({ title, value, change, icon: Icon, trend, onClick }: StatCard
 export const AdminDashboard = () => {
   const [isExporting, setIsExporting] = useState(false);
   const [showExportSuccess, setShowExportSuccess] = useState(false);
-  const [stats, setStats] = useState<any>(null);
+  const [stats, setStats] = useState<DashboardStats | null>(null);
   const [loading, setLoading] = useState(true);
   const [days, setDays] = useState(7);
   const [showDaysDropdown, setShowDaysDropdown] = useState(false);
@@ -231,8 +231,8 @@ export const AdminDashboard = () => {
           </div>
           
           <div className="h-64 flex items-end justify-between px-2 gap-2 md:gap-4">
-              {stats?.revenueHistory.map((item: any, i: number) => {
-                const revenueValues = stats?.revenueHistory.map((r: any) => Number(r.revenue) || 0);
+              {stats?.revenueHistory.map((item, i: number) => {
+                const revenueValues = stats?.revenueHistory.map(r => Number(r.revenue) || 0);
                 const maxRevenue = Math.max(...revenueValues, 1);
                 const currentRevenue = Number(item.revenue) || 0;
                 const barHeight = (currentRevenue / maxRevenue) * 100;
@@ -313,7 +313,7 @@ export const AdminDashboard = () => {
                 <p className="text-slate-500 text-sm italic font-medium">Chưa có đơn hàng nào</p>
               </div>
             ) : (
-              stats?.recentOrders.map((order: any, i: number) => (
+              stats?.recentOrders.map((order, i: number) => (
                 <div key={i} className="flex items-center justify-between group cursor-pointer p-2 -m-2 rounded-2xl hover:bg-slate-800/50 transition-all">
                   <div className="flex items-center gap-3">
                     <div className="w-12 h-12 rounded-2xl bg-slate-800 border border-slate-700 flex items-center justify-center font-black text-[10px] text-primary-500 group-hover:bg-primary-500 group-hover:text-white group-hover:border-primary-600 transition-all shadow-inner">
@@ -383,7 +383,7 @@ export const AdminDashboard = () => {
           ) : (
             <ResponsiveContainer width="100%" height={stats.topFavoritedProducts.length * 52}>
               <BarChart
-                data={stats.topFavoritedProducts.map((p: any) => ({ 
+                data={stats.topFavoritedProducts.map((p) => ({ 
                   name: p.name.length > 18 ? p.name.slice(0, 18) + '…' : p.name, 
                   count: p.count, 
                   sales: p.salesCount,
@@ -448,7 +448,7 @@ export const AdminDashboard = () => {
           ) : (
             <ResponsiveContainer width="100%" height={stats.topRatedProducts.length * 52}>
               <BarChart
-                data={stats.topRatedProducts.map((p: any) => ({ name: p.name.length > 18 ? p.name.slice(0, 18) + '…' : p.name, count: p.count, fullName: p.name }))}
+                data={stats.topRatedProducts.map((p) => ({ name: p.name.length > 18 ? p.name.slice(0, 18) + '…' : p.name, count: p.count, fullName: p.name }))}
                 layout="vertical"
                 margin={{ top: 0, right: 48, left: 0, bottom: 0 }}
               >

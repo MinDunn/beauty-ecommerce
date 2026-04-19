@@ -1,5 +1,6 @@
 import { useState, useMemo, useEffect } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
+import type { AxiosError } from 'axios';
 import { 
   ShieldCheck, 
   ArrowRight, 
@@ -135,9 +136,6 @@ const Checkout = () => {
     let calcDiscount = 0;
     if (appliedCoupon.discountType === 'PERCENTAGE') {
       calcDiscount = (subTotal * appliedCoupon.discountValue) / 100;
-      if (appliedCoupon.maxDiscount && calcDiscount > appliedCoupon.maxDiscount) {
-        calcDiscount = appliedCoupon.maxDiscount;
-      }
     } else {
       calcDiscount = appliedCoupon.discountValue;
     }
@@ -151,11 +149,13 @@ const Checkout = () => {
     setIsApplying(true);
     const loadingToast = toast.loading('Đang kiểm tra mã...');
     try {
-      const resp = await couponService.validate(couponCode, subTotal);
+      const categoryIds = selectedItems.map(item => item.categoryId).filter(id => id !== undefined) as number[];
+      const resp = await couponService.validate(couponCode, subTotal, categoryIds);
       setAppliedCoupon(resp.data.data);
       toast.success('Áp dụng mã giảm giá thành công!', { id: loadingToast });
     } catch (error: unknown) {
-      const errMsg = error instanceof Error ? error.message : 'Không thể áp dụng mã này';
+      const axiosError = error as AxiosError<{ message: string }>;
+      const errMsg = axiosError.response?.data?.message || 'Không thể áp dụng mã này';
       toast.error(errMsg, { id: loadingToast });
       setAppliedCoupon(null);
     } finally {

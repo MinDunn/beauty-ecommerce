@@ -7,7 +7,9 @@ import {
   Sparkles,
   Bell,
   FileText,
-  User
+  User,
+  Layers,
+  Ticket
 } from "lucide-react";
 import { clsx } from "clsx";
 
@@ -17,6 +19,8 @@ export const Sidebar = () => {
   const menuItems = [
     { path: "/admin", name: "Bảng điều khiển", icon: LayoutDashboard },
     { path: "/admin/products", name: "Sản phẩm", icon: ShoppingBag },
+    { path: "/admin/categories", name: "Danh mục", icon: Layers },
+    { path: "/admin/coupons", name: "Mã giảm giá", icon: Ticket },
     { path: "/admin/orders", name: "Đơn hàng", icon: ClipboardList },
     { path: "/admin/inventory-receipts", name: "HĐ nhập hàng", icon: FileText },
     { path: "/admin/users", name: "Người dùng", icon: User },
