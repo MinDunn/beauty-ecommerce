@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { useSelector, useDispatch } from 'react-redux';
 import { 
@@ -16,11 +16,13 @@ import type { RootState } from '../../store';
 import { logout as logoutAction } from '../../store/slices/authSlice';
 import { cn } from '../../utils/cn';
 import { OrderLookupModal } from '../modals/OrderLookupModal';
+import { categoryService } from '../../api/categoryService';
 
 export const Header = () => {
   const [isMenuOpen, setIsMenuOpen] = useState(false);
   const [isOrderLookupOpen, setIsOrderLookupOpen] = useState(false);
   const [searchQuery, setSearchQuery] = useState('');
+  const [expandedCategoryId, setExpandedCategoryId] = useState<number | null>(null);
   
   const { isAuthenticated, user } = useSelector((state: RootState) => state.auth);
   const { totalQuantity } = useSelector((state: RootState) => state.cart);
@@ -47,13 +49,32 @@ export const Header = () => {
     { name: 'Khuyến mãi', href: '/category?onSale=true' },
   ];
 
-  const categoryLinks = [
-    { name: 'Chăm sóc da', href: '/category/skincare' },
-    { name: 'Trang điểm', href: '/category/makeup' },
-    { name: 'Chăm sóc tóc', href: '/category/haircare' },
-    { name: 'Chăm sóc cơ thể', href: '/category/bodycare' },
-    { name: 'Nước hoa', href: '/category/perfume' },
-  ];
+  const [categories, setCategories] = useState<any[]>([]);
+
+  useEffect(() => {
+    const fetchCategories = async () => {
+      try {
+        const data = await categoryService.getAllCategories();
+        setCategories(data);
+      } catch (error) {
+        console.error("Failed to fetch categories", error);
+      }
+    };
+    fetchCategories();
+  }, []);
+
+  // Group subcategories under parents
+  const menuStructure = categories
+    .filter(cat => !cat.parentId || cat.parentId === 0 || cat.parentId === "0") // Strictly top-level
+    .map(parent => ({
+      ...parent,
+      children: categories.filter(child => String(child.parentId) === String(parent.id)),
+      href: `/category/${parent.name.toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "").replace(/\s+/g, '-')}`
+    }));
+
+  const toggleCategory = (id: number) => {
+    setExpandedCategoryId(expandedCategoryId === id ? null : id);
+  };
 
   return (
     <header className="w-full bg-white">
@@ -115,7 +136,7 @@ export const Header = () => {
             {user?.role === 'ADMIN' && (
               <Link to="/admin" className="flex items-center group" title="Trang quản trị">
                 <span className="px-3 py-1.5 rounded-xl border border-slate-300 text-[11px] font-black uppercase tracking-widest text-slate-700 group-hover:text-primary-500 group-hover:border-primary-500 transition-colors">
-                  Trang quản trị
+                   Trang quản trị
                 </span>
               </Link>
             )}
@@ -198,18 +219,50 @@ export const Header = () => {
                 <ChevronDown size={14} className="ml-1 group-hover/cat:rotate-180 transition-transform duration-300" />
               </Link>
               
-              {/* Dropdown Menu */}
-              <div className="absolute top-full left-0 w-64 bg-white border border-gray-100 shadow-2xl rounded-b-2xl opacity-0 invisible group-hover/cat:opacity-100 group-hover/cat:visible transition-all duration-300 z-[100] transform translate-y-2 group-hover/cat:translate-y-0 overflow-hidden">
-                <div className="py-2">
-                  {categoryLinks.map((link) => (
-                    <Link 
-                      key={link.name}
-                      to={link.href}
-                      className="block px-6 py-4 text-sm font-bold text-gray-700 hover:bg-primary-50 hover:text-primary-600 transition-all border-l-4 border-transparent hover:border-primary-500"
-                    >
-                      {link.name}
-                    </Link>
-                  ))}
+              {/* Dropdown Menu (Accordion for both Desktop/Mobile) */}
+              <div className="absolute top-full left-0 w-64 bg-white border border-gray-100 shadow-2xl rounded-b-2xl opacity-0 invisible group-hover/cat:opacity-100 group-hover/cat:visible transition-all duration-300 z-[100] transform translate-y-2 group-hover/cat:translate-y-0 p-2 max-h-[70vh] overflow-y-auto">
+                <div className="py-2 space-y-1">
+                  {menuStructure.length > 0 ? (
+                    menuStructure.map((parent) => (
+                      <div key={parent.id} className="space-y-0.5">
+                        <div 
+                          className="flex items-center justify-between hover:bg-primary-50 rounded-xl transition-all group/item cursor-pointer"
+                          onClick={() => parent.children.length > 0 ? toggleCategory(parent.id) : navigate(parent.href)}
+                        >
+                          <div className="flex-1 px-4 py-3 text-sm font-bold text-gray-700 group-hover/item:text-primary-600 select-none">
+                            {parent.name}
+                          </div>
+                          {parent.children.length > 0 && (
+                            <div className={cn(
+                                "p-2 mr-1 text-gray-400 transition-all",
+                                expandedCategoryId === parent.id ? "rotate-180 text-primary-500" : ""
+                              )}
+                            >
+                              <ChevronDown size={16} />
+                            </div>
+                          )}
+                        </div>
+                        
+                        {/* Children List (Desktop Accordion) */}
+                        {parent.children.length > 0 && expandedCategoryId === parent.id && (
+                          <div className="mx-2 mb-2 py-1 bg-gray-50/50 rounded-xl border border-gray-100 animate-in slide-in-from-top-2 duration-200">
+                            {parent.children.map((child: any) => (
+                              <Link
+                                key={child.id}
+                                to={`/category/${child.name.toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "").replace(/\s+/g, '-')}`}
+                                className="block px-8 py-2.5 text-xs font-bold text-gray-500 hover:text-primary-500 border-l-2 border-transparent hover:border-primary-300 transition-all"
+                                onClick={() => setIsMenuOpen(false)}
+                              >
+                                {child.name}
+                              </Link>
+                            ))}
+                          </div>
+                        )}
+                      </div>
+                    ))
+                  ) : (
+                    <div className="px-6 py-4 text-sm text-gray-400 italic font-medium">Đang tải danh mục...</div>
+                  )}
                 </div>
               </div>
             </div>
@@ -238,7 +291,7 @@ export const Header = () => {
           <div className="text-2xl font-black text-slate-900">GLOWZY<span className="text-primary-500">.</span></div>
           <button onClick={() => setIsMenuOpen(false)}><X size={28} /></button>
         </div>
-        <div className="p-4 space-y-4">
+        <div className="p-4 space-y-4 h-full overflow-y-auto pb-20">
           <div className="relative mb-6">
             <input 
               type="text" 
@@ -260,29 +313,65 @@ export const Header = () => {
                 {link.name}
               </Link>
             ))}
-            <div className="pt-4 pb-2 text-xs font-black uppercase text-gray-400 tracking-widest">Danh mục sản phẩm</div>
-            {categoryLinks.map((link) => (
-              <Link 
-                key={link.name} 
-                to={link.href} 
-                className="text-base font-bold text-gray-800 border-b border-gray-50 pb-2 pl-4"
-                onClick={() => setIsMenuOpen(false)}
-              >
-                {link.name}
-              </Link>
+            
+            <div className="pt-4 pb-2 text-xs font-black uppercase text-gray-400 tracking-widest border-t border-gray-100 mt-4">Danh mục sản phẩm</div>
+            {menuStructure.map((parent) => (
+              <div key={parent.id} className="space-y-1">
+                <div className="flex items-center justify-between border-b border-gray-50 pb-2">
+                  <Link 
+                    to={parent.href} 
+                    className="text-base font-bold text-gray-800 pl-2"
+                    onClick={() => setIsMenuOpen(false)}
+                  >
+                    {parent.name}
+                  </Link>
+                  {parent.children.length > 0 && (
+                    <button 
+                      onClick={(e) => {
+                        e.preventDefault();
+                        toggleCategory(parent.id);
+                      }}
+                      className={cn(
+                        "p-2 rounded-lg bg-gray-50 text-gray-400 transition-all",
+                        expandedCategoryId === parent.id ? "bg-primary-50 text-primary-500 rotate-180" : ""
+                      )}
+                    >
+                      <ChevronDown size={18} />
+                    </button>
+                  )}
+                </div>
+                
+                {parent.children.length > 0 && expandedCategoryId === parent.id && (
+                  <div className="bg-gray-50/50 rounded-xl py-1 mt-1">
+                    {parent.children.map((child: any) => (
+                       <Link 
+                        key={child.id} 
+                        to={`/category/${child.name.toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "").replace(/\s+/g, '-')}`} 
+                        className="text-sm font-medium text-gray-600 py-3 pl-8 flex items-center gap-2 hover:text-primary-500 transition-colors"
+                        onClick={() => setIsMenuOpen(false)}
+                      >
+                        <span className="w-1.5 h-1.5 rounded-full bg-primary-300"></span>
+                        {child.name}
+                      </Link>
+                    ))}
+                  </div>
+                )}
+              </div>
             ))}
           </div>
-          {!isAuthenticated && (
+          
+          <div className="pt-8">
             <Link 
               to="/admin" 
-              className="block w-full text-center py-3 bg-slate-900 border border-slate-700 text-white font-bold rounded-lg flex items-center justify-center gap-2"
+              className="block w-full text-center py-4 bg-slate-900 text-white font-black rounded-2xl flex items-center justify-center gap-3 uppercase tracking-widest text-xs"
               onClick={() => setIsMenuOpen(false)}
             >
               <span>Giao diện Quản trị</span>
             </Link>
-          )}
+          </div>
         </div>
       </div>
+      
       {/* Order Lookup Modal */}
       <OrderLookupModal 
         isOpen={isOrderLookupOpen} 

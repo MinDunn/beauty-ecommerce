@@ -13,27 +13,21 @@ const Category = () => {
   const queryParams = new URLSearchParams(location.search);
   const onSaleParam = queryParams.get('onSale') === 'true';
   const sortParamFromUrl = queryParams.get('sort');
+  
   const [categories, setCategories] = useState<any[]>([]);
   const [products, setProducts] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
   const [categoryName, setCategoryName] = useState('Khám phá Sản phẩm');
-  useEffect(() => {
-    if (onSaleParam) {
-      setCategoryName('Khuyến mãi HOT Deal');
-    } else if (sortParamFromUrl === 'latest') {
-      setCategoryName('Hàng mới về');
-      setSortBy('newest');
-    } else if (!slug) {
-      setCategoryName('Tất cả sản phẩm');
-    }
-  }, [slug, onSaleParam, sortParamFromUrl]);
   const [currentPage, setCurrentPage] = useState(0);
   const [totalPages, setTotalPages] = useState(0);
   const [totalElements, setTotalElements] = useState(0);
   const [sortBy, setSortBy] = useState(sortParamFromUrl === 'latest' ? 'newest' : 'newest');
   const [isMobileFilterOpen, setIsMobileFilterOpen] = useState(false);
   
-  // Price range mapping
+  const [selectedBrands, setSelectedBrands] = useState<string[]>([]);
+  const [selectedPriceRange, setSelectedPriceRange] = useState<string | null>(null);
+  const [selectedSkinTypes, setSelectedSkinTypes] = useState<string[]>([]);
+
   const categoryDescriptions: Record<string, string> = {
     'skincare': 'Serum, kem dưỡng, đặc trị, mặt nạ và các sản phẩm chăm sóc da chuyên sâu.',
     'makeup': 'Son môi, phấn nền, chì kẻ mắt, má hồng và bộ sưu tập trang điểm thời thượng.',
@@ -42,20 +36,18 @@ const Category = () => {
     'perfume': 'Nước hoa nam, nữ, unisex và các dòng tinh dầu thơm cao cấp chính hãng.'
   };
 
-  // Filter states
-  const [selectedBrands, setSelectedBrands] = useState<string[]>([]);
-  const [selectedPriceRange, setSelectedPriceRange] = useState<string | null>(null);
-  const [selectedSkinTypes, setSelectedSkinTypes] = useState<string[]>([]);
+  const normalize = (str: string) => 
+    str.toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "").replace(/\s+/g, '-');
 
   // Fetch individual category info and all categories
   useEffect(() => {
     const fetchMeta = async () => {
       try {
-        const res = await categoryService.getAllCategories();
-        setCategories(res);
+        const data = await categoryService.getAllCategories();
+        setCategories(data);
         if (slug) {
-          const cat = res.find((c: any) => 
-            c.name.toLowerCase().replace(/\s+/g, '-') === slug || 
+          const cat = data.find((c: any) => 
+            normalize(c.name) === slug || 
             (slug === 'skincare' && c.name === 'Chăm sóc da') ||
             (slug === 'makeup' && c.name === 'Trang điểm') ||
             (slug === 'haircare' && c.name === 'Chăm sóc tóc') ||
@@ -71,15 +63,25 @@ const Category = () => {
     fetchMeta();
   }, [slug]);
 
+  useEffect(() => {
+    if (onSaleParam) {
+      setCategoryName('Khuyến mãi HOT Deal');
+    } else if (sortParamFromUrl === 'latest') {
+      setCategoryName('Hàng mới về');
+      setSortBy('newest');
+    } else if (!slug) {
+      setCategoryName('Tất cả sản phẩm');
+    }
+  }, [slug, onSaleParam, sortParamFromUrl]);
+
   const fetchProducts = async () => {
     if (slug && categories.length === 0) return;
     setLoading(true);
     try {
-      // Map slug to categoryId
       let categoryId = undefined;
       if (slug && categories.length > 0) {
         const cat = categories.find((c: any) => 
-          c.name.toLowerCase().replace(/\s+/g, '-') === slug || 
+          normalize(c.name) === slug || 
           (slug === 'skincare' && c.name === 'Chăm sóc da') ||
           (slug === 'makeup' && c.name === 'Trang điểm') ||
           (slug === 'haircare' && c.name === 'Chăm sóc tóc') ||
@@ -89,7 +91,6 @@ const Category = () => {
         if (cat) categoryId = cat.id;
       }
 
-      // Map price range
       let minPrice = undefined;
       let maxPrice = undefined;
       if (selectedPriceRange) {
@@ -99,7 +100,6 @@ const Category = () => {
         else if (selectedPriceRange === 'p4') minPrice = 500000;
       }
 
-      // Sort logic
       let sortParam = 'createdAt,desc';
       if (sortBy === 'price-asc') sortParam = 'currentPrice,asc';
       if (sortBy === 'price-desc') sortParam = 'currentPrice,desc';
@@ -126,14 +126,13 @@ const Category = () => {
 
   useEffect(() => {
     setCurrentPage(0);
-  }, [sortBy]);
+  }, [sortBy, selectedBrands, selectedPriceRange, selectedSkinTypes, onSaleParam]);
 
   useEffect(() => {
     fetchProducts();
   }, [slug, selectedBrands, selectedPriceRange, selectedSkinTypes, currentPage, sortBy, categories, onSaleParam]);
 
   const handleFilterChange = (type: 'brand' | 'price' | 'skinType', value: string) => {
-     setCurrentPage(0);
      if (type === 'brand') {
         setSelectedBrands(prev => prev.includes(value) ? prev.filter(b => b !== value) : [...prev, value]);
      } else if (type === 'price') {
@@ -147,7 +146,6 @@ const Category = () => {
     setSelectedBrands([]);
     setSelectedPriceRange(null);
     setSelectedSkinTypes([]);
-    setCurrentPage(0);
   };
 
   const getSortLabel = () => {
@@ -160,10 +158,8 @@ const Category = () => {
 
   return (
     <div className="bg-white min-h-screen pb-20">
-      {/* Category Banner Background */}
       <div className="bg-primary-50 py-12 mb-8 border-b border-primary-100">
         <div className="container mx-auto px-4 max-w-7xl">
-            {/* Breadcrumb */}
             <div className="flex items-center space-x-2 text-xs md:text-sm text-primary-600 mb-4 font-bold uppercase tracking-widest">
               <Link to="/" className="hover:text-primary-800 cursor-pointer transition-colors px-1">Trang chủ</Link>
               <span>/</span>
@@ -180,7 +176,6 @@ const Category = () => {
 
       <div className="container mx-auto px-4 max-w-7xl">
         <div className="flex flex-col lg:flex-row gap-8 items-start">
-          {/* Left Sidebar Filter */}
           <div className="lg:w-1/4 lg:sticky lg:top-24 w-full">
              <FilterSidebar 
               isMobileOpen={isMobileFilterOpen} 
@@ -193,14 +188,11 @@ const Category = () => {
              />
           </div>
 
-          {/* Right Content Area */}
           <div className="lg:w-3/4 flex-1 w-full">
-            {/* Top Toolbar */}
             <div className="bg-white p-4 rounded-2xl border border-gray-100 flex flex-col sm:flex-row sm:items-center justify-between mb-8 shadow-sm gap-4">
               <span className="text-sm text-gray-500 font-medium">Tìm thấy <strong className="text-gray-900 text-lg">{totalElements}</strong> sản phẩm</span>
               
               <div className="flex items-center gap-3">
-                 {/* Mobile Filter Toggle */}
                 <button 
                   onClick={() => setIsMobileFilterOpen(true)}
                   className="lg:hidden flex-1 sm:flex-none flex items-center justify-center space-x-2 px-5 py-3 bg-gray-50 hover:bg-gray-100 rounded-xl text-sm font-black text-gray-700 uppercase tracking-wide transition-colors"
@@ -208,7 +200,6 @@ const Category = () => {
                   <Filter size={18} /> <span>Lọc SP</span>
                 </button>
 
-                {/* Sort Dropdown */}
                 <div className="relative group flex-1 sm:flex-none">
                   <button className="w-full flex items-center justify-between px-5 py-3 bg-gray-50 hover:bg-gray-100 border border-transparent hover:border-gray-200 rounded-xl text-sm font-black text-gray-700 uppercase tracking-wide transition-all">
                     {getSortLabel()} <ChevronDown size={18} className="ml-3 text-gray-400 group-hover:text-primary-500" />
@@ -238,7 +229,6 @@ const Category = () => {
               </div>
             </div>
 
-            {/* Product Grid */}
             {loading ? (
               <div className="flex flex-col items-center justify-center py-24 gap-4">
                 <Loader2 size={48} className="text-primary-500 animate-spin" />
@@ -263,7 +253,6 @@ const Category = () => {
               </div>
             )}
 
-             {/* Pagination */}
              {totalPages > 1 && (
                <div className="mt-16 flex justify-center">
                  <div className="flex space-x-2">
@@ -300,7 +289,6 @@ const Category = () => {
              )}
           </div>
         </div>
-
       </div>
     </div>
   );

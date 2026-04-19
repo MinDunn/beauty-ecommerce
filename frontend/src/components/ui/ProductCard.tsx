@@ -131,7 +131,7 @@ export const ProductCard = ({ id, name, price, originalPrice, image, badge, bran
             <div className="font-black text-primary-600 text-xl tracking-tighter whitespace-nowrap">
               {price.toLocaleString('vi-VN')}đ
             </div>
-            {originalPrice && (
+            {originalPrice && originalPrice > price && (
               <div className="text-xs text-gray-400 line-through font-bold opacity-60 whitespace-nowrap">
                 {originalPrice.toLocaleString('vi-VN')}đ
               </div>

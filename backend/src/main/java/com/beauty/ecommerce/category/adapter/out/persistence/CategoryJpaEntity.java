@@ -26,4 +26,7 @@ public class CategoryJpaEntity {
 
     private String name;
     private String description;
+
+    @jakarta.persistence.Column(name = "parent_id")
+    private Long parentId;
 }

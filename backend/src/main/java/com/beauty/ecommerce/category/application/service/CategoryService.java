@@ -33,6 +33,7 @@ public class CategoryService {
         CategoryJpaEntity category = CategoryJpaEntity.builder()
                 .name(request.getName())
                 .description(request.getDescription())
+                .parentId(request.getParentId())
                 .build();
         category = categoryRepository.save(category);
         return mapToResponse(category);
@@ -46,6 +47,7 @@ public class CategoryService {
         
         category.setName(request.getName());
         category.setDescription(request.getDescription());
+        category.setParentId(request.getParentId());
         
         category = categoryRepository.save(category);
         return mapToResponse(category);
@@ -65,6 +67,7 @@ public class CategoryService {
                 .id(entity.getId())
                 .name(entity.getName())
                 .description(entity.getDescription())
+                .parentId(entity.getParentId())
                 .build();
     }
 }

@@ -323,7 +323,7 @@ const ProductDetails = () => {
                  <div className="text-5xl font-black text-primary-600 tracking-tighter drop-shadow-sm">
                    {(selectedVariant ? product.price + selectedVariant.price : product.price).toLocaleString('vi-VN')} đ
                  </div>
-                 {product.originalPrice && (
+                 {product.originalPrice && product.originalPrice > (selectedVariant ? product.price + selectedVariant.price : product.price) && (
                     <div className="text-gray-400 text-xl font-bold line-through mb-1.5 italic opacity-40">
                         {product.originalPrice.toLocaleString('vi-VN')} đ
                     </div>

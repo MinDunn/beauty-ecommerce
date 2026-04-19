@@ -16,6 +16,7 @@ interface Category {
   id: number;
   name: string;
   description: string;
+  parentId?: number;
 }
 
 export const Categories = () => {
@@ -26,7 +27,7 @@ export const Categories = () => {
   // Modal states
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [editingCategory, setEditingCategory] = useState<Category | null>(null);
-  const [formData, setFormData] = useState({ name: '', description: '' });
+  const [formData, setFormData] = useState({ name: '', description: '', parentId: '' });
   const [isSubmitting, setIsSubmitting] = useState(false);
   
   // Delete confirm state
@@ -51,10 +52,14 @@ export const Categories = () => {
   const handleOpenModal = (category?: Category) => {
     if (category) {
       setEditingCategory(category);
-      setFormData({ name: category.name, description: category.description || '' });
+      setFormData({ 
+        name: category.name, 
+        description: category.description || '',
+        parentId: category.parentId ? String(category.parentId) : ''
+      });
     } else {
       setEditingCategory(null);
-      setFormData({ name: '', description: '' });
+      setFormData({ name: '', description: '', parentId: '' });
     }
     setIsModalOpen(true);
   };
@@ -68,11 +73,16 @@ export const Categories = () => {
 
     setIsSubmitting(true);
     try {
+      const submitData = {
+        ...formData,
+        parentId: formData.parentId === '' ? undefined : Number(formData.parentId)
+      };
+
       if (editingCategory) {
-        await categoryService.adminUpdateCategory(editingCategory.id, formData);
+        await categoryService.adminUpdateCategory(editingCategory.id, submitData);
         toast.success('Cập nhật danh mục thành công');
       } else {
-        await categoryService.adminCreateCategory(formData);
+        await categoryService.adminCreateCategory(submitData);
         toast.success('Tạo danh mục mới thành công');
       }
       setIsModalOpen(false);
@@ -145,6 +155,7 @@ export const Categories = () => {
               <tr className="bg-slate-800/50">
                 <th className="px-8 py-5 text-[10px] font-black text-slate-400 uppercase tracking-[0.2em]">ID</th>
                 <th className="px-8 py-5 text-[10px] font-black text-slate-400 uppercase tracking-[0.2em]">Tên danh mục</th>
+                <th className="px-8 py-5 text-[10px] font-black text-slate-400 uppercase tracking-[0.2em]">Cấp bậc / Cha</th>
                 <th className="px-8 py-5 text-[10px] font-black text-slate-400 uppercase tracking-[0.2em]">Mô tả</th>
                 <th className="px-8 py-5 text-[10px] font-black text-slate-400 uppercase tracking-[0.2em] text-right">Thao tác</th>
               </tr>
@@ -176,6 +187,17 @@ export const Categories = () => {
                     <td className="px-8 py-6 text-sm font-bold text-slate-500">#{cat.id}</td>
                     <td className="px-8 py-6">
                       <span className="text-sm font-black text-white group-hover:text-primary-500 transition-colors uppercase">{cat.name}</span>
+                    </td>
+                    <td className="px-8 py-6">
+                      {cat.parentId ? (
+                        <span className="px-3 py-1 bg-primary-500/10 text-primary-500 text-[10px] font-black uppercase rounded-lg border border-primary-500/20">
+                          Con của: {categories.find(c => c.id === cat.parentId)?.name || 'N/A'}
+                        </span>
+                      ) : (
+                        <span className="px-3 py-1 bg-slate-800 text-slate-500 text-[10px] font-black uppercase rounded-lg border border-slate-700">
+                          Cấp cao nhất
+                        </span>
+                      )}
                     </td>
                     <td className="px-8 py-6">
                       <p className="text-xs text-slate-400 font-medium italic line-clamp-1 max-w-xs">{cat.description || 'Chưa có mô tả'}</p>
@@ -244,9 +266,27 @@ export const Categories = () => {
                     />
                   </div>
                   <div className="space-y-2">
-                    <label className="text-[10px] font-black text-slate-500 uppercase tracking-widst ml-1">Mô tả (Không bắt buộc)</label>
+                    <label className="text-[10px] font-black text-slate-500 uppercase tracking-widest ml-1">Danh mục cha (Nếu có)</label>
+                    <select 
+                      value={formData.parentId}
+                      onChange={(e) => setFormData({...formData, parentId: e.target.value})}
+                      className="w-full px-6 py-4 bg-slate-800 border border-slate-700 rounded-2xl text-white font-bold outline-none focus:border-primary-500 transition-all appearance-none"
+                    >
+                      <option value="">-- Cấp cao nhất --</option>
+                      {categories
+                        .filter(c => !editingCategory || c.id !== editingCategory.id) // Không chọn chính nó làm cha
+                        .filter(c => !c.parentId) // Chỉ chọn danh mục cấp 1 làm cha (để đảm bảo tối đa 2 cấp)
+                        .map(c => (
+                          <option key={c.id} value={c.id}>{c.name}</option>
+                        ))
+                      }
+                    </select>
+                  </div>
+
+                  <div className="space-y-2">
+                    <label className="text-[10px] font-black text-slate-500 uppercase tracking-widest ml-1">Mô tả (Không bắt buộc)</label>
                     <textarea 
-                      rows={4}
+                      rows={3}
                       value={formData.description}
                       onChange={(e) => setFormData({...formData, description: e.target.value})}
                       className="w-full px-6 py-4 bg-slate-800 border border-slate-700 rounded-2xl text-white font-bold outline-none focus:border-primary-500 transition-all resize-none"

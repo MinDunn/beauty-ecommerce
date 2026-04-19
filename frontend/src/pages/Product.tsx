@@ -79,13 +79,30 @@ export const Products = () => {
         "Chăm sóc cơ thể",
         "Nước hoa"
       ];
-      const categoryByName = new Map(data.map((category: Category) => [category.name, category]));
-      const orderedCategories = homeCategoryOrder
-        .map((name) => categoryByName.get(name))
-        .filter((category): category is Category => Boolean(category));
-      setCategories(orderedCategories);
+      
+      // Sort: Home categories first in specific order, then other categories alphabetically
+      const sortedCategories = [...data].sort((a, b) => {
+        const indexA = homeCategoryOrder.indexOf(a.name);
+        const indexB = homeCategoryOrder.indexOf(b.name);
+        
+        if (indexA !== -1 && indexB !== -1) return indexA - indexB;
+        if (indexA !== -1) return -1;
+        if (indexB !== -1) return 1;
+        
+        return a.name.localeCompare(b.name);
+      });
+      
+      setCategories(sortedCategories);
+      
+      // If we are adding a new product and no category is selected, select the first one
+      setFormData(prev => {
+        if (!prev.categoryId && sortedCategories.length > 0) {
+          return { ...prev, categoryId: sortedCategories[0].id.toString() };
+        }
+        return prev;
+      });
     } catch (error) {
-      console.error("Failed to fetch categories");
+      console.error("Failed to fetch categories", error);
     }
   };
 
@@ -93,6 +110,27 @@ export const Products = () => {
     fetchProducts();
     fetchCategories();
   }, []);
+
+  // Auto-calculate sale price
+  useEffect(() => {
+    const original = Number(sanitizeCurrencyInput(formData.originalPrice || "0"));
+    const discount = Number(formData.discountValue || "0");
+    let result = original;
+
+    if (formData.discountType === 'PERCENT') {
+      result = original * (1 - discount / 100);
+    } else {
+      result = original - discount;
+    }
+
+    const calculatedSalePrice = Math.max(0, Math.floor(result)).toString();
+    if (formData.salePrice !== calculatedSalePrice) {
+      setFormData(prev => ({
+        ...prev,
+        salePrice: calculatedSalePrice
+      }));
+    }
+  }, [formData.originalPrice, formData.discountValue, formData.discountType]);
 
   const handleOpenModal = (product?: Product) => {
     if (product) {
@@ -154,7 +192,7 @@ export const Products = () => {
         categoryId: parseInt(formData.categoryId),
         instructions: formData.instructions,
         ingredients: formData.ingredients,
-        existingImages: [] as string[],
+        existingImages: [formData.imageUrl, ...formData.additionalImages].filter(Boolean) as string[],
         variants: variantsWithIndex
       };
 
@@ -290,7 +328,7 @@ export const Products = () => {
       stockQuantity: "",
       imageUrl: "",
       additionalImages: [],
-      categoryId: categories[0]?.id?.toString() || "",
+      categoryId: categories.length > 0 ? categories[0].id.toString() : "",
       instructions: "",
       ingredients: "",
       variants: []
@@ -509,14 +547,19 @@ export const Products = () => {
                   onChange={e => setFormData({ ...formData, categoryId: e.target.value })}
                 >
                   <option value="" disabled>Chọn danh mục</option>
-                  {categories.map(c => (
-                    <option key={c.id} value={c.id}>{c.name}</option>
-                  ))}
+                  {categories.map(c => {
+                    const isSubcategory = !!c.parentId;
+                    return (
+                      <option key={c.id} value={c.id}>
+                        {isSubcategory ? `   ↳ ${c.name}` : c.name}
+                      </option>
+                    );
+                  })}
                 </select>
               </div>
             </div>
 
-            <div className="grid grid-cols-2 gap-4">
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               {/* Original Price */}
               <div className="space-y-2">
                 <label className="text-[10px] font-black text-slate-500 uppercase tracking-widest ml-1">Giá gốc</label>
@@ -533,20 +576,40 @@ export const Products = () => {
                 </div>
               </div>
 
-              {/* Sale Price */}
+              {/* Discount Section */}
               <div className="space-y-2">
-                <label className="text-[10px] font-black text-slate-500 uppercase tracking-widest ml-1">Giá khuyến mãi</label>
-                <div className="relative group">
-                  <DollarSign className="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-500 group-focus-within:text-primary-500 transition-colors" />
-                  <input
-                    type="text"
-                    inputMode="numeric"
-                    placeholder="0"
-                    className="bg-slate-800/50 border border-slate-700 w-full pl-11 pr-4 py-3.5 rounded-2xl text-white outline-none focus:border-primary-500/50 transition-all font-medium"
-                    value={formData.salePrice}
-                    onChange={e => setFormData({ ...formData, salePrice: sanitizeCurrencyInput(e.target.value) })}
-                  />
+                <label className="text-[10px] font-black text-slate-500 uppercase tracking-widest ml-1">Giảm giá</label>
+                <div className="flex gap-2">
+                  <div className="relative group flex-1">
+                    <input
+                      type="text"
+                      inputMode="numeric"
+                      placeholder="0"
+                      className="bg-slate-800/50 border border-slate-700 w-full px-4 py-3.5 rounded-2xl text-white outline-none focus:border-primary-500/50 transition-all font-medium"
+                      value={formData.discountValue}
+                      onChange={e => setFormData({ ...formData, discountValue: e.target.value.replace(/[^\d]/g, "") })}
+                    />
+                  </div>
+                  <select
+                    className="bg-slate-800/50 border border-slate-700 px-4 py-3.5 rounded-2xl text-white outline-none focus:border-primary-500/50 transition-all font-black text-xs"
+                    value={formData.discountType}
+                    onChange={e => setFormData({ ...formData, discountType: e.target.value as "FIXED" | "PERCENT" })}
+                  >
+                    <option value="FIXED">đ</option>
+                    <option value="PERCENT">%</option>
+                  </select>
                 </div>
+              </div>
+            </div>
+
+            {/* Sale Price (Calculated & Read-only) */}
+            <div className="bg-primary-500/5 border border-primary-500/10 p-5 rounded-[2rem] flex justify-between items-center group">
+              <div>
+                <p className="text-[10px] font-black text-primary-500 uppercase tracking-widest mb-1">Giá bán thực tế (Tự động tính)</p>
+                <p className="text-2xl font-black text-white">{Number(formData.salePrice || 0).toLocaleString()}đ</p>
+              </div>
+              <div className="p-4 rounded-2xl bg-primary-500/10 text-primary-500 group-hover:scale-110 transition-transform">
+                <Tag className="w-6 h-6" />
               </div>
             </div>
             <div className="space-y-2">
@@ -706,52 +769,78 @@ export const Products = () => {
               })}
             </div>
 
-            {/* Image URL Input */}
-            <div className="space-y-2">
-              <label className="text-[10px] font-black text-slate-500 uppercase tracking-widest ml-1">Link hình ảnh chính</label>
-              <div className="grid grid-cols-1 md:grid-cols-4 gap-4 items-start">
-                <div className="md:col-span-3 space-y-3">
+            {/* Product Images Section */}
+            <div className="space-y-4 border-t border-slate-700/50 pt-6">
+              <div className="flex justify-between items-center">
+                <label className="text-[10px] font-black text-slate-500 uppercase tracking-widest ml-1">Hình ảnh sản phẩm</label>
+                <button
+                  type="button"
+                  onClick={() => setFormData({
+                    ...formData,
+                    additionalImages: [...formData.additionalImages, ""]
+                  })}
+                  className="text-[10px] font-black text-emerald-500 uppercase tracking-widest hover:text-emerald-400 transition-colors flex items-center gap-1.5"
+                >
+                  <Plus size={14} /> Thêm hình ảnh
+                </button>
+              </div>
+
+              {/* Main Image */}
+              <div className="grid grid-cols-1 md:grid-cols-4 gap-4 items-start bg-slate-800/30 p-4 rounded-[2rem] border border-slate-700/50">
+                <div className="md:col-span-3 space-y-2">
+                  <label className="text-[10px] font-black text-primary-500 uppercase tracking-widest ml-1">Ảnh chính</label>
                   <div className="relative group">
-                    <Tag className="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-500 group-focus-within:text-primary-500 transition-colors" />
+                    <ImageIcon className="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-500 group-focus-within:text-primary-500 transition-colors" />
                     <input
-                      placeholder="Dán link ảnh từ website hoặc Cloudinary..."
-                      className="bg-slate-800/50 border border-slate-700 w-full pl-11 pr-4 py-3.5 rounded-2xl text-white placeholder:text-slate-600 outline-none focus:border-primary-500/50 focus:ring-4 focus:ring-primary-500/10 transition-all font-medium"
+                      placeholder="Dán link ảnh chính tại đây..."
+                      className="bg-slate-900/50 border border-slate-700 w-full pl-11 pr-4 py-3.5 rounded-2xl text-white text-sm outline-none focus:border-primary-500/50 transition-all font-medium"
                       value={formData.imageUrl}
                       onChange={e => setFormData({ ...formData, imageUrl: e.target.value })}
                     />
                   </div>
-                  <p className="text-[9px] text-slate-600 uppercase font-black tracking-widest ml-1">
-                    Dán URL ảnh vào đây để tất cả thành viên đều có thể thấy hình ảnh sản phẩm.
-                  </p>
                 </div>
-
-                <div className="aspect-square rounded-[2rem] overflow-hidden border-2 border-slate-700 bg-slate-800/30 flex items-center justify-center relative group/preview shadow-xl">
+                <div className="aspect-square rounded-2xl overflow-hidden border border-slate-700 bg-slate-900 flex items-center justify-center relative group/preview">
                   {formData.imageUrl ? (
-                    <img 
-                      src={formData.imageUrl} 
-                      className="w-full h-full object-cover transition-transform group-hover/preview:scale-110" 
-                      alt="Main preview" 
-                      onError={(e) => {
-                        (e.target as HTMLImageElement).src = "https://via.placeholder.com/150?text=Invalid+URL";
-                      }}
-                    />
-                  ) : (
-                    <div className="flex flex-col items-center gap-2">
-                      <ImageIcon className="text-slate-700 w-8 h-8" />
-                      <span className="text-[8px] font-black text-slate-700 uppercase tracking-tighter">Chưa có ảnh</span>
-                    </div>
-                  )}
-                  {formData.imageUrl && (
-                    <button
-                      type="button"
-                      onClick={() => setFormData({ ...formData, imageUrl: "" })}
-                      className="absolute top-2 right-2 p-1.5 bg-rose-500 text-white rounded-lg opacity-0 group-hover/preview:opacity-100 transition-all hover:bg-rose-600 shadow-lg"
-                    >
-                      <X size={12} />
-                    </button>
-                  )}
+                    <img src={formData.imageUrl} className="w-full h-full object-cover" alt="Main" onError={e => (e.target as HTMLImageElement).src = "https://via.placeholder.com/150"} />
+                  ) : <ImageIcon className="text-slate-700 w-6 h-6" />}
                 </div>
               </div>
+
+              {/* Additional Images */}
+              {formData.additionalImages.map((imgUrl, index) => (
+                <div key={index} className="grid grid-cols-1 md:grid-cols-4 gap-4 items-start bg-slate-800/10 p-4 rounded-[2rem] border border-slate-700/30 relative group/img animate-in fade-in slide-in-from-top-2">
+                  <div className="md:col-span-3 space-y-2">
+                    <label className="text-[10px] font-black text-slate-500 uppercase tracking-widest ml-1">Ảnh phụ #{index + 1}</label>
+                    <div className="relative group">
+                      <input
+                        placeholder="Link ảnh bổ sung..."
+                        className="bg-slate-900/50 border border-slate-700 w-full px-4 py-3.5 rounded-2xl text-white text-sm outline-none focus:border-primary-500/50 transition-all font-medium"
+                        value={imgUrl}
+                        onChange={e => {
+                          const newImages = [...formData.additionalImages];
+                          newImages[index] = e.target.value;
+                          setFormData({ ...formData, additionalImages: newImages });
+                        }}
+                      />
+                    </div>
+                  </div>
+                  <div className="aspect-square rounded-2xl overflow-hidden border border-slate-700 bg-slate-900 flex items-center justify-center">
+                    {imgUrl ? (
+                      <img src={imgUrl} className="w-full h-full object-cover" alt={`Gallery ${index}`} onError={e => (e.target as HTMLImageElement).src = "https://via.placeholder.com/150"} />
+                    ) : <ImageIcon className="text-slate-800 w-5 h-5" />}
+                  </div>
+                  <button
+                    type="button"
+                    onClick={() => {
+                      const newImages = formData.additionalImages.filter((_, i) => i !== index);
+                      setFormData({ ...formData, additionalImages: newImages });
+                    }}
+                    className="absolute -top-2 -right-2 w-7 h-7 bg-rose-500 text-white rounded-full flex items-center justify-center opacity-0 group-hover/img:opacity-100 transition-all shadow-lg active:scale-90"
+                  >
+                    <X size={14} />
+                  </button>
+                </div>
+              ))}
             </div>
 
             <div className="pt-4 flex gap-3">

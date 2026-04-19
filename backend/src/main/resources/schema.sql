@@ -18,7 +18,9 @@ CREATE TABLE IF NOT EXISTS users (
 CREATE TABLE IF NOT EXISTS categories (
     id BIGINT AUTO_INCREMENT PRIMARY KEY,
     name VARCHAR(255) NOT NULL UNIQUE,
-    description TEXT
+    description TEXT,
+    parent_id BIGINT,
+    FOREIGN KEY (parent_id) REFERENCES categories(id)
 );
 
 -- Products table
