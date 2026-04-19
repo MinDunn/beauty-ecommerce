@@ -4,6 +4,7 @@ import { productService } from '../../api/productService';
 import { Loader2, ChevronLeft, ChevronRight, Zap } from 'lucide-react';
 import { motion } from 'framer-motion';
 import { CountdownClock } from './CountdownClock';
+import { Link } from 'react-router-dom';
 
 const resolveProductImage = (imageUrl?: string) => {
   if (!imageUrl) {
@@ -24,14 +25,16 @@ export const ProductGrid = ({
   type = 'latest',
   isCarousel = false,
   autoPlay = false,
-  infinite = true
+  infinite = true,
+  viewAllLink = "/category"
 }: { 
   title?: string;
   subtitle?: string;
-  type?: 'latest' | 'trending';
+  type?: 'latest' | 'trending' | 'flash-sale';
   isCarousel?: boolean;
   autoPlay?: boolean;
   infinite?: boolean;
+  viewAllLink?: string;
 }) => {
   const [products, setProducts] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
@@ -50,6 +53,9 @@ export const ProductGrid = ({
         if (type === 'trending') {
           const res = await productService.getTrendingProducts(10);
           data = res.data;
+        } else if (type === 'flash-sale') {
+          const res = await productService.searchProducts({ onSale: true, size: 12, sortBy: 'createdAt,desc' });
+          data = res.content;
         } else {
           const res = await productService.searchProducts({ size: 10, sortBy: 'createdAt,desc' });
           data = res.content;
@@ -153,9 +159,9 @@ export const ProductGrid = ({
             </p>
           </div>
           
-          <button className="px-8 py-3 bg-white border-2 border-gray-100 text-gray-700 font-bold rounded-2xl hover:border-primary-500 hover:text-primary-600 transition-all shadow-sm hover:shadow-md active:scale-95 whitespace-nowrap">
+          <Link to={viewAllLink} className="px-8 py-3 bg-white border-2 border-gray-100 text-gray-700 font-bold rounded-2xl hover:border-primary-500 hover:text-primary-600 transition-all shadow-sm hover:shadow-md active:scale-95 whitespace-nowrap">
             Xem tất cả
-          </button>
+          </Link>
         </div>
         
         {loading ? (

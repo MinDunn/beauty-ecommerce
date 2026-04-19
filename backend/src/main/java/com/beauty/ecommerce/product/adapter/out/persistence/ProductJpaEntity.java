@@ -52,6 +52,13 @@ public class ProductJpaEntity {
     @Builder.Default
     private LocalDateTime createdAt = LocalDateTime.now();
 
+    @jakarta.persistence.Column(name = "view_count")
+    @Builder.Default
+    private Long viewCount = 0L;
+
+    @jakarta.persistence.Column(name = "skin_type")
+    private String skinType;
+
     @jakarta.persistence.OneToMany(mappedBy = "product", cascade = jakarta.persistence.CascadeType.ALL, orphanRemoval = true, fetch = jakarta.persistence.FetchType.EAGER)
     private java.util.List<ProductImageJpaEntity> images;
 

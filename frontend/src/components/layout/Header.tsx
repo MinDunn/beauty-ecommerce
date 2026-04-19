@@ -219,38 +219,100 @@ export const Header = () => {
                 <ChevronDown size={14} className="ml-1 group-hover/cat:rotate-180 transition-transform duration-300" />
               </Link>
               
-              {/* Dropdown Menu (Accordion for both Desktop/Mobile) */}
-              <div className="absolute top-full left-0 w-64 bg-white border border-gray-100 shadow-2xl rounded-b-2xl opacity-0 invisible group-hover/cat:opacity-100 group-hover/cat:visible transition-all duration-300 z-[100] transform translate-y-2 group-hover/cat:translate-y-0 p-2 max-h-[70vh] overflow-y-auto">
+              {/* Dropdown Menu (Fly-out for Desktop) */}
+              <div className="absolute top-full left-0 w-64 bg-white border border-gray-100 shadow-2xl rounded-b-2xl opacity-0 invisible group-hover/cat:opacity-100 group-hover/cat:visible transition-all duration-300 z-[100] transform translate-y-2 group-hover/cat:translate-y-0 p-2 overflow-visible">
                 <div className="py-2 space-y-1">
                   {menuStructure.length > 0 ? (
                     menuStructure.map((parent) => (
-                      <div key={parent.id} className="space-y-0.5">
-                        <div 
-                          className="flex items-center justify-between hover:bg-primary-50 rounded-xl transition-all group/item cursor-pointer"
-                          onClick={() => parent.children.length > 0 ? toggleCategory(parent.id) : navigate(parent.href)}
-                        >
-                          <div className="flex-1 px-4 py-3 text-sm font-bold text-gray-700 group-hover/item:text-primary-600 select-none">
+                      <div 
+                        key={parent.id} 
+                        className="relative"
+                        onMouseEnter={() => window.innerWidth >= 1024 && setExpandedCategoryId(parent.id)}
+                        onMouseLeave={() => window.innerWidth >= 1024 && setExpandedCategoryId(null)}
+                      >
+                        <div className={cn(
+                          "flex items-center group/item rounded-xl transition-all border-l-4 border-transparent hover:border-primary-500",
+                          expandedCategoryId === parent.id && window.innerWidth >= 1024 ? "bg-primary-50 border-primary-500" : "hover:bg-primary-50"
+                        )}>
+                          {/* Name Link - Triggers Navigation */}
+                          <Link 
+                            to={parent.href}
+                            className={cn(
+                              "flex-1 px-4 py-3 text-sm font-bold transition-colors select-none",
+                              expandedCategoryId === parent.id && window.innerWidth >= 1024 ? "text-primary-600" : "text-gray-700 group-hover/item:text-primary-600"
+                            )}
+                            onClick={() => setIsMenuOpen(false)}
+                          >
                             {parent.name}
-                          </div>
+                          </Link>
+
+                          {/* Chevron Icon - Indicator */}
                           {parent.children.length > 0 && (
-                            <div className={cn(
-                                "p-2 mr-1 text-gray-400 transition-all",
+                            <button 
+                              onClick={(e) => {
+                                e.preventDefault();
+                                e.stopPropagation();
+                                toggleCategory(parent.id);
+                              }}
+                              className={cn(
+                                "p-2 mr-1 transition-all lg:block hidden",
+                                expandedCategoryId === parent.id ? "rotate-[-90deg] text-primary-500" : "text-gray-400"
+                              )}
+                            >
+                              <ChevronDown size={16} />
+                            </button>
+                          )}
+                          
+                          {/* Mobile Toggle Button */}
+                          {parent.children.length > 0 && (
+                            <button 
+                              onClick={(e) => {
+                                e.preventDefault();
+                                e.stopPropagation();
+                                toggleCategory(parent.id);
+                              }}
+                              className={cn(
+                                "p-2 mr-1 text-gray-400 lg:hidden",
                                 expandedCategoryId === parent.id ? "rotate-180 text-primary-500" : ""
                               )}
                             >
                               <ChevronDown size={16} />
-                            </div>
+                            </button>
                           )}
                         </div>
                         
-                        {/* Children List (Desktop Accordion) */}
-                        {parent.children.length > 0 && expandedCategoryId === parent.id && (
+                        {/* Fly-out Children (Desktop Only) */}
+                        {parent.children.length > 0 && expandedCategoryId === parent.id && window.innerWidth >= 1024 && (
+                          <div className="absolute left-[calc(100%+8px)] top-0 w-72 bg-white border border-gray-100 shadow-2xl rounded-2xl p-2 z-[110] animate-in fade-in slide-in-from-left-2 duration-200">
+                             <div className="px-4 py-2 mb-2 border-b border-gray-50">
+                                <span className="text-[10px] font-black uppercase tracking-[0.2em] text-primary-500">Khám phá {parent.name}</span>
+                             </div>
+                             <div className="space-y-1">
+                                {parent.children.map((child: any) => (
+                                  <Link
+                                    key={child.id}
+                                    to={`/category/${child.name.toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "").replace(/\s+/g, '-')}`}
+                                    className="flex items-center gap-3 px-4 py-2.5 text-sm font-bold text-gray-600 hover:text-primary-600 hover:bg-primary-50 rounded-xl transition-all"
+                                    onClick={() => setIsMenuOpen(false)}
+                                  >
+                                    <span className="w-1.5 h-1.5 rounded-full bg-primary-200"></span>
+                                    {child.name}
+                                  </Link>
+                                ))}
+                             </div>
+                             {/* Invisible bridge to prevent menu from closing when moving mouse */}
+                             <div className="absolute top-0 -left-4 w-4 h-full"></div>
+                          </div>
+                        )}
+
+                        {/* Accordion Children (Mobile Only) */}
+                        {parent.children.length > 0 && expandedCategoryId === parent.id && window.innerWidth < 1024 && (
                           <div className="mx-2 mb-2 py-1 bg-gray-50/50 rounded-xl border border-gray-100 animate-in slide-in-from-top-2 duration-200">
                             {parent.children.map((child: any) => (
                               <Link
                                 key={child.id}
                                 to={`/category/${child.name.toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "").replace(/\s+/g, '-')}`}
-                                className="block px-8 py-2.5 text-xs font-bold text-gray-500 hover:text-primary-500 border-l-2 border-transparent hover:border-primary-300 transition-all"
+                                className="block px-8 py-2.5 text-xs font-bold text-gray-500 hover:text-primary-500 transition-all"
                                 onClick={() => setIsMenuOpen(false)}
                               >
                                 {child.name}

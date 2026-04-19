@@ -22,10 +22,12 @@ public class Product {
     private BigDecimal currentPrice;
     private Integer stockQuantity;
     private String imageUrl;
+    private String skinType;
     private Long categoryId;
     private String instructions;
     private String ingredients;
     private LocalDateTime createdAt;
+    private Long viewCount;
     private java.util.List<String> images;
     private java.util.List<ProductVariant> variants;
 

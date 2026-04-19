@@ -6,6 +6,7 @@ import { addItem } from '../../store/slices/cartSlice';
 import type { RootState } from '../../store';
 import wishlistService from '../../api/wishlistService';
 import toast from 'react-hot-toast';
+import { cn } from '../../utils/cn';
 
 interface ProductCardProps {
   id: string;
@@ -15,6 +16,7 @@ interface ProductCardProps {
   image: string;
   badge?: string;
   brand?: string;
+  reviewCount?: number;
 }
 
 const resolveProductImage = (image?: string) => {
@@ -25,7 +27,7 @@ const resolveProductImage = (image?: string) => {
   return `/images/${image.replace(/^\/+/, '')}`;
 };
 
-export const ProductCard = ({ id, name, price, originalPrice, image, badge, brand = "Glowzy" }: ProductCardProps) => {
+export const ProductCard = ({ id, name, price, originalPrice, image, badge, brand = "Glowzy", reviewCount }: ProductCardProps) => {
   const dispatch = useDispatch();
   const { user, isAuthenticated } = useSelector((state: RootState) => state.auth);
   const [isWishlisted, setIsWishlisted] = useState(false);
@@ -92,9 +94,12 @@ export const ProductCard = ({ id, name, price, originalPrice, image, badge, bran
   return (
     <Link to={`/product/${id}`} className="glowzy-card block group overflow-hidden">
       <div className="relative aspect-square overflow-hidden bg-white">
-        {badge && (
-          <span className="absolute top-4 left-4 bg-red-500 text-white text-[10px] font-black uppercase px-2.5 py-1.5 rounded-lg z-10 shadow-lg shadow-red-500/20">
-            {badge}
+        {(badge || reviewCount === 0) && (
+          <span className={cn(
+            "absolute top-4 left-4 text-white text-[10px] font-black uppercase px-2.5 py-1.5 rounded-lg z-10 shadow-lg transition-transform group-hover:scale-110",
+            badge ? "bg-red-500 shadow-red-500/20" : "bg-primary-600 shadow-primary-600/20"
+          )}>
+            {badge || "NEW"}
           </span>
         )}
         

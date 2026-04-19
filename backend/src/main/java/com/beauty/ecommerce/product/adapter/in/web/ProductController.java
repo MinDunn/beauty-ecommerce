@@ -39,6 +39,7 @@ public class ProductController {
             @RequestParam(required = false) String keyword,
             @RequestParam(required = false, defaultValue = "latest") String sortBy,
             @RequestParam(required = false) Boolean onSale,
+            @RequestParam(required = false) String skinType,
             @RequestParam(required = false, defaultValue = "0") int page,
             @RequestParam(required = false, defaultValue = "10") int size
     ) {
@@ -98,25 +99,30 @@ public class ProductController {
         }
 
         Pageable pageable = PageRequest.of(page, size, sort);
-        Page<Product> productPage = productUseCase.getAllProducts(categoryId, minPrice, maxPrice, keyword, sortBy, onSale, pageable);
+        Page<Product> productPage = productUseCase.getAllProducts(categoryId, minPrice, maxPrice, keyword, sortBy, onSale, skinType, pageable);
         
         // Giải quyết N+1 bằng cách lấy rating hàng loạt
         List<Long> productIds = productPage.getContent().stream()
                 .map(Product::getId)
                 .collect(Collectors.toList());
         
-        Map<Long, Double> ratingsMap = Collections.emptyMap();
+        Map<Long, Double> averageRatingsMap = new java.util.HashMap<>();
+        Map<Long, Long> countsMap = new java.util.HashMap<>();
+        
         if (!productIds.isEmpty()) {
-            ratingsMap = reviewRepository.findAverageRatingsByProductIds(productIds).stream()
-                .collect(Collectors.toMap(
-                    obj -> (Long) obj[0],
-                    obj -> (Double) obj[1]
-                ));
+            reviewRepository.findRatingStatsByProductIds(productIds).forEach(obj -> {
+                Long pId = (Long) obj[0];
+                Double avg = (Double) obj[1];
+                Long count = (Long) obj[2];
+                averageRatingsMap.put(pId, avg != null ? avg : 0.0);
+                countsMap.put(pId, count != null ? count : 0L);
+            });
         }
 
-        final Map<Long, Double> finalRatingsMap = ratingsMap;
         Page<ProductListResponse> responsePage = productPage.map(product -> 
-            mapToListResponse(product, finalRatingsMap.getOrDefault(product.getId(), 0.0))
+            mapToListResponse(product, 
+                averageRatingsMap.getOrDefault(product.getId(), 0.0),
+                countsMap.getOrDefault(product.getId(), 0L))
         );
 
         return ResponseEntity.ok(responsePage);
@@ -129,7 +135,7 @@ public class ProductController {
         return ResponseEntity.ok(response);
     }
 
-    private ProductListResponse mapToListResponse(Product product, Double avgRating) {
+    private ProductListResponse mapToListResponse(Product product, Double avgRating, Long reviewCount) {
         return ProductListResponse.builder()
                 .id(product.getId())
                 .name(product.getName())
@@ -151,7 +157,9 @@ public class ProductController {
                 .categoryId(product.getCategoryId())
                 .instructions(product.getInstructions())
                 .ingredients(product.getIngredients())
+                .skinType(product.getSkinType())
                 .averageRating(avgRating != null ? avgRating : 0.0)
+                .reviewCount(reviewCount != null ? reviewCount : 0L)
                 .build();
     }
  

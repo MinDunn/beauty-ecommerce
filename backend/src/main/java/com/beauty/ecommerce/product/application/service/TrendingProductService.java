@@ -1,8 +1,10 @@
 package com.beauty.ecommerce.product.application.service;
 
+import com.beauty.ecommerce.product.adapter.out.persistence.ProductJpaEntity;
 import com.beauty.ecommerce.product.adapter.out.persistence.ProductRepository;
 import com.beauty.ecommerce.product.adapter.out.persistence.WishlistRepository;
 import com.beauty.ecommerce.product.adapter.out.persistence.mapper.ProductMapper;
+import com.beauty.ecommerce.review.adapter.out.persistence.ReviewRepository;
 import com.beauty.ecommerce.product.domain.entity.Product;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -19,27 +21,61 @@ import java.util.stream.Collectors;
 public class TrendingProductService {
 
     private final WishlistRepository wishlistRepository;
+    private final ReviewRepository reviewRepository;
     private final ProductRepository productRepository;
     private final ProductMapper productMapper;
 
     public List<Product> getWeeklyTrendingProducts(int limit) {
-        log.info("Lấy danh sách {} sản phẩm xu hướng trong tuần", limit);
+        log.info("Lấy danh sách {} sản phẩm xu hướng trong tuần (Tim + 5 Sao)", limit);
         LocalDateTime startDate = LocalDateTime.now().minusDays(7);
         
-        List<Object[]> topProductIds = wishlistRepository.findTopFavoritedProducts(startDate, PageRequest.of(0, limit));
+        // 1. Lấy dữ liệu Lượt Tim (Lấy rộng ra để đảm bảo không sót ứng viên)
+        List<Object[]> topFavs = wishlistRepository.findTopFavoritedProducts(startDate, PageRequest.of(0, 500));
         
-        List<Long> productIds = topProductIds.stream()
-                .map(obj -> (Long) obj[0])
-                .collect(Collectors.toList());
-
-        if (productIds.isEmpty()) {
-            // Nếu không có sản phẩm xu hướng tuần này, lấy sản phẩm mới nhất làm mặc định
-            return productRepository.findAll(PageRequest.of(0, limit)).stream()
-                    .map(productMapper::mapToDomainEntity)
-                    .collect(Collectors.toList());
+        // 2. Lấy dữ liệu Đánh giá 5 Sao
+        List<Object[]> topRated = reviewRepository.findTopRatedProducts(startDate, PageRequest.of(0, 500));
+        
+        // 3. Hợp nhất điểm số (Score Map)
+        java.util.Map<Long, Long> productScores = new java.util.HashMap<>();
+        
+        for (Object[] row : topFavs) {
+            Long productId = (Long) row[0];
+            Long count = (Long) row[1];
+            productScores.put(productId, productScores.getOrDefault(productId, 0L) + count);
+        }
+        
+        for (Object[] row : topRated) {
+            Long productId = (Long) row[0];
+            Long count = (Long) row[1];
+            productScores.put(productId, productScores.getOrDefault(productId, 0L) + count);
         }
 
-        return productRepository.findAllById(productIds).stream()
+        // 4. Sắp xếp và lấy theo limit yêu cầu
+        // Thêm tiêu chí phụ (id giảm dần) để đảm bảo thứ tự luôn cố định khi bằng điểm
+        List<Long> rankedProductIds = productScores.entrySet().stream()
+                .sorted((entry1, entry2) -> {
+                    int compare = entry2.getValue().compareTo(entry1.getValue());
+                    if (compare == 0) {
+                        return entry2.getKey().compareTo(entry1.getKey()); // Nếu điểm bằng nhau, ưu tiên ID lớn hơn (mới hơn)
+                    }
+                    return compare;
+                })
+                .map(java.util.Map.Entry::getKey)
+                .limit(limit)
+                .collect(Collectors.toList());
+
+        if (rankedProductIds.isEmpty()) {
+            log.info("Không có dữ liệu Trending tuần này (Tim hoặc 5 Sao)");
+            return java.util.Collections.emptyList();
+        }
+
+        // 5. Lấy thông tin chi tiết sản phẩm và giữ nguyên thứ tự xếp hạng
+        List<ProductJpaEntity> entities = productRepository.findAllById(rankedProductIds);
+        
+        // Sắp xếp lại danh sách entities theo đúng thứ tự của rankedProductIds
+        return rankedProductIds.stream()
+                .map(id -> entities.stream().filter(e -> e.getId().equals(id)).findFirst().orElse(null))
+                .filter(java.util.Objects::nonNull)
                 .map(productMapper::mapToDomainEntity)
                 .collect(Collectors.toList());
     }

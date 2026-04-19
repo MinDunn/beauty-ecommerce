@@ -1,9 +1,5 @@
 package com.beauty.ecommerce.common.config;
 
-import com.beauty.ecommerce.category.adapter.out.persistence.CategoryJpaEntity;
-import com.beauty.ecommerce.category.adapter.out.persistence.CategoryRepository;
-import com.beauty.ecommerce.product.adapter.out.persistence.ProductJpaEntity;
-import com.beauty.ecommerce.product.adapter.out.persistence.ProductRepository;
 import com.beauty.ecommerce.user.adapter.out.persistence.UserJpaEntity;
 import com.beauty.ecommerce.user.adapter.out.persistence.UserRepository;
 import lombok.RequiredArgsConstructor;
@@ -12,9 +8,7 @@ import org.springframework.boot.CommandLineRunner;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.security.crypto.password.PasswordEncoder;
 
-import java.math.BigDecimal;
 import java.time.LocalDateTime;
-import java.util.List;
 
 @Configuration
 @RequiredArgsConstructor
@@ -22,8 +16,6 @@ import java.util.List;
 public class DataInitializer implements CommandLineRunner {
 
     private final UserRepository userRepository;
-    private final ProductRepository productRepository;
-    private final CategoryRepository categoryRepository;
     private final PasswordEncoder passwordEncoder;
 
     @Override
@@ -76,22 +68,6 @@ public class DataInitializer implements CommandLineRunner {
     }
 
     private void initializeCategoriesAndProducts() {
-        // Ensure categories exist
-        CategoryJpaEntity makeup = categoryRepository.findByName("Trang điểm")
-                .orElseGet(() -> categoryRepository.save(CategoryJpaEntity.builder().name("Trang điểm").description("Các sản phẩm làm đẹp, kem nền, son môi...").build()));
-        
-        CategoryJpaEntity skincare = categoryRepository.findByName("Chăm sóc da")
-                .orElseGet(() -> categoryRepository.save(CategoryJpaEntity.builder().name("Chăm sóc da").description("Kem dưỡng, sữa rửa mặt, mặt nạ...").build()));
-
-        CategoryJpaEntity haircare = categoryRepository.findByName("Chăm sóc tóc")
-                .orElseGet(() -> categoryRepository.save(CategoryJpaEntity.builder().name("Chăm sóc tóc").description("Dầu gội, dầu xả, tinh dầu dưỡng tóc...").build()));
-
-        CategoryJpaEntity bodycare = categoryRepository.findByName("Chăm sóc cơ thể")
-                .orElseGet(() -> categoryRepository.save(CategoryJpaEntity.builder().name("Chăm sóc cơ thể").description("Sữa tắm, dưỡng thể, tẩy tế bào chết...").build()));
-
-        CategoryJpaEntity perfume = categoryRepository.findByName("Nước hoa")
-                .orElseGet(() -> categoryRepository.save(CategoryJpaEntity.builder().name("Nước hoa").description("Nước hoa nam, nữ, unisex và tinh dầu thơm cao cấp...").build()));
-
-
+        log.info("Bỏ qua khởi tạo danh mục tự động (để tránh trùng lặp dữ liệu)...");
     }
 }

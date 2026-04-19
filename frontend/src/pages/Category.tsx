@@ -21,12 +21,12 @@ const Category = () => {
   const [currentPage, setCurrentPage] = useState(0);
   const [totalPages, setTotalPages] = useState(0);
   const [totalElements, setTotalElements] = useState(0);
-  const [sortBy, setSortBy] = useState(sortParamFromUrl === 'latest' ? 'newest' : 'newest');
+  const [sortBy, setSortBy] = useState(sortParamFromUrl === 'latest' ? 'newest' : sortParamFromUrl === 'trending' ? 'trending' : 'newest');
   const [isMobileFilterOpen, setIsMobileFilterOpen] = useState(false);
   
-  const [selectedBrands, setSelectedBrands] = useState<string[]>([]);
   const [selectedPriceRange, setSelectedPriceRange] = useState<string | null>(null);
-  const [selectedSkinTypes, setSelectedSkinTypes] = useState<string[]>([]);
+  const [selectedOnSale, setSelectedOnSale] = useState(onSaleParam);
+  const [selectedSkinType, setSelectedSkinType] = useState<string | null>(null);
 
   const categoryDescriptions: Record<string, string> = {
     'skincare': 'Serum, kem dưỡng, đặc trị, mặt nạ và các sản phẩm chăm sóc da chuyên sâu.',
@@ -69,6 +69,9 @@ const Category = () => {
     } else if (sortParamFromUrl === 'latest') {
       setCategoryName('Hàng mới về');
       setSortBy('newest');
+    } else if (sortParamFromUrl === 'trending') {
+      setCategoryName('Sản phẩm yêu thích nhất tuần');
+      setSortBy('trending');
     } else if (!slug) {
       setCategoryName('Tất cả sản phẩm');
     }
@@ -103,13 +106,33 @@ const Category = () => {
       let sortParam = 'createdAt,desc';
       if (sortBy === 'price-asc') sortParam = 'currentPrice,asc';
       if (sortBy === 'price-desc') sortParam = 'currentPrice,desc';
+      if (sortBy === 'trending') sortParam = 'trending';
+
+      // TRƯỜNG HỢP ĐẶC BIỆT: Yêu thích nhất tuần (Trending)
+      if (sortBy === 'trending') {
+        const trendingRes = await productService.getTrendingProducts(100);
+        const allTrending = trendingRes.data || [];
+        
+        // Phân trang thủ công cho Trending
+        const pageSize = 9;
+        const start = currentPage * pageSize;
+        const end = start + pageSize;
+        const pagedTrending = allTrending.slice(start, end);
+
+        setProducts(pagedTrending);
+        setTotalPages(Math.ceil(allTrending.length / pageSize));
+        setTotalElements(allTrending.length);
+        setLoading(false);
+        return;
+      }
 
       const res = await productService.searchProducts({
         categoryId,
         minPrice,
         maxPrice,
         sortBy: sortParam,
-        onSale: onSaleParam,
+        onSale: selectedOnSale,
+        skinType: selectedSkinType ?? undefined,
         page: currentPage,
         size: 9
       });
@@ -126,32 +149,33 @@ const Category = () => {
 
   useEffect(() => {
     setCurrentPage(0);
-  }, [sortBy, selectedBrands, selectedPriceRange, selectedSkinTypes, onSaleParam]);
+  }, [sortBy, selectedPriceRange, selectedOnSale, selectedSkinType]);
 
   useEffect(() => {
     fetchProducts();
-  }, [slug, selectedBrands, selectedPriceRange, selectedSkinTypes, currentPage, sortBy, categories, onSaleParam]);
+  }, [slug, selectedPriceRange, currentPage, sortBy, categories, selectedOnSale, selectedSkinType]);
 
-  const handleFilterChange = (type: 'brand' | 'price' | 'skinType', value: string) => {
-     if (type === 'brand') {
-        setSelectedBrands(prev => prev.includes(value) ? prev.filter(b => b !== value) : [...prev, value]);
-     } else if (type === 'price') {
+  const handleFilterChange = (type: 'brand' | 'price' | 'skinType' | 'offer' | 'rating', value: any) => {
+     if (type === 'price') {
         setSelectedPriceRange(prev => prev === value ? null : value);
+     } else if (type === 'offer') {
+        if (value === 'onSale') setSelectedOnSale(!selectedOnSale);
      } else if (type === 'skinType') {
-        setSelectedSkinTypes(prev => prev.includes(value) ? prev.filter(s => s !== value) : [...prev, value]);
+        setSelectedSkinType(prev => prev === value ? null : value);
      }
   };
 
   const clearFilters = () => {
-    setSelectedBrands([]);
     setSelectedPriceRange(null);
-    setSelectedSkinTypes([]);
+    setSelectedOnSale(false);
+    setSelectedSkinType(null);
   };
 
   const getSortLabel = () => {
     switch (sortBy) {
       case 'price-asc': return 'Giá thấp đến cao';
       case 'price-desc': return 'Giá cao đến thấp';
+      case 'trending': return 'Yêu thích nhất';
       default: return 'Mới nhất';
     }
   };
@@ -169,7 +193,7 @@ const Category = () => {
               {categoryName}
             </h1>
             <p className="text-primary-700 font-medium max-w-xl text-sm md:text-base italic">
-              {onSaleParam ? "Tổng hợp tất cả các sản phẩm đang có chương trình giảm giá cực sốc tại Glowzy." : (slug && categoryDescriptions[slug] ? categoryDescriptions[slug] : "Khám phá bộ sưu tập hàng trăm sản phẩm chính hãng với mức giá siêu ưu đãi từ Glowzy.")}
+              {onSaleParam ? "Tổng hợp tất cả các sản phẩm đang có chương trình giảm giá cực sốc tại Glowzy." : (sortParamFromUrl === 'trending' ? "Bảng xếp hạng những sản phẩm 'quốc dân' được tìm kiếm và săn đón nhiều nhất trong tuần qua." : (slug && categoryDescriptions[slug] ? categoryDescriptions[slug] : "Khám phá bộ sưu tập hàng trăm sản phẩm chính hãng với mức giá siêu ưu đãi từ Glowzy."))}
             </p>
         </div>
       </div>
@@ -180,11 +204,15 @@ const Category = () => {
              <FilterSidebar 
               isMobileOpen={isMobileFilterOpen} 
               setIsMobileOpen={setIsMobileFilterOpen}
-              selectedBrands={selectedBrands}
               selectedPriceRange={selectedPriceRange}
-              selectedSkinTypes={selectedSkinTypes}
+              selectedOnSale={selectedOnSale}
+              selectedSkinType={selectedSkinType}
               onFilterChange={handleFilterChange}
               onReset={clearFilters}
+              isSkincare={
+                categories.find(c => normalize(c.name) === slug || (slug === 'skincare' && c.name === 'Chăm sóc da'))?.name === "Chăm sóc da" ||
+                categories.find(c => (normalize(c.name) === slug || (slug === 'skincare' && c.name === 'Chăm sóc da')) && c.parentId === categories.find(p => p.name === "Chăm sóc da")?.id) !== undefined
+              }
              />
           </div>
 
@@ -206,6 +234,12 @@ const Category = () => {
                   </button>
                   
                   <div className="absolute right-0 top-full mt-2 w-48 bg-white rounded-2xl shadow-2xl border border-gray-100 opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all z-30 overflow-hidden">
+                    <button 
+                      onClick={() => setSortBy('trending')}
+                      className={cn("w-full text-left px-6 py-4 text-xs font-black uppercase tracking-widest hover:bg-primary-50 hover:text-primary-600 transition-colors", sortBy === 'trending' ? 'text-primary-600 bg-primary-50' : 'text-gray-600')}
+                    >
+                      Yêu thích nhất
+                    </button>
                     <button 
                       onClick={() => setSortBy('newest')}
                       className={cn("w-full text-left px-6 py-4 text-xs font-black uppercase tracking-widest hover:bg-primary-50 hover:text-primary-600 transition-colors", sortBy === 'newest' ? 'text-primary-600 bg-primary-50' : 'text-gray-600')}
@@ -244,6 +278,7 @@ const Category = () => {
                     price={product.currentPrice}
                     originalPrice={product.originalPrice}
                     image={product.imageUrl}
+                    reviewCount={product.reviewCount}
                   />
                 ))}
               </div>

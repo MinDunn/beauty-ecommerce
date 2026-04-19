@@ -1,12 +1,13 @@
 package com.beauty.ecommerce.product.application.service;
 
+import com.beauty.ecommerce.category.adapter.out.persistence.CategoryJpaEntity;
+import com.beauty.ecommerce.category.adapter.out.persistence.CategoryRepository;
 import com.beauty.ecommerce.common.exception.ResourceNotFoundException;
 import com.beauty.ecommerce.product.adapter.out.persistence.ProductJpaEntity;
 import com.beauty.ecommerce.product.adapter.out.persistence.ProductRepository;
 import com.beauty.ecommerce.product.adapter.out.persistence.mapper.ProductMapper;
 import com.beauty.ecommerce.product.application.port.in.GetProductUseCase;
 import com.beauty.ecommerce.product.domain.entity.Product;
-import com.beauty.ecommerce.review.adapter.out.persistence.ReviewRepository;
 import jakarta.persistence.criteria.Predicate;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -28,17 +29,20 @@ public class ProductReaderService implements GetProductUseCase {
 
     private final ProductRepository productRepository;
     private final ProductMapper productMapper;
-    private final ReviewRepository reviewRepository;
+    private final CategoryRepository categoryRepository;
+    private final TrendingProductService trendingProductService;
 
     @Override
-    public Page<Product> getAllProducts(Long categoryId, BigDecimal minPrice, BigDecimal maxPrice, String keyword, String sortBy, Boolean onSale, Pageable pageable) {
-        log.info("Đang lấy danh sách sản phẩm với bộ lọc và phân trang");
+    public Page<Product> getAllProducts(Long categoryId, BigDecimal minPrice, BigDecimal maxPrice, String keyword, String sortBy, Boolean onSale, String skinType, Pageable pageable) {
+        log.info("Đang lấy danh sách sản phẩm với bộ lọc: categoryId={}, minPrice={}, maxPrice={}, keyword={}, sortBy={}, onSale={}, skinType={}", 
+                categoryId, minPrice, maxPrice, keyword, sortBy, onSale, skinType);
         
         Specification<ProductJpaEntity> spec = (root, query, cb) -> {
             List<Predicate> predicates = new ArrayList<>();
 
             if (categoryId != null) {
-                predicates.add(cb.equal(root.get("categoryId"), categoryId));
+                List<Long> allCategoryIds = getAllChildCategoryIds(categoryId);
+                predicates.add(root.get("categoryId").in(allCategoryIds));
             }
 
             if (minPrice != null) {
@@ -61,10 +65,31 @@ public class ProductReaderService implements GetProductUseCase {
                 predicates.add(cb.lessThan(root.get("currentPrice"), root.get("originalPrice")));
             }
 
+            if (skinType != null && !skinType.isEmpty()) {
+                predicates.add(cb.equal(cb.lower(root.get("skinType")), skinType.toLowerCase()));
+            }
+
             return cb.and(predicates.toArray(new Predicate[0]));
         };
 
-        // Note: We use the sort from pageable if provided, otherwise default to createdAt DESC
+        // TRƯỜNG HỢP ĐẶC BIỆT: Sắp xếp theo Trending (Lượt Tim + 5 Sao)
+        if ("trending".equals(sortBy)) {
+            log.info("Sử dụng thuật toán Trending (Tim + 5 Sao) cho danh sách sản phẩm");
+            List<Product> trendingList = trendingProductService.getWeeklyTrendingProducts(100); 
+            
+            // Xử lý phân trang thủ công cho danh sách Trending
+            int start = (int) pageable.getOffset();
+            int end = Math.min((start + pageable.getPageSize()), trendingList.size());
+            
+            List<Product> pagedList = new ArrayList<>();
+            if (start < trendingList.size()) {
+                pagedList = trendingList.subList(start, end);
+            }
+            
+            return new PageImpl<>(pagedList, pageable, trendingList.size());
+        }
+
+        // Các trường hợp sắp xếp thông thường
         log.info("Thực hiện truy vấn với Sort: {}", pageable.getSort());
         Page<ProductJpaEntity> entities = productRepository.findAll(spec, pageable);
         
@@ -76,10 +101,34 @@ public class ProductReaderService implements GetProductUseCase {
     }
 
     @Override
+    @org.springframework.transaction.annotation.Transactional
     public Product getProductById(Long id) {
-        log.info("Đang lấy thông tin chi tiết sản phẩm ID: {}", id);
+        log.info("Đang lấy thông tin chi tiết và tăng lượt xem sản phẩm ID: {}", id);
         ProductJpaEntity entity = productRepository.findById(id)
                 .orElseThrow(() -> new ResourceNotFoundException("Không tìm thấy sản phẩm với id: " + id));
+        
+        // Tăng lượt xem tự động
+        entity.setViewCount(entity.getViewCount() != null ? entity.getViewCount() + 1 : 1L);
+        productRepository.save(entity);
+        
         return productMapper.mapToDomainEntity(entity);
+    }
+
+    @Override
+    public List<Product> getTrendingProducts(int limit) {
+        return trendingProductService.getWeeklyTrendingProducts(limit);
+    }
+
+    private List<Long> getAllChildCategoryIds(Long parentId) {
+        List<Long> ids = new ArrayList<>();
+        ids.add(parentId);
+        
+        List<CategoryJpaEntity> children = categoryRepository.findByParentId(parentId);
+        if (children != null && !children.isEmpty()) {
+            for (CategoryJpaEntity child : children) {
+                ids.addAll(getAllChildCategoryIds(child.getId()));
+            }
+        }
+        return ids;
     }
 }

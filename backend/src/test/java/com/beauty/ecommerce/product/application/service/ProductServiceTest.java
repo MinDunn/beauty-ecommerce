@@ -1,8 +1,6 @@
 package com.beauty.ecommerce.product.application.service;
 
 import com.beauty.ecommerce.common.exception.ResourceNotFoundException;
-import com.beauty.ecommerce.product.adapter.in.web.response.ProductListResponse;
-import com.beauty.ecommerce.product.adapter.in.web.response.ProductResponse;
 import com.beauty.ecommerce.product.adapter.out.persistence.ProductJpaEntity;
 import com.beauty.ecommerce.product.adapter.out.persistence.ProductRepository;
 import com.beauty.ecommerce.product.adapter.out.persistence.mapper.ProductMapper;
@@ -22,7 +20,6 @@ import org.springframework.data.jpa.domain.Specification;
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
 import java.util.Arrays;
-import java.util.List;
 import java.util.Optional;
 
 import static org.junit.jupiter.api.Assertions.*;
@@ -71,7 +68,7 @@ class ProductServiceTest {
         when(productMapper.mapToDomainEntity(any(ProductJpaEntity.class)))
                 .thenReturn(domainProduct);
 
-        Page<Product> result = productService.getAllProducts(1L, null, null, "son", "latest", null, Pageable.unpaged());
+        Page<Product> result = productService.getAllProducts(1L, null, null, "son", "latest", null, null, Pageable.unpaged());
 
         assertNotNull(result);
         assertEquals(1, result.getContent().size());

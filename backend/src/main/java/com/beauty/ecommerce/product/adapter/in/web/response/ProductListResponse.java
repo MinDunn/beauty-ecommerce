@@ -27,4 +27,6 @@ public class ProductListResponse {
     private String instructions;
     private String ingredients;
     private Double averageRating;
+    private Long reviewCount;
+    private String skinType;
 }

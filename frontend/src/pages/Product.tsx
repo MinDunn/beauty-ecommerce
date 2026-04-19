@@ -50,6 +50,7 @@ export const Products = () => {
     categoryId: "",
     instructions: "",
     ingredients: "",
+    skinType: "",
     variants: [] as { variantName: string, price: string, imageUrl: string, stockQuantity: number, file?: File }[]
   });
 
@@ -162,6 +163,7 @@ export const Products = () => {
         categoryId: product.categoryId?.toString() || "",
         instructions: product.instructions || "",
         ingredients: product.ingredients || "",
+        skinType: (product as any).skinType || "",
         variants: product.variants?.map((v: any) => ({
           variantName: v.variantName,
           price: (v.price ?? 0).toString(),
@@ -206,6 +208,7 @@ export const Products = () => {
         categoryId: parseInt(formData.categoryId),
         instructions: formData.instructions,
         ingredients: formData.ingredients,
+        skinType: formData.skinType,
         existingImages: [formData.imageUrl, ...formData.additionalImages].filter(Boolean) as string[],
         variants: variantsWithIndex
       };
@@ -345,6 +348,7 @@ export const Products = () => {
       categoryId: categories.length > 0 ? categories[0].id.toString() : "",
       instructions: "",
       ingredients: "",
+      skinType: "",
       variants: []
     });
   };
@@ -650,6 +654,26 @@ export const Products = () => {
                   })}
                 </select>
               </div>
+
+              {/* Skin Type conditional */}
+              {(categories.find(c => String(c.id) === formData.categoryId)?.name === "Chăm sóc da" || 
+                categories.find(c => String(c.id) === formData.categoryId)?.parentId === categories.find(p => p.name === "Chăm sóc da")?.id) && (
+                <div className="space-y-2 animate-in fade-in zoom-in duration-300">
+                  <label className="text-[10px] font-black text-primary-500 uppercase tracking-widest ml-1">Loại da phù hợp</label>
+                  <select 
+                    className="bg-primary-500/10 border-2 border-primary-500/40 w-full px-4 py-3.5 rounded-2xl text-white outline-none focus:border-primary-500 focus:ring-4 focus:ring-primary-500/20 transition-all font-bold appearance-none shadow-[0_0_15px_rgba(236,72,153,0.1)]" 
+                    value={formData.skinType} 
+                    onChange={e => setFormData({ ...formData, skinType: e.target.value })}
+                  >
+                    <option value="" className="bg-slate-900 text-white">-- Chọn loại da phù hợp --</option>
+                    <option value="Da dầu" className="bg-slate-900 text-white">Da dầu</option>
+                    <option value="Da khô" className="bg-slate-900 text-white">Da khô</option>
+                    <option value="Da nhạy cảm" className="bg-slate-900 text-white">Da nhạy cảm</option>
+                    <option value="Da hỗn hợp" className="bg-slate-900 text-white">Da hỗn hợp</option>
+                    <option value="Da thường" className="bg-slate-900 text-white">Da thường</option>
+                  </select>
+                </div>
+              )}
             </div>
 
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
