@@ -3,18 +3,32 @@ import { ArrowRight, ChevronLeft, ChevronRight } from 'lucide-react';
 
 const STATIC_BANNERS = [
   {
-    id: 1,
-    image: "https://innovativehub.com.vn/wp-content/uploads/2021/11/nganh-my-pham-viet-nam.jpg",
-    title: "Beauty & Green",
-    campaign: "Green Skincare Trends",
-    subtitle: "Glowzy mang đến giải pháp làm đẹp thuần chay, an toàn và hiệu quả tuyệt đối cho làn da của phụ nữ Việt.",
+    id: 3,
+    image: "https://owa.bestprice.vn/images/articles/uploads/tu-a-z-kinh-nghiem-mua-my-pham-han-quoc-chat-luong-tiet-kiem-5e8698f6a74c9.jpg",
+    title: "Chăm Sóc Da Chuyên Sâu",
+    campaign: "Summer Sale",
+    subtitle: "Làn da khỏe mạnh là nền tảng của vẻ đẹp bền vững. Đánh thức vẻ đẹp tự nhiên với liệu trình chăm sóc da từ chuyên gia.",
+  },
+  {
+    id: 4,
+    image: "https://media.vneconomy.vn/images/upload/2025/04/08/roundup-korean-skincare-2048px-9736-2x1-1.jpg",
+    title: "Vẻ Đẹp Hoàn Mỹ",
+    campaign: "Premium Collection",
+    subtitle: "Nâng tầm phong cách sống với những sản phẩm làm đẹp đẳng cấp, được tuyển chọn khắt khe dành riêng cho bạn.",
   },
   {
     id: 2,
-    image: "https://bazaarvietnam.vn/wp-content/uploads/2020/03/xu-huong-lam-dep-xanh-harpers-bazaar-6.jpg",
-    title: "Skincare Trend 2020",
-    campaign: "Green Beauty Evolution",
-    subtitle: "Khám phá những sản phẩm dưỡng da dẫn đầu xu hướng thế giới với thành phần từ tự nhiên tinh khiết.",
+    image: "https://thanhnien.mediacdn.vn/Uploaded/dieutrang-qc/2021_10_22/mai-han-duoc-my-pham-2-4439.png",
+    title: "Chăm Sóc Da Chuyên Sâu",
+    campaign: "Summer Sale",
+    subtitle: "Làn da khỏe mạnh là nền tảng của vẻ đẹp bền vững. Đánh thức vẻ đẹp tự nhiên với liệu trình chăm sóc da từ chuyên gia.",
+  },
+  {
+    id: 1,
+    image: "https://bizweb.dktcdn.net/100/413/259/articles/lam-my-pham-tu-thien-nhien.jpg?v=1678420307457",
+    title: "Thế Giới Trang Điểm",
+    campaign: "New Trend 2026",
+    subtitle: "Khám phá bộ sưu tập mỹ phẩm thời thượng, giúp bạn tự tin tỏa sáng mọi góc nhìn và tôn vinh phong cách riêng.",
   }
 ];
 
