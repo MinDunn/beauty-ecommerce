@@ -112,10 +112,10 @@ public class ProductController {
         if (!productIds.isEmpty()) {
             reviewRepository.findRatingStatsByProductIds(productIds).forEach(obj -> {
                 Long pId = (Long) obj[0];
-                Double avg = (Double) obj[1];
-                Long count = (Long) obj[2];
-                averageRatingsMap.put(pId, avg != null ? avg : 0.0);
-                countsMap.put(pId, count != null ? count : 0L);
+                Double avg = obj[1] != null ? ((Number) obj[1]).doubleValue() : 0.0;
+                Long count = obj[2] != null ? ((Number) obj[2]).longValue() : 0L;
+                averageRatingsMap.put(pId, avg);
+                countsMap.put(pId, count);
             });
         }
 
@@ -133,6 +133,12 @@ public class ProductController {
         Product product = productUseCase.getProductById(id);
         ProductResponse response = mapToResponse(product);
         return ResponseEntity.ok(response);
+    }
+
+    @org.springframework.web.bind.annotation.PostMapping("/{id}/view")
+    public ResponseEntity<Void> incrementViewCount(@PathVariable Long id) {
+        productUseCase.incrementViewCount(id);
+        return ResponseEntity.ok().build();
     }
 
     private ProductListResponse mapToListResponse(Product product, Double avgRating, Long reviewCount) {
@@ -160,6 +166,8 @@ public class ProductController {
                 .skinType(product.getSkinType())
                 .averageRating(avgRating != null ? avgRating : 0.0)
                 .reviewCount(reviewCount != null ? reviewCount : 0L)
+                .viewCount(product.getViewCount())
+                .sold(product.getSold())
                 .build();
     }
  
@@ -190,6 +198,8 @@ public class ProductController {
                 .skinType(product.getSkinType())
                 .createdAt(product.getCreatedAt())
                 .averageRating(avgRating)
+                .viewCount(product.getViewCount())
+                .sold(product.getSold())
                 .build();
     }
 }

@@ -9,4 +9,5 @@ public interface GetProductUseCase {
     Page<Product> getAllProducts(Long categoryId, BigDecimal minPrice, BigDecimal maxPrice, String keyword, String sortBy, Boolean onSale, String skinType, Pageable pageable);
     Product getProductById(Long id);
     java.util.List<Product> getTrendingProducts(int limit);
+    void incrementViewCount(Long id);
 }

@@ -30,6 +30,8 @@ public class ProductResponse {
     private String skinType;
     private LocalDateTime createdAt;
     private Double averageRating;
+    private Long viewCount;
+    private Integer sold;
 
     @Getter
     @Setter

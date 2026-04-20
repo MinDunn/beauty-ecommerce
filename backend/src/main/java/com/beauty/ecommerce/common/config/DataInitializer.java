@@ -25,6 +25,7 @@ public class DataInitializer implements CommandLineRunner {
         try {
             log.info("Bắt đầu kiểm tra cấu trúc Database...");
             ensureSkinTypeColumnExists();
+            ensureSoldAndViewColumnsExist();
             log.info("Bắt đầu khởi tạo dữ liệu mẫu...");
             initializeUsers();
             initializeCategoriesAndProducts();
@@ -108,6 +109,22 @@ public class DataInitializer implements CommandLineRunner {
         } catch (Exception e) {
             // If column already exists, MySQL throws an error we can safely ignore
             log.info("Cột skin_type đã tồn tại hoặc có lỗi (bỏ qua): {}", e.getMessage());
+        }
+    }
+
+    private void ensureSoldAndViewColumnsExist() {
+        log.info("Kiểm tra và tạo cột sold/view_count nếu chưa tồn tại...");
+        try {
+            jdbcTemplate.execute("ALTER TABLE products ADD COLUMN sold INT DEFAULT 0");
+            log.info("Đã tạo cột sold thành công.");
+        } catch (Exception e) {
+            log.info("Cột sold đã tồn tại hoặc có lỗi (bỏ qua): {}", e.getMessage());
+        }
+        try {
+            jdbcTemplate.execute("ALTER TABLE products ADD COLUMN view_count BIGINT DEFAULT 0");
+            log.info("Đã tạo cột view_count thành công.");
+        } catch (Exception e) {
+            log.info("Cột view_count đã tồn tại hoặc có lỗi (bỏ qua): {}", e.getMessage());
         }
     }
 }

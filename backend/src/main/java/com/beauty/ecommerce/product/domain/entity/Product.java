@@ -28,6 +28,7 @@ public class Product {
     private String ingredients;
     private LocalDateTime createdAt;
     private Long viewCount;
+    private Integer sold;
     private java.util.List<String> images;
     private java.util.List<ProductVariant> variants;
 

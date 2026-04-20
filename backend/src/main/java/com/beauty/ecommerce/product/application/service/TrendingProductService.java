@@ -65,8 +65,11 @@ public class TrendingProductService {
                 .collect(Collectors.toList());
 
         if (rankedProductIds.isEmpty()) {
-            log.info("Không có dữ liệu Trending tuần này (Tim hoặc 5 Sao)");
-            return java.util.Collections.emptyList();
+            log.info("Không có dữ liệu Trending (Tim/5 Sao), chuyển sang lấy sản phẩm nhiều lượt xem nhất");
+            return productRepository.findTop10ByOrderByViewCountDesc().stream()
+                    .limit(limit)
+                    .map(productMapper::mapToDomainEntity)
+                    .collect(Collectors.toList());
         }
 
         // 5. Lấy thông tin chi tiết sản phẩm và giữ nguyên thứ tự xếp hạng

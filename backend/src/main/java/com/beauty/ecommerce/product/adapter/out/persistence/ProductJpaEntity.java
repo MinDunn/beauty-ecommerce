@@ -56,6 +56,10 @@ public class ProductJpaEntity {
     @Builder.Default
     private Long viewCount = 0L;
 
+    @jakarta.persistence.Column(name = "sold")
+    @Builder.Default
+    private Integer sold = 0;
+
     @jakarta.persistence.Column(name = "skin_type")
     private String skinType;
 

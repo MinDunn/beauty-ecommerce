@@ -41,6 +41,13 @@ export const productService = {
   },
   adminDeleteProduct: async (id: number) => {
     await axiosInstance.delete(`/admin/products/${id}`);
+  },
+  incrementViewCount: async (id: number) => {
+    try {
+      await axiosInstance.post(`/products/${id}/view`);
+    } catch (error) {
+      console.error("Failed to increment view count", error);
+    }
   }
 };
 

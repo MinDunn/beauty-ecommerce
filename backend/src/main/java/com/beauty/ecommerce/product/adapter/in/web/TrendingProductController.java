@@ -30,27 +30,32 @@ public class TrendingProductController {
     public ResponseEntity<ApiResponse<List<ProductListResponse>>> getTrendingProducts(
             @RequestParam(defaultValue = "5") int limit) {
         List<Product> products = trendingProductService.getWeeklyTrendingProducts(limit);
-        
+
         // Tính toán Rating đồng bộ với ProductController
         List<Long> productIds = products.stream().map(Product::getId).collect(Collectors.toList());
-        Map<Long, Double> ratingsMap = Collections.emptyMap();
+        Map<Long, Double> ratingsMap = new java.util.HashMap<>();
+        Map<Long, Long> countsMap = new java.util.HashMap<>();
+
         if (!productIds.isEmpty()) {
-            ratingsMap = reviewRepository.findAverageRatingsByProductIds(productIds).stream()
-                .collect(Collectors.toMap(
-                    obj -> (Long) obj[0],
-                    obj -> (Double) obj[1]
-                ));
+            reviewRepository.findRatingStatsByProductIds(productIds).forEach(obj -> {
+                Long pId = (Long) obj[0];
+                Double avg = obj[1] != null ? ((Number) obj[1]).doubleValue() : 0.0;
+                Long count = obj[2] != null ? ((Number) obj[2]).longValue() : 0L;
+                ratingsMap.put(pId, avg);
+                countsMap.put(pId, count);
+            });
         }
 
-        final Map<Long, Double> finalRatingsMap = ratingsMap;
         List<ProductListResponse> response = products.stream()
-            .map(p -> mapToListResponse(p, finalRatingsMap.getOrDefault(p.getId(), 0.0)))
-            .collect(Collectors.toList());
+                .map(p -> mapToListResponse(p,
+                        ratingsMap.getOrDefault(p.getId(), 0.0),
+                        countsMap.getOrDefault(p.getId(), 0L)))
+                .collect(Collectors.toList());
 
         return ResponseEntity.ok(ApiResponse.success(response));
     }
 
-    private ProductListResponse mapToListResponse(Product product, Double avgRating) {
+    private ProductListResponse mapToListResponse(Product product, Double avgRating, Long reviewCount) {
         return ProductListResponse.builder()
                 .id(product.getId())
                 .name(product.getName())
@@ -72,7 +77,10 @@ public class TrendingProductController {
                 .categoryId(product.getCategoryId())
                 .instructions(product.getInstructions())
                 .ingredients(product.getIngredients())
+                .skinType(product.getSkinType())
                 .averageRating(avgRating != null ? avgRating : 0.0)
+                .reviewCount(reviewCount != null ? reviewCount : 0L)
+                .viewCount(product.getViewCount())
                 .build();
     }
 }

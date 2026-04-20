@@ -22,6 +22,7 @@ public class ProductMapper {
                 .skinType(jpaEntity.getSkinType())
                 .createdAt(jpaEntity.getCreatedAt())
                 .viewCount(jpaEntity.getViewCount() != null ? jpaEntity.getViewCount() : 0L)
+                .sold(jpaEntity.getSold() != null ? jpaEntity.getSold() : 0)
                 .images(jpaEntity.getImages() != null ? jpaEntity.getImages().stream()
                         .map(com.beauty.ecommerce.product.adapter.out.persistence.ProductImageJpaEntity::getImageUrl)
                         .collect(java.util.stream.Collectors.toList()) : new java.util.ArrayList<>())
@@ -52,6 +53,7 @@ public class ProductMapper {
                 .skinType(domainEntity.getSkinType())
                 .createdAt(domainEntity.getCreatedAt())
                 .viewCount(domainEntity.getViewCount() != null ? domainEntity.getViewCount() : 0L)
+                .sold(domainEntity.getSold() != null ? domainEntity.getSold() : 0)
                 .build();
 
         if (domainEntity.getImages() != null) {

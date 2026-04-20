@@ -19,15 +19,15 @@ const resolveProductImage = (imageUrl?: string) => {
   return `/images/${imageUrl}`;
 };
 
-export const ProductGrid = ({ 
-  title = "Sản phẩm nổi bật", 
+export const ProductGrid = ({
+  title = "Sản phẩm nổi bật",
   subtitle,
   type = 'latest',
   isCarousel = false,
   autoPlay = false,
   infinite = true,
   viewAllLink = "/category"
-}: { 
+}: {
   title?: string;
   subtitle?: string;
   type?: 'latest' | 'trending' | 'flash-sale';
@@ -61,7 +61,7 @@ export const ProductGrid = ({
           data = res.content;
         }
         setProducts(data || []);
-        
+
         if (isCarousel && data && data.length > 0) {
           setCurrentIndex(infinite ? data.length : 0);
         }
@@ -124,14 +124,14 @@ export const ProductGrid = ({
   }, [isCarousel, autoPlay, products.length, isPaused, handleNext]);
 
   const displayIndex = products.length > 0 ? (currentIndex % products.length) : 0;
-  
+
   // Điều kiện để disable nút
   const canGoPrev = infinite || currentIndex > 0;
   const canGoNext = infinite || (products.length > visibleCards && currentIndex < products.length - visibleCards);
 
   return (
     <section className="py-12 bg-gray-50 border-t border-gray-100 overflow-hidden">
-      <div className="container mx-auto px-4 max-w-7xl relative" ref={containerRef}>
+      <div className="container mx-auto px-4 max-w-[1536px] relative" ref={containerRef}>
         <div className="flex flex-col md:flex-row md:items-end justify-between mb-10 gap-6 border-b border-gray-100 pb-6">
           <div className="flex flex-col gap-3">
             <div className="flex items-center gap-4 flex-wrap">
@@ -139,7 +139,7 @@ export const ProductGrid = ({
               <div className="flex items-center">
                 {autoPlay && (
                   <div className="bg-primary-50 p-2 rounded-xl mr-3 shadow-inner">
-                     <Zap size={22} className="text-primary-500 fill-current" />
+                    <Zap size={22} className="text-primary-500 fill-current" />
                   </div>
                 )}
                 <h3 className="text-2xl md:text-3xl font-black tracking-tight text-gray-900">
@@ -147,7 +147,7 @@ export const ProductGrid = ({
                   {title}
                 </h3>
               </div>
-              
+
               {/* Đồng hồ đếm ngược */}
               {autoPlay && <CountdownClock />}
             </div>
@@ -158,32 +158,32 @@ export const ProductGrid = ({
               {subtitle || (isCarousel ? "Săn ngay kẻo lỡ - Ưu đãi giới hạn mỗi ngày" : "Các sản phẩm được yêu thích nhất trong tuần")}
             </p>
           </div>
-          
+
           <Link to={viewAllLink} className="px-8 py-3 bg-white border-2 border-gray-100 text-gray-700 font-bold rounded-2xl hover:border-primary-500 hover:text-primary-600 transition-all shadow-sm hover:shadow-md active:scale-95 whitespace-nowrap">
             Xem tất cả
           </Link>
         </div>
-        
+
         {loading ? (
           <div className="flex flex-col items-center justify-center py-12 gap-4">
-             <Loader2 className="text-primary-500 animate-spin" size={32} />
-             <p className="text-[10px] font-black uppercase text-gray-400">Đang tìm hàng...</p>
+            <Loader2 className="text-primary-500 animate-spin" size={32} />
+            <p className="text-[10px] font-black uppercase text-gray-400">Đang tìm hàng...</p>
           </div>
         ) : products.length > 0 ? (
           <div className="relative">
-            <div 
+            <div
               className={`relative ${isCarousel ? 'md:px-12' : ''} group`}
               onMouseEnter={() => setIsPaused(true)}
               onMouseLeave={() => setIsPaused(false)}
             >
               {/* Nút điều hướng bên trái - Luôn hiển thị nếu là Carousel */}
               {isCarousel && (
-                <button 
+                <button
                   onClick={handlePrev}
                   disabled={!canGoPrev}
                   className={`absolute left-0 lg:left-[-20px] top-1/2 -translate-y-1/2 z-20 w-12 h-12 rounded-full bg-white border border-gray-100 flex items-center justify-center shadow-xl opacity-0 group-hover:opacity-100 transition-all duration-300 
-                    ${canGoPrev 
-                      ? 'text-gray-700 hover:bg-primary-500 hover:text-white hover:border-primary-600 active:scale-90' 
+                    ${canGoPrev
+                      ? 'text-gray-700 hover:bg-primary-500 hover:text-white hover:border-primary-600 active:scale-90'
                       : 'text-gray-300 cursor-not-allowed opacity-30 lg:opacity-30'
                     }`}
                 >
@@ -192,11 +192,11 @@ export const ProductGrid = ({
               )}
 
               <div className={isCarousel ? "overflow-hidden" : ""}>
-                <motion.div 
+                <motion.div
                   className={`
-                    ${isCarousel 
-                      ? 'flex gap-4 md:gap-6 py-4' 
-                      : 'grid grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-4 md:gap-6 py-4'
+                    ${isCarousel
+                      ? 'flex gap-4 md:gap-6 py-4'
+                      : 'grid grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-4 md:gap-5 py-4'
                     }
                   `}
                   animate={isCarousel ? {
@@ -210,17 +210,20 @@ export const ProductGrid = ({
                   }}
                 >
                   {(isCarousel && infinite ? [...products, ...products, ...products, ...products] : products).map((product, index) => (
-                    <div 
-                      key={`${product.id}-${index}`} 
+                    <div
+                      key={`${product.id}-${index}`}
                       className={isCarousel ? 'shrink-0' : ''}
                       style={isCarousel ? { width: cardWidth - (window.innerWidth >= 768 ? 24 : 16) } : {}}
                     >
-                      <ProductCard 
+                      <ProductCard
                         id={product.id.toString()}
                         name={product.name}
                         price={product.currentPrice}
                         originalPrice={product.originalPrice}
                         image={resolveProductImage(product.imageUrl)}
+                        views={product.viewCount || 0}
+                        categoryId={product.categoryId}
+                        brand={product.brand}
                       />
                     </div>
                   ))}
@@ -229,12 +232,12 @@ export const ProductGrid = ({
 
               {/* Nút điều hướng bên phải - Luôn hiển thị nếu là Carousel */}
               {isCarousel && (
-                <button 
+                <button
                   onClick={handleNext}
                   disabled={!canGoNext}
                   className={`absolute right-0 lg:right-[-20px] top-1/2 -translate-y-1/2 z-20 w-12 h-12 rounded-full bg-white border border-gray-100 flex items-center justify-center shadow-xl opacity-0 group-hover:opacity-100 transition-all duration-300 
-                    ${canGoNext 
-                      ? 'text-gray-700 hover:bg-primary-500 hover:text-white hover:border-primary-600 active:scale-90' 
+                    ${canGoNext
+                      ? 'text-gray-700 hover:bg-primary-500 hover:text-white hover:border-primary-600 active:scale-90'
                       : 'text-gray-300 cursor-not-allowed opacity-30 lg:opacity-30'
                     }`}
                 >
@@ -242,12 +245,12 @@ export const ProductGrid = ({
                 </button>
               )}
             </div>
-            
+
             {isCarousel && (
               <div className="flex justify-center gap-1.5 mt-2 md:hidden">
                 {(infinite ? products.slice(0, 5) : products.slice(0, Math.ceil(products.length / visibleCards))).map((_, i) => (
-                  <div 
-                    key={i} 
+                  <div
+                    key={i}
                     className={`h-1.5 rounded-full transition-all duration-300 ${displayIndex === i ? 'w-6 bg-primary-500' : 'w-1.5 bg-gray-200'}`}
                   />
                 ))}
@@ -257,7 +260,7 @@ export const ProductGrid = ({
         ) : (
           <div className="text-center py-12 text-gray-400 font-bold italic">Chưa có sản phẩm nào.</div>
         )}
-        
+
         <div className="mt-8 text-center md:hidden">
           <button className="w-full px-6 py-3 border border-gray-200 bg-white text-gray-700 font-bold rounded-xl hover:bg-gray-50 transition-colors">
             Xem tất cả sản phẩm

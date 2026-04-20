@@ -107,11 +107,19 @@ public class ProductReaderService implements GetProductUseCase {
         ProductJpaEntity entity = productRepository.findById(id)
                 .orElseThrow(() -> new ResourceNotFoundException("Không tìm thấy sản phẩm với id: " + id));
         
-        // Tăng lượt xem tự động
-        entity.setViewCount(entity.getViewCount() != null ? entity.getViewCount() + 1 : 1L);
-        productRepository.save(entity);
-        
         return productMapper.mapToDomainEntity(entity);
+    }
+
+    @Override
+    @org.springframework.transaction.annotation.Transactional
+    public void incrementViewCount(Long id) {
+        log.info("Đang tăng lượt xem thủ công cho sản phẩm ID: {}", id);
+        ProductJpaEntity entity = productRepository.findById(id)
+                .orElse(null);
+        if (entity != null) {
+            entity.setViewCount(entity.getViewCount() != null ? entity.getViewCount() + 1 : 1L);
+            productRepository.save(entity);
+        }
     }
 
     @Override

@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { ShoppingCart, Heart } from 'lucide-react';
+import { ShoppingCart, Heart, Eye } from 'lucide-react';
 import { Link } from 'react-router-dom';
 import { useDispatch, useSelector } from 'react-redux';
 import { addItem } from '../../store/slices/cartSlice';
@@ -17,6 +17,8 @@ interface ProductCardProps {
   badge?: string;
   brand?: string;
   reviewCount?: number;
+  views?: number;
+  categoryId?: number;
 }
 
 const resolveProductImage = (image?: string) => {
@@ -27,7 +29,18 @@ const resolveProductImage = (image?: string) => {
   return `/images/${image.replace(/^\/+/, '')}`;
 };
 
-export const ProductCard = ({ id, name, price, originalPrice, image, badge, brand = "Glowzy", reviewCount }: ProductCardProps) => {
+export const ProductCard = ({
+  id,
+  name,
+  price,
+  originalPrice,
+  image,
+  badge,
+  brand = "Glowzy",
+  reviewCount,
+  views = 0,
+  categoryId
+}: ProductCardProps) => {
   const dispatch = useDispatch();
   const { user, isAuthenticated } = useSelector((state: RootState) => state.auth);
   const [isWishlisted, setIsWishlisted] = useState(false);
@@ -56,7 +69,9 @@ export const ProductCard = ({ id, name, price, originalPrice, image, badge, bran
       price,
       image,
       brand,
-      quantity: 1
+      quantity: 1,
+      variantName: null,
+      categoryId
     }));
     toast.success('Đã thêm vào giỏ hàng');
   };
@@ -92,11 +107,20 @@ export const ProductCard = ({ id, name, price, originalPrice, image, badge, bran
   };
 
   return (
-    <Link to={`/product/${id}`} className="glowzy-card block group overflow-hidden">
+    <Link 
+      to={`/product/${id}`} 
+      className="glowzy-card block group overflow-hidden"
+    >
       <div className="relative aspect-square overflow-hidden bg-white">
+        {/* View Count - Top Left (No Background) */}
+        <div className="absolute top-4 left-4 z-20 flex items-center gap-1.5 text-gray-400 font-black text-[11px] transition-colors group-hover:text-primary-500 drop-shadow-sm">
+          <Eye size={14} strokeWidth={2.5} />
+          <span>{(views || 0).toLocaleString()}</span>
+        </div>
+
         {(badge || reviewCount === 0) && (
           <span className={cn(
-            "absolute top-4 left-4 text-white text-[10px] font-black uppercase px-2.5 py-1.5 rounded-lg z-10 shadow-lg transition-transform group-hover:scale-110",
+            "absolute top-11 left-4 text-white text-[10px] font-black uppercase px-2 py-1 rounded-lg z-10 shadow-lg transition-transform group-hover:scale-110",
             badge ? "bg-red-500 shadow-red-500/20" : "bg-primary-600 shadow-primary-600/20"
           )}>
             {badge || "MỚI"}
@@ -122,27 +146,30 @@ export const ProductCard = ({ id, name, price, originalPrice, image, badge, bran
         {/* Quick Add Button overlay */}
         <button 
           onClick={handleAddToCart}
-          className="absolute bottom-4 right-4 glowzy-btn-primary p-4 rounded-2xl shadow-xl translate-y-4 opacity-0 group-hover:translate-y-0 group-hover:opacity-100 z-20"
+          className="absolute bottom-4 right-4 bg-primary-500 text-white p-2.5 rounded-full shadow-lg translate-y-2 opacity-0 group-hover:translate-y-0 group-hover:opacity-100 z-20 hover:scale-110 active:scale-95 transition-all duration-300"
+          title="Thêm nhanh vào giỏ"
         >
-          <ShoppingCart size={22} />
+          <ShoppingCart size={16} />
         </button>
       </div>
       <div className="p-6 pt-2">
         <h3 className="font-bold text-gray-800 text-sm line-clamp-2 min-h-[40px] mb-3 group-hover:text-primary-600 transition-colors">
           {name}
         </h3>
-        <div className="flex items-end justify-between">
-          <div>
-            <div className="font-black text-primary-600 text-xl tracking-tighter whitespace-nowrap">
-              {price.toLocaleString('vi-VN')}đ
-            </div>
-            {originalPrice && originalPrice > price && (
-              <div className="text-xs text-gray-400 line-through font-bold opacity-60 whitespace-nowrap">
-                {originalPrice.toLocaleString('vi-VN')}đ
-              </div>
-            )}
+        <div className="flex items-center gap-x-2 gap-y-1 flex-wrap mt-2">
+          <div className="font-black text-primary-600 text-xl tracking-tighter whitespace-nowrap">
+            {price.toLocaleString('vi-VN')}đ
           </div>
-          <div className="text-[10px] font-black text-gray-300 uppercase tracking-widest italic group-hover:text-primary-400 transition-colors">Glowzy Choice</div>
+          {originalPrice && originalPrice > price && (
+            <>
+              <span className="text-xs text-gray-400 line-through font-bold opacity-60">
+                {originalPrice.toLocaleString('vi-VN')}đ
+              </span>
+              <span className="bg-red-500 text-white text-[10px] font-black px-2 py-0.5 rounded-lg shadow-lg shadow-red-500/20">
+                -{Math.round(((originalPrice - price) / originalPrice) * 100)}%
+              </span>
+            </>
+          )}
         </div>
       </div>
     </Link>

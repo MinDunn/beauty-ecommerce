@@ -3,18 +3,18 @@ import { ArrowRight, ChevronLeft, ChevronRight } from 'lucide-react';
 
 const STATIC_BANNERS = [
   {
-    id: 3,
-    image: "https://owa.bestprice.vn/images/articles/uploads/tu-a-z-kinh-nghiem-mua-my-pham-han-quoc-chat-luong-tiet-kiem-5e8698f6a74c9.jpg",
-    title: "Chăm Sóc Da Chuyên Sâu",
-    campaign: "Summer Sale",
-    subtitle: "Làn da khỏe mạnh là nền tảng của vẻ đẹp bền vững. Đánh thức vẻ đẹp tự nhiên với liệu trình chăm sóc da từ chuyên gia.",
-  },
-  {
     id: 4,
     image: "https://media.vneconomy.vn/images/upload/2025/04/08/roundup-korean-skincare-2048px-9736-2x1-1.jpg",
     title: "Vẻ Đẹp Hoàn Mỹ",
     campaign: "Premium Collection",
     subtitle: "Nâng tầm phong cách sống với những sản phẩm làm đẹp đẳng cấp, được tuyển chọn khắt khe dành riêng cho bạn.",
+  },
+  {
+    id: 3,
+    image: "https://owa.bestprice.vn/images/articles/uploads/tu-a-z-kinh-nghiem-mua-my-pham-han-quoc-chat-luong-tiet-kiem-5e8698f6a74c9.jpg",
+    title: "Chăm Sóc Da Chuyên Sâu",
+    campaign: "Summer Sale",
+    subtitle: "Làn da khỏe mạnh là nền tảng của vẻ đẹp bền vững. Đánh thức vẻ đẹp tự nhiên với liệu trình chăm sóc da từ chuyên gia.",
   },
   {
     id: 2,
@@ -52,7 +52,7 @@ export const HeroBanner = () => {
   };
 
   return (
-    <div className="relative w-full h-[450px] md:h-[550px] lg:h-[650px] bg-white overflow-hidden mt-0 md:mt-6 md:rounded-[3rem] max-w-7xl mx-auto shadow-2xl group">
+    <div className="relative w-full h-[380px] md:h-[450px] lg:h-[520px] bg-white overflow-hidden mt-0 md:mt-6 md:rounded-[3rem] max-w-7xl mx-auto shadow-2xl group">
       
       {/* Slides Container */}
       <div className="relative w-full h-full">
@@ -79,12 +79,12 @@ export const HeroBanner = () => {
                   }`}
                 >
                   {/* Badge */}
-                  <div className="inline-block px-4 py-1.5 bg-orange-500 text-white text-[10px] font-black uppercase rounded-full mb-6 tracking-[0.2em] shadow-xl shadow-orange-500/20">
+                  <div className="inline-block px-4 py-1.5 bg-orange-500 text-white text-[10px] font-black uppercase rounded-full mb-4 tracking-[0.2em] shadow-xl shadow-orange-500/20">
                     Premium Quality
                   </div>
                   
                   {/* Title */}
-                  <h2 className="text-4xl md:text-6xl lg:text-7xl font-black text-white leading-tight mb-6 tracking-tight drop-shadow-[0_2px_8px_rgba(0,0,0,0.5)] max-w-[90%] md:max-w-none">
+                  <h2 className="text-3xl md:text-5xl lg:text-6xl font-black text-white leading-tight mb-4 tracking-tight drop-shadow-[0_2px_8px_rgba(0,0,0,0.5)] max-w-[90%] md:max-w-none">
                     {slide.title} <br/>
                     <span className="text-transparent bg-clip-text bg-gradient-to-r from-orange-400 to-rose-300 drop-shadow-sm">
                       {slide.campaign}
@@ -92,12 +92,12 @@ export const HeroBanner = () => {
                   </h2>
                   
                   {/* Subtitle */}
-                  <p className="text-white/90 text-sm md:text-lg mb-10 max-w-md font-medium leading-relaxed drop-shadow-[0_1px_4px_rgba(0,0,0,0.6)]">
+                  <p className="text-white/90 text-sm md:text-base mb-6 max-w-md font-medium leading-relaxed drop-shadow-[0_1px_4px_rgba(0,0,0,0.6)]">
                     {slide.subtitle}
                   </p>
                   
                   {/* Action Button */}
-                  <button className="flex items-center space-x-3 bg-slate-900 text-white px-8 py-5 rounded-2xl font-bold hover:bg-orange-600 transition-all hover:shadow-2xl hover:shadow-orange-200 hover:-translate-y-1 active:scale-95 group/btn uppercase tracking-widest text-xs">
+                  <button className="flex items-center space-x-3 bg-slate-900 text-white px-8 py-4 rounded-2xl font-bold hover:bg-orange-600 transition-all hover:shadow-2xl hover:shadow-orange-200 hover:-translate-y-1 active:scale-95 group/btn uppercase tracking-widest text-xs">
                     <span>Khám phá ngay</span>
                     <ArrowRight size={20} className="group-hover/btn:translate-x-2 transition-transform duration-300" />
                   </button>

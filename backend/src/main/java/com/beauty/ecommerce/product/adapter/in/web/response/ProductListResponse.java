@@ -29,4 +29,6 @@ public class ProductListResponse {
     private Double averageRating;
     private Long reviewCount;
     private String skinType;
+    private Long viewCount;
+    private Integer sold;
 }
