@@ -8,7 +8,7 @@ export const VoucherWidget = () => {
 
   return (
     <>
-      <div className="fixed top-60 right-8 z-[900]">
+      <div className="fixed top-48 right-8 z-[900]">
         <motion.button
           animate={{ 
             rotate: [0, -10, 10, -10, 10, 0],
@@ -24,16 +24,16 @@ export const VoucherWidget = () => {
           whileHover={{ scale: 1.1 }}
           whileTap={{ scale: 0.9 }}
           onClick={() => setIsOpen(true)}
-          className="relative w-12 h-12 md:w-14 md:h-14 bg-primary-500 rounded-2xl shadow-2xl shadow-primary-500/40 flex items-center justify-center text-white group"
+          className="relative w-16 h-16 md:w-20 md:h-20 bg-primary-500 rounded-[2rem] shadow-2xl shadow-primary-500/40 flex items-center justify-center text-white group"
         >
           {/* Glowing Effect */}
-          <div className="absolute inset-0 bg-primary-500 rounded-2xl animate-ping opacity-20" />
+          <div className="absolute inset-0 bg-primary-500 rounded-[2rem] animate-ping opacity-20" />
           
-          <Gift className="w-5 h-5 md:w-6 md:h-6 relative z-10 transition-transform group-hover:drop-shadow-lg" />
+          <Gift className="w-7 h-7 md:w-10 md:h-10 relative z-10 transition-transform group-hover:drop-shadow-lg" />
           
           {/* Badge/Pulse */}
-          <div className="absolute -top-1 -right-1 w-4 h-4 md:w-5 md:h-5 bg-rose-500 rounded-full border-2 border-white flex items-center justify-center">
-             <div className="w-1 h-1 md:w-1.5 md:h-1.5 bg-white rounded-full animate-pulse" />
+          <div className="absolute -top-1 -right-1 w-6 h-6 md:w-7 md:h-7 bg-rose-500 rounded-full border-2 border-white flex items-center justify-center">
+             <div className="w-1.5 h-1.5 md:w-2 md:h-2 bg-white rounded-full animate-pulse" />
           </div>
 
           {/* Label - Visible on Hover */}

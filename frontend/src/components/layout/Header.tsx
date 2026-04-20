@@ -81,7 +81,7 @@ export const Header = () => {
     <header className="w-full bg-white sticky top-0 z-50 shadow-sm md:shadow-md transition-shadow">
       {/* Main Header Section - Darker solid shade */}
       <div className="w-full bg-primary-200 border-b border-primary-300/30">
-        <div className="container mx-auto px-4 py-4 md:py-6 flex items-center justify-between gap-4 max-w-[1536px]">
+        <div className="container mx-auto px-4 py-2 md:py-3.5 flex items-center justify-between gap-4 max-w-[1536px]">
           {/* Mobile menu button */}
           <button
             className="lg:hidden text-gray-700"
@@ -93,11 +93,11 @@ export const Header = () => {
           {/* Logo Section - Consolidated Single Layer */}
           <div className="relative -ml-4 flex-shrink-0 group z-10">
             {/* Unified Background & Shadow Layer - Extra bottom overlap to ensure flush fit */}
-            <div className="absolute left-[-100vw] right-0 top-0 bottom-0 bg-primary-400 -mt-4 md:-mt-6 -mb-[24px] md:-mb-[32px] rounded-r-full shadow-2xl transition-all"></div>
+            <div className="absolute left-[-100vw] right-0 top-0 bottom-0 bg-primary-400 -mt-2 md:-mt-3.5 -mb-[18px] md:-mb-[24px] rounded-r-full shadow-2xl transition-all"></div>
             
             <Link 
               to="/" 
-              className="relative z-10 flex items-center text-white pl-6 pr-12 py-7 md:py-9 -mt-4 md:-mt-6 -mb-[24px] md:-mb-[32px]"
+              className="relative z-10 flex items-center text-white pl-6 pr-12 py-4 md:py-6 -mt-2 md:-mt-3.5 -mb-[18px] md:-mb-[24px]"
             >
               <div className="text-2xl md:text-3xl font-black tracking-tighter flex items-center relative">
                 GLOWZY<span className="text-white/80 transition-colors">.</span>
@@ -113,7 +113,7 @@ export const Header = () => {
                 value={searchQuery}
                 onChange={(e: any) => setSearchQuery(e.target.value)}
                 placeholder="Tìm kiếm sản phẩm, thương hiệu..."
-                className="w-full pl-4 pr-12 py-2.5 bg-white border border-primary-100 rounded-full focus:ring-2 focus:ring-primary-500 transition-all outline-none text-sm"
+                className="w-full pl-4 pr-12 py-2 bg-white border border-primary-100 rounded-full focus:ring-2 focus:ring-primary-500 transition-all outline-none text-sm"
               />
               <button type="submit" className="absolute right-1 top-1 bottom-1 px-4 bg-primary-500 text-white rounded-full hover:bg-primary-600 transition-colors">
                 <Search size={18} />
@@ -150,9 +150,9 @@ export const Header = () => {
                 )}
 
                 {!isAuthenticated ? (
-                  <Link to="/login" className="flex items-center gap-3 group transition-all bg-white/80 backdrop-blur-sm border border-slate-100 p-1.5 pr-5 rounded-full hover:bg-white hover:shadow-sm hover:border-primary-200">
-                    <div className="w-9 h-9 rounded-full bg-primary-50 shadow-sm flex items-center justify-center group-hover:bg-primary-100 transition-colors">
-                      <User size={18} className="text-slate-700 group-hover:text-primary-500 transition-colors" />
+                  <Link to="/login" className="flex items-center gap-3 group transition-all bg-white/80 backdrop-blur-sm border border-slate-100 p-1 pr-5 rounded-full hover:bg-white hover:shadow-sm">
+                    <div className="w-8 h-8 rounded-full bg-primary-50 shadow-sm flex items-center justify-center group-hover:bg-primary-100 transition-colors">
+                      <User size={16} className="text-slate-700 group-hover:text-primary-500 transition-colors" />
                     </div>
                     <div className="flex flex-col">
                       <span className="text-xs font-bold text-slate-800 group-hover:text-primary-500 transition-colors leading-none mb-1">Đăng nhập</span>
@@ -160,9 +160,9 @@ export const Header = () => {
                     </div>
                   </Link>
                 ) : (
-                  <div className="relative group/user py-2 cursor-pointer">
-                    <div className="flex items-center space-x-3 bg-white/80 backdrop-blur-sm border border-slate-100 p-1.5 pr-5 rounded-full hover:bg-white hover:shadow-sm">
-                      <div className="w-9 h-9 rounded-full bg-primary-100 flex items-center justify-center text-primary-600 font-bold uppercase border border-white shadow-sm">
+                  <div className="relative group/user py-1 cursor-pointer">
+                    <div className="flex items-center space-x-3 bg-white/80 backdrop-blur-sm border border-slate-100 p-1 pr-5 rounded-full hover:bg-white hover:shadow-sm">
+                      <div className="w-8 h-8 rounded-full bg-primary-100 flex items-center justify-center text-primary-600 font-bold uppercase border border-white shadow-sm text-xs">
                         {user?.fullName?.[0] || 'U'}
                       </div>
                       <div className="flex flex-col">
@@ -170,7 +170,7 @@ export const Header = () => {
                         <span className="text-[9px] text-gray-400 uppercase font-bold">Thành viên</span>
                       </div>
                     </div>
-
+                    {/* Logout menu remains the same or slightly adjusted */}
                     <div className="absolute right-0 top-full w-48 bg-white border border-gray-100 rounded-2xl shadow-xl opacity-0 invisible group-hover/user:opacity-100 group-hover/user:visible transition-all duration-300 z-50 overflow-hidden transform translate-y-2 group-hover/user:translate-y-0">
                       <div className="p-2">
                         <Link to="/profile" className="block px-4 py-3 text-sm font-bold text-gray-700 hover:bg-gray-50 hover:text-primary-600 rounded-xl transition-colors">
@@ -184,9 +184,9 @@ export const Header = () => {
                   </div>
                 )}
 
-                <Link to="/profile?tab=wishlist" className="flex items-center gap-3 group transition-all bg-white/80 backdrop-blur-sm border border-slate-100 p-1.5 pr-5 rounded-full hover:bg-white hover:shadow-sm hover:border-primary-200">
-                  <div className="w-9 h-9 rounded-full bg-primary-50 shadow-sm flex items-center justify-center group-hover:bg-primary-100 transition-colors">
-                    <Heart size={18} className="text-slate-700 group-hover:text-primary-500 transition-colors" />
+                <Link to="/profile?tab=wishlist" className="flex items-center gap-3 group transition-all bg-white/80 backdrop-blur-sm border border-slate-100 p-1 pr-5 rounded-full hover:bg-white hover:shadow-sm">
+                  <div className="w-8 h-8 rounded-full bg-primary-50 shadow-sm flex items-center justify-center group-hover:bg-primary-100 transition-colors">
+                    <Heart size={16} className="text-slate-700 group-hover:text-primary-500 transition-colors" />
                   </div>
                   <div className="flex flex-col">
                     <span className="text-xs font-bold text-slate-800 group-hover:text-primary-500 transition-colors leading-none mb-1">Bộ sưu tập</span>
@@ -194,9 +194,9 @@ export const Header = () => {
                   </div>
                 </Link>
 
-                <Link to="/cart" className="relative flex items-center gap-3 group transition-all bg-white/80 backdrop-blur-sm border border-slate-100 p-1.5 pr-5 rounded-full hover:bg-white hover:shadow-sm hover:border-primary-200">
-                  <div className="w-9 h-9 rounded-full bg-primary-50 shadow-sm flex items-center justify-center group-hover:bg-primary-100 transition-colors">
-                    <ShoppingCart size={18} className="text-slate-700 group-hover:text-primary-500 transition-colors" />
+                <Link to="/cart" className="relative flex items-center gap-3 group transition-all bg-white/80 backdrop-blur-sm border border-slate-100 p-1 pr-5 rounded-full hover:bg-white hover:shadow-sm">
+                  <div className="w-8 h-8 rounded-full bg-primary-50 shadow-sm flex items-center justify-center group-hover:bg-primary-100 transition-colors">
+                    <ShoppingCart size={16} className="text-slate-700 group-hover:text-primary-500 transition-colors" />
                   </div>
                   <div className="flex flex-col">
                     <span className="text-xs font-bold text-slate-800 group-hover:text-primary-500 transition-colors leading-none mb-1">Giỏ hàng</span>
@@ -217,7 +217,7 @@ export const Header = () => {
             <div className="relative group/cat">
               <Link
                 to="/category"
-                className="flex items-center space-x-2 bg-primary-100 text-slate-900 px-8 py-3.5 font-bold text-sm uppercase tracking-wider rounded-t-xl hover:bg-primary-200 transition-all duration-300"
+                className="flex items-center space-x-2 bg-primary-100 text-slate-900 px-8 py-2.5 font-bold text-sm uppercase tracking-wider rounded-t-xl hover:bg-primary-200 transition-all duration-300"
               >
                 <Menu size={18} />
                 <span>Danh mục sản phẩm</span>
@@ -444,10 +444,21 @@ export const Header = () => {
             ))}
           </div>
 
-          <div className="pt-8">
+          <div className="pt-8 space-y-3">
+            <button
+              onClick={() => {
+                setIsMenuOpen(false);
+                setIsOrderLookupOpen(true);
+              }}
+              className="w-full py-4 bg-primary-500 text-white font-black rounded-2xl flex items-center justify-center gap-3 uppercase tracking-widest text-xs shadow-lg shadow-primary-500/20"
+            >
+              <PhoneCall size={16} />
+              <span>Tra cứu đơn hàng</span>
+            </button>
+            
             <Link
               to="/admin"
-              className="block w-full text-center py-4 bg-slate-900 text-white font-black rounded-2xl flex items-center justify-center gap-3 uppercase tracking-widest text-xs"
+              className="block w-full text-center py-4 bg-slate-900 shadow-xl text-white font-black rounded-2xl flex items-center justify-center gap-3 uppercase tracking-widest text-xs"
               onClick={() => setIsMenuOpen(false)}
             >
               <span>Giao diện Quản trị</span>

@@ -29,6 +29,11 @@ import {
   Tooltip,
   ResponsiveContainer,
   Cell,
+  AreaChart,
+  Area,
+  PieChart,
+  Pie,
+  Legend,
 } from "recharts";
 
 interface StatCardProps {
@@ -230,34 +235,47 @@ export const AdminDashboard = () => {
             </div>
           </div>
           
-          <div className="h-64 flex items-end justify-between px-2 gap-2 md:gap-4">
-              {stats?.revenueHistory.map((item, i: number) => {
-                const revenueValues = stats?.revenueHistory.map(r => Number(r.revenue) || 0);
-                const maxRevenue = Math.max(...revenueValues, 1);
-                const currentRevenue = Number(item.revenue) || 0;
-                const barHeight = (currentRevenue / maxRevenue) * 100;
-                
-                return (
-                 <div key={i} className="flex-1 h-full flex flex-col justify-end group">
-                   <div className="relative w-full flex flex-col items-center">
-                      <div className="absolute -top-10 opacity-0 group-hover:opacity-100 transition-all bg-slate-800 text-primary-500 px-2 py-1 rounded-lg text-[10px] font-black pointer-events-none shadow-xl border border-primary-500/20 whitespace-nowrap z-10">
-                        {(currentRevenue / 1000).toFixed(0)}K
-                      </div>
-                      <div className="w-full bg-slate-800/80 rounded-xl relative overflow-hidden border border-slate-700/50" style={{ height: '140px' }}>
-                        <motion.div 
-                          initial={{ height: 0 }}
-                          animate={{ height: `${Math.max(barHeight, 5)}%` }}
-                          transition={{ delay: i * 0.05, duration: 1 }}
-                          className="absolute bottom-0 left-0 right-0 bg-[#F97316] shadow-[0_0_15px_rgba(249,115,22,0.4)] rounded-t-lg"
-                        />
-                      </div>
-                      <span className={`mt-4 text-[10px] font-black transition-colors uppercase tracking-[0.1em] ${currentRevenue > 0 ? 'text-[#F97316]' : 'text-slate-500'}`}>
-                        {item.date}
-                      </span>
-                   </div>
-                 </div>
-                );
-              })}
+          <div className="h-64 mt-4">
+            <ResponsiveContainer width="100%" height="100%">
+              <AreaChart
+                data={stats?.revenueHistory}
+                margin={{ top: 10, right: 10, left: -20, bottom: 0 }}
+              >
+                <defs>
+                  <linearGradient id="colorRevenue" x1="0" y1="0" x2="0" y2="1">
+                    <stop offset="5%" stopColor="#F97316" stopOpacity={0.3}/>
+                    <stop offset="95%" stopColor="#F97316" stopOpacity={0}/>
+                  </linearGradient>
+                </defs>
+                <XAxis 
+                  dataKey="date" 
+                  axisLine={false}
+                  tickLine={false}
+                  tick={{ fill: '#64748b', fontSize: 10, fontWeight: 800 }}
+                  dy={10}
+                />
+                <Tooltip 
+                  contentStyle={{ 
+                    background: '#0f172a', 
+                    border: '1px solid #1e293b', 
+                    borderRadius: '16px',
+                    boxShadow: '0 20px 25px -5px rgb(0 0 0 / 0.5)'
+                  }}
+                  itemStyle={{ color: '#F97316', fontWeight: 900, fontSize: 12 }}
+                  labelStyle={{ color: '#94a3b8', fontSize: 10, fontWeight: 800, marginBottom: 4 }}
+                  formatter={(value: any) => [`${(Number(value) / 1000).toFixed(0)}K VNĐ`, 'Doanh thu']}
+                />
+                <Area 
+                  type="monotone" 
+                  dataKey="revenue" 
+                  stroke="#F97316" 
+                  strokeWidth={4}
+                  fillOpacity={1} 
+                  fill="url(#colorRevenue)" 
+                  animationDuration={1500}
+                />
+              </AreaChart>
+            </ResponsiveContainer>
           </div>
         </div>
 
@@ -446,39 +464,51 @@ export const AdminDashboard = () => {
           {(!stats?.topRatedProducts || stats.topRatedProducts.length === 0) ? (
             <div className="flex items-center justify-center h-40 text-slate-600 text-xs italic">Chưa có đánh giá 5 sao nào</div>
           ) : (
-            <ResponsiveContainer width="100%" height={stats.topRatedProducts.length * 52}>
-              <BarChart
-                data={stats.topRatedProducts.map((p) => ({ name: p.name.length > 18 ? p.name.slice(0, 18) + '…' : p.name, count: p.count, fullName: p.name }))}
-                layout="vertical"
-                margin={{ top: 0, right: 48, left: 0, bottom: 0 }}
-              >
-                <XAxis type="number" hide />
-                <YAxis
-                  type="category"
-                  dataKey="name"
-                  width={140}
-                  tick={{ fill: '#94a3b8', fontSize: 11, fontWeight: 700 }}
-                  axisLine={false}
-                  tickLine={false}
-                />
-                <Tooltip
-                  cursor={{ fill: 'rgba(255,255,255,0.03)' }}
-                  contentStyle={{ background: '#0f172a', border: '1px solid #1e293b', borderRadius: '12px', padding: '8px 14px' }}
-                  labelStyle={{ color: '#f1f5f9', fontWeight: 700, fontSize: 12 }}
-                  itemStyle={{ color: '#fbbf24', fontWeight: 700 }}
-                  formatter={(value: any) => [`${value} lượt`, '5 Sao']}
-                  labelFormatter={(_: any, payload: any) => payload?.[0]?.payload?.fullName || ''}
-                />
-                <Bar dataKey="count" radius={[0, 6, 6, 0]} maxBarSize={20}>
-                  {stats.topRatedProducts.map((_: any, index: number) => (
-                    <Cell
-                      key={index}
-                      fill={`rgba(251,191,36,${1 - index * 0.15})`}
-                    />
-                  ))}
-                </Bar>
-              </BarChart>
-            </ResponsiveContainer>
+            <div className="h-64 relative flex items-center justify-center">
+              <ResponsiveContainer width="100%" height="100%">
+                <PieChart>
+                  <Pie
+                    data={stats.topRatedProducts}
+                    cx="50%"
+                    cy="50%"
+                    innerRadius={60}
+                    outerRadius={80}
+                    paddingAngle={8}
+                    dataKey="count"
+                    animationDuration={1500}
+                  >
+                    {stats.topRatedProducts.map((_, index) => (
+                      <Cell 
+                        key={`cell-${index}`} 
+                        fill={['#FBBF24', '#F59E0B', '#D97706', '#B45309', '#92400E'][index % 5]} 
+                        className="filter drop-shadow-[0_4px_6px_rgba(0,0,0,0.3)]"
+                      />
+                    ))}
+                  </Pie>
+                  <Tooltip
+                    contentStyle={{ background: '#0f172a', border: '1px solid #1e293b', borderRadius: '12px' }}
+                    itemStyle={{ color: '#f1f5f9', fontWeight: 800, fontSize: 11 }}
+                  />
+                  <Legend 
+                    layout="horizontal" 
+                    verticalAlign="bottom" 
+                    align="center"
+                    iconType="circle"
+                    formatter={(value, entry: any) => (
+                      <span className="text-[9px] font-black text-slate-500 uppercase tracking-widest ml-1">
+                        {entry.payload.name.length > 12 ? entry.payload.name.slice(0, 12) + '…' : entry.payload.name}
+                      </span>
+                    )}
+                  />
+                </PieChart>
+              </ResponsiveContainer>
+              <div className="absolute inset-0 flex flex-col items-center justify-center pointer-events-none">
+                <span className="text-2xl font-black text-white">
+                  {stats.topRatedProducts.reduce((acc, curr) => acc + curr.count, 0)}
+                </span>
+                <span className="text-[8px] font-black text-slate-500 uppercase tracking-[0.2em]">Tổng 5★</span>
+              </div>
+            </div>
           )}
         </div>
 

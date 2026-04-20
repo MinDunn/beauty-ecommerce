@@ -1,5 +1,7 @@
+import { useState, useRef } from 'react';
 import { Sparkles, ArrowRight, Play, Clock } from 'lucide-react';
-import { motion } from 'framer-motion';
+import { motion, AnimatePresence } from 'framer-motion';
+import { toast } from 'react-hot-toast';
 
 const articles = [
   {
@@ -29,6 +31,32 @@ const articles = [
 ];
 
 const BeautyGuide = () => {
+  const [activeCategory, setActiveCategory] = useState('Tất cả');
+  const articlesRef = useRef<HTMLDivElement>(null);
+
+  const handleScrollToArticles = () => {
+    articlesRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+  };
+
+  const handleComingSoon = (feature: string) => {
+    toast.success(`${feature} sẽ sớm ra mắt!`, {
+      icon: '🚀',
+      style: {
+        borderRadius: '16px',
+        background: '#0f172a',
+        color: '#fff',
+        fontSize: '12px',
+        fontWeight: 'bold',
+        textTransform: 'uppercase',
+        letterSpacing: '0.1em'
+      }
+    });
+  };
+
+  const filteredArticles = activeCategory === 'Tất cả' 
+    ? articles 
+    : articles.filter(article => article.category === activeCategory);
+
   return (
     <div className="bg-white min-h-screen pb-32">
       {/* Hero Banner */}
@@ -48,10 +76,13 @@ const BeautyGuide = () => {
              <p className="text-slate-300 text-lg font-medium leading-relaxed mb-10">
                Khám phá những bí quyết chăm sóc sắc đẹp, xu hướng trang điểm mới nhất và phong cách sống lành mạnh cùng đội ngũ chuyên gia Glowzy.
              </p>
-             <button className="bg-primary-500 text-white px-10 py-4 rounded-2xl font-black text-sm uppercase tracking-widest hover:bg-primary-600 transition-all flex items-center gap-3">
-               <span>Khám phá ngay</span>
-               <ArrowRight size={18} />
-             </button>
+              <button 
+                onClick={handleScrollToArticles}
+                className="bg-primary-500 text-white px-10 py-4 rounded-2xl font-black text-sm uppercase tracking-widest hover:bg-primary-600 transition-all flex items-center gap-3 active:scale-95"
+              >
+                <span>Khám phá ngay</span>
+                <ArrowRight size={18} />
+              </button>
            </div>
         </div>
       </div>
@@ -65,7 +96,10 @@ const BeautyGuide = () => {
                 alt="Highlight Video"
                 className="w-full h-full object-cover aspect-video lg:aspect-square"
                />
-               <div className="absolute inset-0 bg-slate-900/20 group-hover:bg-slate-900/40 transition-all flex items-center justify-center">
+               <div 
+                 onClick={() => handleComingSoon('Video')}
+                 className="absolute inset-0 bg-slate-900/20 group-hover:bg-slate-900/40 transition-all flex items-center justify-center"
+               >
                   <div className="w-20 h-20 bg-white rounded-full flex items-center justify-center shadow-2xl transform group-hover:scale-110 transition-transform">
                      <Play className="text-primary-500 fill-primary-500 ml-1" size={32} />
                   </div>
@@ -77,9 +111,12 @@ const BeautyGuide = () => {
                <p className="text-gray-500 font-medium mb-10">
                  Cùng chuyên gia da liễu Linh Nguyễn khám phá quy trình chăm sóc da khoa học, đơn giản nhưng mang lại hiệu quả vượt trội cho làn da của bạn.
                </p>
-               <button className="flex items-center gap-3 text-slate-900 font-black uppercase text-xs tracking-widest border-b-2 border-primary-500 pb-1 hover:text-primary-600 transition-colors w-max">
-                 Xem video hướng dẫn <ArrowRight size={16} />
-               </button>
+                <button 
+                  onClick={() => handleComingSoon('Trình xem Video')}
+                  className="flex items-center gap-3 text-slate-900 font-black uppercase text-xs tracking-widest border-b-2 border-primary-500 pb-1 hover:text-primary-600 transition-colors w-max"
+                >
+                  Xem video hướng dẫn <ArrowRight size={16} />
+                </button>
             </div>
          </div>
       </div>
@@ -95,7 +132,12 @@ const BeautyGuide = () => {
             {['Tất cả', 'Skincare', 'Makeup', 'Lifestyle'].map((tag) => (
               <button 
                 key={tag}
-                className="px-6 py-2 rounded-full bg-gray-50 border border-gray-100 hover:border-primary-500 hover:text-primary-500 transition-all text-sm font-bold text-gray-700"
+                onClick={() => setActiveCategory(tag)}
+                className={`px-6 py-2 rounded-full border transition-all text-sm font-bold ${
+                  activeCategory === tag 
+                    ? 'bg-primary-500 border-primary-500 text-white shadow-lg shadow-primary-500/30' 
+                    : 'bg-gray-50 border-gray-100 text-gray-700 hover:border-primary-500 hover:text-primary-500'
+                }`}
               >
                 {tag}
               </button>
@@ -103,15 +145,18 @@ const BeautyGuide = () => {
           </div>
         </div>
 
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-10">
-           {articles.map((item, i) => (
+        <div ref={articlesRef} className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-10 scroll-mt-24">
+           <AnimatePresence mode="popLayout">
+           {filteredArticles.map((item, i) => (
              <motion.div 
-              initial={{ opacity: 0, y: 20 }}
-              whileInView={{ opacity: 1, y: 0 }}
-              viewport={{ once: true }}
-              transition={{ delay: i * 0.1 }}
-              key={i} 
+              layout
+              initial={{ opacity: 0, scale: 0.9 }}
+              animate={{ opacity: 1, scale: 1 }}
+              exit={{ opacity: 0, scale: 0.9 }}
+              transition={{ duration: 0.3 }}
+              key={item.title} 
               className="group cursor-pointer"
+              onClick={() => handleComingSoon('Trang bài viết')}
              >
                 <div className="relative aspect-[4/3] rounded-[2.5rem] overflow-hidden mb-6 shadow-lg">
                    <img src={item.image} alt={item.title} className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-700" />
@@ -141,6 +186,7 @@ const BeautyGuide = () => {
                 </div>
              </motion.div>
            ))}
+           </AnimatePresence>
         </div>
         
         <div className="mt-24 text-center">

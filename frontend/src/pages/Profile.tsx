@@ -1,6 +1,7 @@
 import { useState, useEffect, useRef } from 'react';
 import { useSelector, useDispatch } from 'react-redux';
 import { User, Mail, Lock, Phone, MapPin, Package, Settings, ChevronRight, Camera, LogOut, Heart, Sparkles } from 'lucide-react';
+import { motion, AnimatePresence } from 'framer-motion';
 import type { RootState } from '../store';
 import { logout as logoutAction, updateUser } from '../store/slices/authSlice';
 import { cn } from '../utils/cn';
@@ -13,7 +14,7 @@ import orderService from '../api/orderService';
 import type { Order } from '../types';
 import { ProductCard } from '../components/ui/ProductCard';
 import { addItem, selectOnlyItems } from '../store/slices/cartSlice';
-// // import { SEO } from '../components/common/SEO';
+import { getFullTimeline } from '../utils/orderUtils';
 
 const Profile = () => {
   const { user } = useSelector((state: RootState) => state.auth);
@@ -241,6 +242,7 @@ const Profile = () => {
     const [orderToCancel, setOrderToCancel] = useState<number | null>(null);
     const [selectedReason, setSelectedReason] = useState<string>("");
     const [customReason, setCustomReason] = useState<string>("");
+    const [expandedOrderId, setExpandedOrderId] = useState<number | null>(null);
 
     const cancelReasons = [
       "Sai địa chỉ nhận hàng",
@@ -264,28 +266,6 @@ const Profile = () => {
       };
       loadOrders();
     }, []);
-
-    const getStatusColor = (status: string) => {
-      switch (status) {
-        case 'DELIVERED': return 'bg-green-50 text-green-600';
-        case 'CANCELLED': return 'bg-red-50 text-red-600';
-        case 'SHIPPING': return 'bg-blue-50 text-blue-600';
-        case 'CONFIRMED': return 'bg-purple-50 text-purple-600';
-        case 'CANCELLATION_REQUESTED': return 'bg-pink-50 text-pink-600 animate-pulse';
-        default: return 'bg-amber-50 text-amber-600';
-      }
-    };
-
-    const getStatusLabel = (status: string) => {
-      switch (status) {
-        case 'DELIVERED': return 'Đã giao hàng';
-        case 'CANCELLED': return 'Đã hủy';
-        case 'SHIPPING': return 'Đang giao hàng';
-        case 'CONFIRMED': return 'Đang chuẩn bị hàng';
-        case 'CANCELLATION_REQUESTED': return 'Chờ duyệt hủy';
-        default: return 'Chờ duyệt';
-      }
-    };
 
     const handleCancelOrder = (orderId: number) => {
       setOrderToCancel(orderId);
@@ -369,17 +349,22 @@ const Profile = () => {
           <div className="space-y-4">
             {orderHistory.map((order) => (
               <div key={order.id} className="border border-gray-100 rounded-3xl p-6 hover:border-primary-200 transition-colors bg-gray-50/20">
-                <div className="flex flex-wrap items-center justify-between gap-4 mb-4">
-                  <div className="flex items-center space-x-3 font-black text-[10px] uppercase tracking-tighter">
-                    <span className="text-gray-400">Mã đơn:</span>
-                    <span className="text-gray-900">#GLW{order.id}</span>
+                <div className="flex flex-wrap items-center justify-between gap-4 mb-8">
+                  <div className="flex items-center space-x-3">
+                    <div className="w-10 h-10 rounded-2xl bg-white shadow-sm border border-gray-100 flex items-center justify-center text-slate-400">
+                      <Package size={20} />
+                    </div>
+                    <div>
+                      <p className="text-[10px] font-black uppercase text-gray-400 tracking-widest">Mã đơn hàng</p>
+                      <p className="font-black text-sm text-slate-900 tracking-tight">#GLW{order.id}</p>
+                    </div>
                   </div>
-                  <span className={`px-3 py-1 text-[9px] font-black uppercase rounded-lg ${getStatusColor(order.status)}`}>
-                    {getStatusLabel(order.status)}
-                  </span>
-                  <span className="text-[10px] text-gray-400 font-bold ml-auto">
-                    {new Date(order.orderDate).toLocaleDateString('vi-VN')}
-                  </span>
+
+                  <div className="flex-1 max-w-sm px-4"></div>
+                  <div className="text-right">
+                    <p className="text-[10px] text-gray-400 font-bold uppercase tracking-widest">{new Date(order.orderDate).toLocaleDateString('vi-VN')}</p>
+                    <p className="text-[9px] text-gray-400 font-bold">{new Date(order.orderDate).toLocaleTimeString('vi-VN', { hour: '2-digit', minute: '2-digit' })}</p>
+                  </div>
                 </div>
                 
                 {/* Order Summary / Items Preview */}
@@ -404,29 +389,115 @@ const Profile = () => {
                   ))}
                 </div>
                 
-                <div className="mt-6 pt-4 border-t border-gray-100 flex justify-between items-center">
-                   <div className="text-[10px] font-black text-gray-400 uppercase tracking-widest">Thanh toán bằng {order.paymentMethod === 'MOMO' ? 'Ví MoMo' : 'COD'}</div>
-                   <div className="text-right flex items-center justify-end gap-4">
+                <div className="mt-8 pt-6 border-t border-gray-100/50 flex flex-wrap justify-between items-center gap-6">
+                   <div className="flex items-center gap-2">
+                      <div className={cn("w-2 h-2 rounded-full", order.status === 'DELIVERED' ? "bg-green-500" : "bg-primary-500")} />
+                      <span className="text-[10px] font-black text-gray-400 uppercase tracking-widest">
+                        Thanh toán: {order.paymentMethod === 'MOMO' ? 'Ví MoMo' : 'COD'}
+                      </span>
+                   </div>
+                   
+                   <div className="flex flex-wrap items-center justify-end gap-3 flex-1">
+                      <button 
+                        onClick={() => setExpandedOrderId(expandedOrderId === order.id ? null : order.id)}
+                        className="px-4 py-2.5 bg-gray-50 text-gray-600 rounded-xl text-[10px] font-black uppercase tracking-widest hover:bg-gray-100 transition-all border border-gray-100"
+                      >
+                        {expandedOrderId === order.id ? 'Đóng chi tiết' : 'Chi tiết hành trình'}
+                      </button>
+
                       {(order.status === 'PENDING' || order.status === 'CONFIRMED') && (
                         <button 
                           onClick={() => handleCancelOrder(order.id)}
-                          className="px-4 py-2 bg-red-50 text-red-600 rounded-xl text-[10px] font-black uppercase tracking-widest hover:bg-red-600 hover:text-white transition-colors border border-red-100"
+                          className="px-4 py-2.5 bg-white text-red-500 rounded-xl text-[10px] font-black uppercase tracking-widest hover:bg-red-500 hover:text-white transition-all border border-red-100 shadow-sm"
                         >
-                          Hủy Đơn
+                          Hủy đơn
                         </button>
                       )}
+                      
                       <button 
                         onClick={() => handleBuyAgain(order)}
-                        className="px-4 py-2 bg-primary-500 text-white rounded-xl text-[10px] font-black uppercase tracking-widest hover:bg-black transition-all shadow-lg shadow-primary-500/20"
+                        className="px-4 py-2.5 bg-slate-900 text-white rounded-xl text-[10px] font-black uppercase tracking-widest hover:bg-primary-500 transition-all shadow-xl shadow-slate-900/10"
                       >
                         Mua lại
                       </button>
-                      <div>
-                        <p className="text-[8px] font-black text-primary-500 uppercase tracking-widest mb-1">Tổng thanh toán</p>
-                        <p className="text-xl font-black text-primary-600 tracking-tighter">{(order.totalPrice || 0).toLocaleString()}đ</p>
+
+                      <div className="pl-4 border-l border-gray-100">
+                        <p className="text-[8px] font-black text-primary-500 uppercase tracking-widest mb-0.5">Tổng thanh toán</p>
+                        <p className="text-xl font-black text-slate-900 tracking-tighter">{(order.totalPrice || 0).toLocaleString()}đ</p>
                       </div>
                    </div>
                 </div>
+
+                {/* Timeline Expansion */}
+                <AnimatePresence>
+                  {expandedOrderId === order.id && (
+                    <motion.div 
+                      initial={{ height: 0, opacity: 0 }}
+                      animate={{ height: 'auto', opacity: 1 }}
+                      exit={{ height: 0, opacity: 0 }}
+                      className="overflow-hidden"
+                    >
+                      <div className="pt-8 pb-4">
+                        <div className="bg-white rounded-[2rem] p-8 border border-primary-100 shadow-inner ring-4 ring-primary-50/50">
+                          <h5 className="text-[10px] font-black uppercase text-primary-600 tracking-[0.2em] mb-8 flex items-center gap-2">
+                             <Sparkles size={14} /> Chi tiết hành trình đơn hàng
+                          </h5>
+                          <div className="space-y-8 relative">
+                            <div className="absolute left-[13px] top-2 bottom-2 w-[2px] bg-slate-100" />
+                            {getFullTimeline(order).reverse().map((step, idx) => {
+                              const StepIcon = step.icon;
+                              const isCurrent = step.isActive;
+                              const isPast = step.isCompleted;
+                              
+                              return (
+                                <div key={idx} className={cn(
+                                  "flex gap-6 relative transition-all duration-500",
+                                  !isPast && !isCurrent ? "opacity-40 grayscale-[0.5]" : "opacity-100"
+                                )}>
+                                  <div className={cn(
+                                    "w-7 h-7 rounded-full flex items-center justify-center z-10 border-2 transition-all duration-500",
+                                    isPast ? "bg-primary-500 border-primary-500 text-white" : 
+                                    isCurrent ? "bg-white border-primary-500 text-primary-500 shadow-[0_0_15px_rgba(249,115,22,0.3)]" : 
+                                    "bg-white border-slate-200 text-slate-300"
+                                  )}>
+                                    {isCurrent && (
+                                      <motion.div 
+                                        animate={{ scale: [1, 1.5, 1], opacity: [0.5, 0, 0.5] }}
+                                        transition={{ duration: 2, repeat: Infinity }}
+                                        className="absolute inset-0 bg-primary-500/20 rounded-full"
+                                      />
+                                    )}
+                                    <StepIcon size={12} className={isCurrent ? "animate-pulse" : ""} />
+                                  </div>
+                                  <div className="flex-1">
+                                    <div className="flex items-center justify-between gap-4 mb-1">
+                                      <p className={cn(
+                                        "text-xs font-black uppercase tracking-tight",
+                                        isCurrent ? "text-primary-600" : isPast ? "text-slate-900" : "text-slate-400"
+                                      )}>
+                                        {step.label}
+                                        {isCurrent && <span className="ml-2 text-[8px] bg-primary-100 text-primary-600 px-1.5 py-0.5 rounded-full">Hiện tại</span>}
+                                      </p>
+                                      {(isPast || isCurrent) && (
+                                        <div className="text-right">
+                                          <p className="text-[10px] font-bold text-slate-900">{step.time}</p>
+                                          <p className="text-[8px] text-gray-400 font-bold">{step.date}</p>
+                                        </div>
+                                      )}
+                                    </div>
+                                    {isCurrent && (
+                                       <p className="text-[10px] text-primary-500 font-medium italic">Sản phẩm đang nằm trong bước này</p>
+                                    )}
+                                  </div>
+                                </div>
+                              );
+                            })}
+                          </div>
+                        </div>
+                      </div>
+                    </motion.div>
+                  )}
+                </AnimatePresence>
               </div>
             ))}
           </div>
