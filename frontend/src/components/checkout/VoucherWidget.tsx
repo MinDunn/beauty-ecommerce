@@ -36,15 +36,12 @@ export const VoucherWidget = () => {
              <div className="w-1 h-1 md:w-1.5 md:h-1.5 bg-white rounded-full animate-pulse" />
           </div>
 
-          {/* Label - Always visible with Pulse */}
-          <motion.div 
-            animate={{ x: [0, -5, 0] }}
-            transition={{ duration: 1.5, repeat: Infinity }}
-            className="absolute right-full mr-4 top-1/2 -translate-y-1/2 px-3 py-1.5 bg-slate-900 text-white rounded-xl text-[9px] font-black uppercase tracking-widest shadow-xl whitespace-nowrap"
-          >
+          {/* Label - Visible on Hover */}
+          <div className="absolute right-full mr-4 top-1/2 -translate-y-1/2 px-3 py-1.5 bg-slate-900 text-white rounded-xl text-[9px] font-black uppercase tracking-widest shadow-xl whitespace-nowrap opacity-0 group-hover:opacity-100 transition-opacity duration-300 pointer-events-none">
             Săn ưu đãi ngay
             <div className="absolute left-full top-1/2 -translate-y-1/2 border-[6px] border-transparent border-l-slate-900" />
-          </motion.div>
+          </div>
+
         </motion.button>
       </div>
 

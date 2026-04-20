@@ -252,12 +252,6 @@ const Category = () => {
                   
                   <div className="absolute right-0 top-full mt-2 w-48 bg-white rounded-2xl shadow-2xl border border-gray-100 opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all z-30 overflow-hidden">
                     <button 
-                      onClick={() => setSortBy('trending')}
-                      className={cn("w-full text-left px-6 py-4 text-xs font-black uppercase tracking-widest hover:bg-primary-50 hover:text-primary-600 transition-colors", sortBy === 'trending' ? 'text-primary-600 bg-primary-50' : 'text-gray-600')}
-                    >
-                      Yêu thích nhất
-                    </button>
-                    <button 
                       onClick={() => setSortBy('newest')}
                       className={cn("w-full text-left px-6 py-4 text-xs font-black uppercase tracking-widest hover:bg-primary-50 hover:text-primary-600 transition-colors", sortBy === 'newest' ? 'text-primary-600 bg-primary-50' : 'text-gray-600')}
                     >
