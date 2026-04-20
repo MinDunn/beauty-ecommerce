@@ -7,7 +7,6 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 import org.springframework.web.multipart.MultipartFile;
 
-import java.io.IOException;
 import java.util.Map;
 
 @Service
@@ -18,13 +17,18 @@ public class CloudinaryService {
     private final Cloudinary cloudinary;
 
     public String uploadImage(MultipartFile file) {
+        return uploadMedia(file, "image");
+    }
+
+    public String uploadMedia(MultipartFile file, String resourceType) {
         try {
-            log.info("Đang tải ảnh lên Cloudinary: {}", file.getOriginalFilename());
-            Map uploadResult = cloudinary.uploader().upload(file.getBytes(), ObjectUtils.emptyMap());
-            return uploadResult.get("url").toString();
-        } catch (IOException e) {
-            log.error("Lỗi khi tải ảnh lên Cloudinary", e);
-            throw new RuntimeException("Không thể tải ảnh lên hệ thống");
+            log.info("Đang tải {} lên Cloudinary: {}", resourceType, file.getOriginalFilename());
+            Map uploadResult = cloudinary.uploader().upload(file.getBytes(), 
+                ObjectUtils.asMap("resource_type", resourceType));
+            return uploadResult.get("secure_url").toString();
+        } catch (Exception e) {
+            log.error("CRITICAL ERROR: Cloudinary upload failed! Message: {}", e.getMessage(), e);
+            throw new RuntimeException("Lỗi hệ thống Cloudinary: " + e.getMessage());
         }
     }
 }

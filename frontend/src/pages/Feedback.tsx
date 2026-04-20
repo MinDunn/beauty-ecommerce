@@ -5,15 +5,18 @@ import { Table } from "../components/admin/Table";
 import { feedbackService } from "../api/feedbackService";
 import { reviewService, type Review } from "../api/reviewService";
 import { toast } from "react-hot-toast";
-import { MessageSquare, User, Mail, Calendar, Star, Package, MessageCircle, Trash2, Check } from "lucide-react";
+import { MessageSquare, User, Mail, Calendar, Star, Package, Trash2, Check, Send } from "lucide-react";
 import { clsx } from "clsx";
+import AdminChat from "../components/admin/AdminChat";
+
+type FeedbackTab = 'chat' | 'reviews' | 'suggestions';
 
 export const FeedbackPage = () => {
   const location = useLocation();
   const [feedbacks, setFeedbacks] = useState<Feedback[]>([]);
   const [reviews, setReviews] = useState<Review[]>([]);
   const [loading, setLoading] = useState(true);
-  const [activeTab, setActiveTab] = useState<'contacts' | 'reviews'>('contacts');
+  const [activeTab, setActiveTab] = useState<FeedbackTab>('chat');
 
   const fetchData = async () => {
     setLoading(true);
@@ -34,10 +37,9 @@ export const FeedbackPage = () => {
 
   useEffect(() => {
     const params = new URLSearchParams(location.search);
-    if (params.get('tab') === 'reviews') {
-      setActiveTab('reviews');
-    } else {
-      setActiveTab('contacts');
+    const tab = params.get('tab') as FeedbackTab;
+    if (tab && ['chat', 'reviews', 'suggestions'].includes(tab)) {
+      setActiveTab(tab);
     }
     fetchData();
   }, [location.search]);
@@ -89,24 +91,24 @@ export const FeedbackPage = () => {
       </div>
     ),
     actions: (
-        <div className="flex items-center justify-end gap-2">
-            {!fb.isRead && (
-                <button 
-                onClick={() => handleMarkAsRead(fb.id)}
-                className="p-2.5 bg-emerald-500/10 text-emerald-500 hover:bg-emerald-500 hover:text-white rounded-xl transition-all shadow-inner border border-emerald-500/20"
-                title="Đánh dấu đã đọc"
-                >
-                    <Check size={16} />
-                </button>
-            )}
-            <button 
-                onClick={() => handleDeleteContact(fb.id)}
-                className="p-2.5 bg-slate-800 text-slate-500 hover:bg-rose-500 hover:text-white rounded-xl transition-all shadow-inner"
-                title="Xóa phản hồi"
-            >
-                <Trash2 size={16} />
-            </button>
-        </div>
+      <div className="flex items-center justify-end gap-2">
+        {!fb.isRead && (
+          <button 
+            onClick={() => handleMarkAsRead(fb.id)}
+            className="p-2.5 bg-emerald-500/10 text-emerald-500 hover:bg-emerald-500 hover:text-white rounded-xl transition-all shadow-inner border border-emerald-500/20"
+            title="Đánh dấu đã đọc"
+          >
+            <Check size={16} />
+          </button>
+        )}
+        <button 
+          onClick={() => handleDeleteContact(fb.id)}
+          className="p-2.5 bg-slate-800 text-slate-500 hover:bg-rose-500 hover:text-white rounded-xl transition-all shadow-inner"
+          title="Xóa phản hồi"
+        >
+          <Trash2 size={16} />
+        </button>
+      </div>
     ),
     rowClassName: !fb.isRead ? "bg-primary-500/[0.03]" : ""
   }));
@@ -153,53 +155,50 @@ export const FeedbackPage = () => {
 
   return (
     <div className="space-y-8 animate-in fade-in duration-700">
-      <div className="flex flex-col md:flex-row md:items-end justify-between gap-6 border-b border-slate-800 pb-8">
+      <div className="flex flex-col lg:flex-row lg:items-end justify-between gap-6 border-b border-slate-800 pb-8">
         <div>
             <h1 className="text-3xl font-black text-white uppercase tracking-tight underline decoration-primary-500 decoration-4 underline-offset-8">Feedback</h1>
-            <p className="text-slate-500 text-sm mt-5 italic font-medium">Lắng nghe ý kiến của khách hàng để cải thiện dịch vụ của <span className="text-white font-bold">Glowzy</span>.</p>
+            <p className="text-slate-500 text-sm mt-5 italic font-medium">Quản lý hội thoại và lắng nghe ý kiến từ khách hàng <span className="text-white font-bold">Glowzy</span>.</p>
         </div>
 
-        <div className="flex p-1.5 bg-slate-900 border border-slate-800 rounded-2xl w-fit shadow-2xl">
+        <div className="flex p-1.5 bg-slate-900 border border-slate-800 rounded-2xl w-fit shadow-2xl overflow-x-auto whitespace-nowrap">
             <button 
-                onClick={() => setActiveTab('contacts')}
+                onClick={() => setActiveTab('chat')}
                 className={clsx(
-                    "px-8 py-3 rounded-xl text-xs font-black uppercase tracking-widest transition-all flex items-center gap-2",
-                    activeTab === 'contacts' ? "bg-primary-500 text-white shadow-xl shadow-primary-500/20" : "text-slate-500 hover:text-white"
+                    "px-6 py-3 rounded-xl text-[10px] font-black uppercase tracking-widest transition-all flex items-center gap-2",
+                    activeTab === 'chat' ? "bg-primary-500 text-white shadow-xl shadow-primary-500/20" : "text-slate-500 hover:text-white"
                 )}
             >
-                <MessageSquare size={14} />
-                <span>Liên hệ ({feedbacks.length})</span>
+                <Send size={14} />
+                <span>Tin nhắn</span>
             </button>
             <button 
                 onClick={() => setActiveTab('reviews')}
                 className={clsx(
-                    "px-8 py-3 rounded-xl text-xs font-black uppercase tracking-widest transition-all flex items-center gap-2",
+                    "px-6 py-3 rounded-xl text-[10px] font-black uppercase tracking-widest transition-all flex items-center gap-2",
                     activeTab === 'reviews' ? "bg-primary-500 text-white shadow-xl shadow-primary-500/20" : "text-slate-500 hover:text-white"
                 )}
             >
-                <MessageCircle size={14} />
+                <Star size={14} />
                 <span>Đánh giá ({reviews.length})</span>
+            </button>
+            <button 
+                onClick={() => setActiveTab('suggestions')}
+                className={clsx(
+                    "px-6 py-3 rounded-xl text-[10px] font-black uppercase tracking-widest transition-all flex items-center gap-2",
+                    activeTab === 'suggestions' ? "bg-primary-500 text-white shadow-xl shadow-primary-500/20" : "text-slate-500 hover:text-white"
+                )}
+            >
+                <MessageSquare size={14} />
+                <span>Góp ý ({feedbacks.length})</span>
             </button>
         </div>
       </div>
 
-      <div className="min-h-[400px]">
-          {activeTab === 'contacts' ? (
-              feedbacks.length === 0 ? (
-                  <EmptyState title="Hộp thư đang trống" description="Hiện chưa có bất kỳ phản hồi liên hệ nào từ khách hàng." icon={MessageSquare} />
-              ) : (
-                  <Table 
-                    columns={[
-                        { header: "Khách hàng", key: "user" },
-                        { header: "Nội dung phản hồi", key: "message" },
-                        { header: "Thời gian", key: "date" },
-                        { header: "Thao tác", key: "actions", className: "text-right" }
-                    ]} 
-                    data={contactTableData} 
-                    rowClassName={(item: any) => item.rowClassName}
-                    />
-              )
-          ) : (
+      <div className="min-h-[500px]">
+          {activeTab === 'chat' && <AdminChat />}
+          
+          {activeTab === 'reviews' && (
               reviews.length === 0 ? (
                   <EmptyState title="Chưa có đánh giá" description="Khách hàng chưa để lại nhận xét nào cho sản phẩm của bạn." icon={Star} />
               ) : (
@@ -213,6 +212,23 @@ export const FeedbackPage = () => {
                     ]} 
                     data={reviewTableData} 
                   />
+              )
+          )}
+
+          {activeTab === 'suggestions' && (
+              feedbacks.length === 0 ? (
+                  <EmptyState title="Hộp thư góp ý đang trống" description="Hiện chưa có ý kiến đóng góp nào từ khách hàng." icon={MessageSquare} />
+              ) : (
+                  <Table 
+                    columns={[
+                        { header: "Người góp ý", key: "user" },
+                        { header: "Nội dung góp ý", key: "message" },
+                        { header: "Thời gian", key: "date" },
+                        { header: "Thao tác", key: "actions", className: "text-right" }
+                    ]} 
+                    data={contactTableData} 
+                    rowClassName={(item: any) => item.rowClassName}
+                    />
               )
           )}
       </div>

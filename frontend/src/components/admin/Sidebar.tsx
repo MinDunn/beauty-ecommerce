@@ -1,8 +1,8 @@
 import { Link, useLocation } from "react-router-dom";
-import { 
-  LayoutDashboard, 
-  ShoppingBag, 
-  ClipboardList, 
+import {
+  LayoutDashboard,
+  ShoppingBag,
+  ClipboardList,
   MessageSquare,
   Sparkles,
   Bell,
@@ -61,7 +61,7 @@ export const Sidebar = ({ isOpen, onClose }: SidebarProps) => {
             </div>
             <h2 className="text-xl font-black text-white tracking-tight uppercase select-none">Glowzy <span className="text-primary-500">Admin</span></h2>
           </div>
-          <button 
+          <button
             onClick={onClose}
             className="p-2 text-slate-400 hover:text-white md:hidden"
           >
@@ -73,7 +73,7 @@ export const Sidebar = ({ isOpen, onClose }: SidebarProps) => {
           {menuItems.map((item) => {
             const Icon = item.icon;
             const isActive = location.pathname === item.path || (item.path !== "/admin" && location.pathname.startsWith(item.path));
-            
+
             return (
               <Link
                 key={item.path}
@@ -81,8 +81,8 @@ export const Sidebar = ({ isOpen, onClose }: SidebarProps) => {
                 onClick={onClose}
                 className={clsx(
                   "flex items-center gap-3 px-4 py-3 rounded-xl transition-all duration-200 group",
-                  isActive 
-                    ? "bg-primary-500/10 text-primary-500" 
+                  isActive
+                    ? "bg-primary-500/10 text-primary-500"
                     : "hover:bg-slate-800 hover:text-white"
                 )}
               >

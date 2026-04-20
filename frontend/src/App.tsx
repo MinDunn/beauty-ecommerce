@@ -34,6 +34,7 @@ import { InventoryReceiptsPage } from './pages/admin/InventoryReceiptsPage';
 import { Activities } from './pages/Activities';
 import { useAuth } from './hooks/useAuth';
 import { VoucherWidget } from './components/checkout/VoucherWidget';
+import ChatWidget from './components/chat/ChatWidget';
 import { useState } from 'react';
 
 function AdminLayout({ logout }: { logout: () => void }) {
@@ -88,7 +89,7 @@ function App() {
                 <Route path="/product/:id" element={<ProductDetails />} />
                 <Route path="/cart" element={<Cart />} />
                 <Route path="/checkout" element={<Checkout />} />
-                
+
                 {/* Auth Routes */}
                 <Route path="/login" element={<Login />} />
                 <Route path="/register" element={<Register />} />
@@ -113,7 +114,7 @@ function App() {
                 {/* User Account Routes */}
                 <Route path="/profile" element={<Profile />} />
                 <Route path="/order-success" element={<OrderSuccess />} />
-                
+
                 {/* Catch all for public routes - redirect to home */}
                 <Route path="*" element={<Navigate to="/" replace />} />
               </Routes>
@@ -122,6 +123,7 @@ function App() {
         />
       </Routes>
       {!isAdmin && <VoucherWidget />}
+      {!isAdmin && <ChatWidget />}
     </Router>
   );
 }
