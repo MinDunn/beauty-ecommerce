@@ -39,12 +39,12 @@ export const CountdownClock = () => {
 
   return (
     <div className="flex items-center gap-1.5 ml-4 md:ml-6">
-      <span className="text-[10px] md:text-xs font-bold text-gray-400 uppercase tracking-wider hidden sm:block">Kết thúc sau:</span>
-      <div className="flex items-center gap-1 mt-0.5">
+      <span className="text-[9px] md:text-[10px] font-black text-gray-400 uppercase tracking-widest hidden sm:block">Kết thúc sau:</span>
+      <div className="flex items-center gap-1 mt-0">
         <TimeUnit value={timeLeft.hours} label="H" />
-        <span className="text-primary-500 font-bold">:</span>
+        <span className="text-primary-500 font-black text-sm">:</span>
         <TimeUnit value={timeLeft.minutes} label="M" />
-        <span className="text-primary-500 font-bold">:</span>
+        <span className="text-primary-500 font-black text-sm">:</span>
         <TimeUnit value={timeLeft.seconds} label="S" />
       </div>
     </div>
@@ -53,7 +53,7 @@ export const CountdownClock = () => {
 
 const TimeUnit = ({ value }: { value: string; label: string }) => (
   <div className="flex flex-col items-center">
-    <div className="bg-white border-2 border-primary-100 text-primary-600 min-w-[32px] md:min-w-[38px] h-8 md:h-10 flex items-center justify-center rounded-xl font-black text-base md:text-lg shadow-sm shadow-primary-100/50 tabular-nums">
+    <div className="bg-white border border-primary-100 text-primary-600 min-w-[28px] md:min-w-[32px] h-7 md:h-8 flex items-center justify-center rounded-lg font-black text-sm md:text-base shadow-sm tabular-nums">
       {value}
     </div>
   </div>

@@ -28,6 +28,7 @@ const Home = () => {
         subtitle="Khám phá bộ sưu tập mới nhất"
         type="latest"
         isCarousel={false}
+        showLoadMore={true}
         viewAllLink="/category?sort=createdAt,desc"
       />
     </main>

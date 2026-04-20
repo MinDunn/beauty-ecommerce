@@ -152,6 +152,7 @@ const SearchResultPage = () => {
                     price={product.currentPrice}
                     originalPrice={product.originalPrice}
                     image={product.imageUrl}
+                    views={product.viewCount || 0}
                   />
                 ))}
               </div>

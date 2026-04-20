@@ -8,7 +8,7 @@ export const VoucherWidget = () => {
 
   return (
     <>
-      <div className="fixed top-40 right-8 z-[900]">
+      <div className="fixed top-60 right-8 z-[900]">
         <motion.button
           animate={{ 
             rotate: [0, -10, 10, -10, 10, 0],
@@ -24,23 +24,23 @@ export const VoucherWidget = () => {
           whileHover={{ scale: 1.1 }}
           whileTap={{ scale: 0.9 }}
           onClick={() => setIsOpen(true)}
-          className="relative w-16 h-16 bg-primary-500 rounded-[1.5rem] shadow-2xl shadow-primary-500/40 flex items-center justify-center text-white group"
+          className="relative w-12 h-12 md:w-14 md:h-14 bg-primary-500 rounded-2xl shadow-2xl shadow-primary-500/40 flex items-center justify-center text-white group"
         >
           {/* Glowing Effect */}
-          <div className="absolute inset-0 bg-primary-500 rounded-[1.5rem] animate-ping opacity-20" />
+          <div className="absolute inset-0 bg-primary-500 rounded-2xl animate-ping opacity-20" />
           
-          <Gift className="w-8 h-8 relative z-10 transition-transform group-hover:drop-shadow-lg" />
+          <Gift className="w-5 h-5 md:w-6 md:h-6 relative z-10 transition-transform group-hover:drop-shadow-lg" />
           
           {/* Badge/Pulse */}
-          <div className="absolute -top-1 -right-1 w-5 h-5 bg-rose-500 rounded-full border-2 border-white flex items-center justify-center">
-             <div className="w-1.5 h-1.5 bg-white rounded-full animate-pulse" />
+          <div className="absolute -top-1 -right-1 w-4 h-4 md:w-5 md:h-5 bg-rose-500 rounded-full border-2 border-white flex items-center justify-center">
+             <div className="w-1 h-1 md:w-1.5 md:h-1.5 bg-white rounded-full animate-pulse" />
           </div>
 
           {/* Label - Always visible with Pulse */}
           <motion.div 
             animate={{ x: [0, -5, 0] }}
             transition={{ duration: 1.5, repeat: Infinity }}
-            className="absolute right-full mr-4 top-1/2 -translate-y-1/2 px-4 py-2 bg-slate-900 text-white rounded-xl text-[10px] font-black uppercase tracking-widest shadow-xl whitespace-nowrap"
+            className="absolute right-full mr-4 top-1/2 -translate-y-1/2 px-3 py-1.5 bg-slate-900 text-white rounded-xl text-[9px] font-black uppercase tracking-widest shadow-xl whitespace-nowrap"
           >
             Săn ưu đãi ngay
             <div className="absolute left-full top-1/2 -translate-y-1/2 border-[6px] border-transparent border-l-slate-900" />

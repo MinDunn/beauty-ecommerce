@@ -26,7 +26,8 @@ export const ProductGrid = ({
   isCarousel = false,
   autoPlay = false,
   infinite = true,
-  viewAllLink = "/category"
+  viewAllLink = "/category",
+  showLoadMore = false
 }: {
   title?: string;
   subtitle?: string;
@@ -35,9 +36,13 @@ export const ProductGrid = ({
   autoPlay?: boolean;
   infinite?: boolean;
   viewAllLink?: string;
+  showLoadMore?: boolean;
 }) => {
   const [products, setProducts] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
+  const [loadingMore, setLoadingMore] = useState(false);
+  const [page, setPage] = useState(0);
+  const [hasMore, setHasMore] = useState(true);
   const [isPaused, setIsPaused] = useState(false);
   const [currentIndex, setCurrentIndex] = useState(0);
   const containerRef = useRef<HTMLDivElement>(null);
@@ -46,33 +51,65 @@ export const ProductGrid = ({
   const visibleCards = window.innerWidth >= 1024 ? 5 : window.innerWidth >= 768 ? 3 : 2;
 
   useEffect(() => {
-    const fetchProducts = async () => {
-      try {
-        setLoading(true);
-        let data;
-        if (type === 'trending') {
-          const res = await productService.getTrendingProducts(10);
-          data = res.data;
-        } else if (type === 'flash-sale') {
-          const res = await productService.searchProducts({ onSale: true, size: 12, sortBy: 'createdAt,desc' });
-          data = res.content;
-        } else {
-          const res = await productService.searchProducts({ size: 10, sortBy: 'createdAt,desc' });
-          data = res.content;
-        }
-        setProducts(data || []);
-
-        if (isCarousel && data && data.length > 0) {
-          setCurrentIndex(infinite ? data.length : 0);
-        }
-      } catch (err) {
-        console.error(`Failed to fetch ${type} products for grid`, err);
-      } finally {
-        setLoading(false);
-      }
-    };
-    fetchProducts();
+    fetchProducts(0);
   }, [type, isCarousel, infinite]);
+
+  const fetchProducts = async (pageToFetch: number) => {
+    try {
+      if (pageToFetch === 0) setLoading(true);
+      else setLoadingMore(true);
+
+      let data;
+      let newHasMore = true;
+
+      if (type === 'trending') {
+        const res = await productService.getTrendingProducts(10);
+        data = res.data;
+        newHasMore = false; // Trending fixed size for now
+      } else if (type === 'flash-sale') {
+        const res = await productService.searchProducts({ onSale: true, size: 12, sortBy: 'createdAt,desc', page: pageToFetch });
+        data = res.content;
+        newHasMore = !res.last;
+      } else {
+        const res = await productService.searchProducts({ size: 10, sortBy: 'createdAt,desc', page: pageToFetch });
+        data = res.content;
+        newHasMore = !res.last;
+      }
+
+      if (pageToFetch === 0) {
+        setProducts(data || []);
+      } else {
+        setProducts(prev => [...prev, ...(data || [])]);
+      }
+      
+      setHasMore(newHasMore);
+
+      if (isCarousel && data && data.length > 0 && pageToFetch === 0) {
+        setCurrentIndex(infinite ? data.length : 0);
+      }
+    } catch (err) {
+      console.error(`Failed to fetch ${type} products for grid`, err);
+    } finally {
+      setLoading(false);
+      setLoadingMore(false);
+    }
+  };
+
+  const handleLoadMore = () => {
+    const nextPage = page + 1;
+    setPage(nextPage);
+    fetchProducts(nextPage);
+  };
+
+  const handleShowLess = () => {
+    setProducts(prev => prev.slice(0, 10)); // Quay lại 10 sp tiêu chuẩn
+    setPage(0);
+    setHasMore(true);
+    // Cuộn nhẹ lên đầu section
+    if (containerRef.current) {
+      containerRef.current.scrollIntoView({ behavior: 'smooth', block: 'start' });
+    }
+  };
 
   useEffect(() => {
     const updateWidth = () => {
@@ -130,16 +167,16 @@ export const ProductGrid = ({
   const canGoNext = infinite || (products.length > visibleCards && currentIndex < products.length - visibleCards);
 
   return (
-    <section className="py-12 bg-gray-50 border-t border-gray-100 overflow-hidden">
+    <section className="py-8 bg-gray-50 border-t border-gray-100 overflow-hidden">
       <div className="container mx-auto px-4 max-w-[1536px] relative" ref={containerRef}>
-        <div className="flex flex-col md:flex-row md:items-end justify-between mb-10 gap-6 border-b border-gray-100 pb-6">
+        <div className="flex flex-col md:flex-row md:items-end justify-between mb-2 gap-4 border-b border-gray-100 pb-3">
           <div className="flex flex-col gap-3">
             <div className="flex items-center gap-4 flex-wrap">
               {/* Cụm Tiêu đề Flash Sale - Bỏ nền đen, dùng text accent */}
               <div className="flex items-center">
                 {autoPlay && (
-                  <div className="bg-primary-50 p-2 rounded-xl mr-3 shadow-inner">
-                    <Zap size={22} className="text-primary-500 fill-current" />
+                  <div className="bg-primary-50 p-1.5 rounded-lg mr-2 shadow-inner">
+                    <Zap size={18} className="text-primary-500 fill-current" />
                   </div>
                 )}
                 <h3 className="text-2xl md:text-3xl font-black tracking-tight text-gray-900">
@@ -159,9 +196,11 @@ export const ProductGrid = ({
             </p>
           </div>
 
-          <Link to={viewAllLink} className="px-8 py-3 bg-white border-2 border-gray-100 text-gray-700 font-bold rounded-2xl hover:border-primary-500 hover:text-primary-600 transition-all shadow-sm hover:shadow-md active:scale-95 whitespace-nowrap">
-            Xem tất cả
-          </Link>
+          {!showLoadMore && (
+            <Link to={viewAllLink} className="px-8 py-3 bg-white border-2 border-gray-100 text-gray-700 font-bold rounded-2xl hover:border-primary-500 hover:text-primary-600 transition-all shadow-sm hover:shadow-md active:scale-95 whitespace-nowrap">
+              Xem tất cả
+            </Link>
+          )}
         </div>
 
         {loading ? (
@@ -261,11 +300,45 @@ export const ProductGrid = ({
           <div className="text-center py-12 text-gray-400 font-bold italic">Chưa có sản phẩm nào.</div>
         )}
 
-        <div className="mt-8 text-center md:hidden">
-          <button className="w-full px-6 py-3 border border-gray-200 bg-white text-gray-700 font-bold rounded-xl hover:bg-gray-50 transition-colors">
-            Xem tất cả sản phẩm
-          </button>
-        </div>
+        {showLoadMore && (
+          <div className="mt-12 text-center">
+            {hasMore ? (
+              <button
+                onClick={handleLoadMore}
+                disabled={loadingMore}
+                className="inline-flex items-center gap-2 px-10 py-4 bg-primary-50 text-primary-600 font-black rounded-full hover:bg-primary-500 hover:text-white transition-all shadow-md hover:shadow-primary-500/20 active:scale-95 disabled:opacity-50 disabled:cursor-not-allowed group uppercase tracking-widest text-xs border border-primary-100"
+              >
+                {loadingMore ? (
+                  <>
+                    <Loader2 size={16} className="animate-spin" />
+                    <span>Đang tải...</span>
+                  </>
+                ) : (
+                  <>
+                    <span>Xem thêm sản phẩm</span>
+                    <ChevronRight size={16} className="group-hover:translate-x-1 transition-transform" />
+                  </>
+                )}
+              </button>
+            ) : (
+              <button
+                onClick={handleShowLess}
+                className="inline-flex items-center gap-2 px-10 py-4 bg-gray-50 text-gray-500 font-black rounded-full hover:bg-gray-900 hover:text-white transition-all shadow-md active:scale-95 group uppercase tracking-widest text-xs border border-gray-200"
+              >
+                <span>Thu gọn danh sách</span>
+                <ChevronRight size={16} className="-rotate-90 group-hover:-translate-y-1 transition-transform" />
+              </button>
+            )}
+          </div>
+        )}
+
+        {!showLoadMore && (
+          <div className="mt-8 text-center md:hidden">
+            <Link to={viewAllLink} className="block w-full px-6 py-3 border border-gray-200 bg-white text-gray-700 font-bold rounded-xl hover:bg-gray-50 transition-colors">
+              Xem tất cả sản phẩm
+            </Link>
+          </div>
+        )}
       </div>
     </section>
   );

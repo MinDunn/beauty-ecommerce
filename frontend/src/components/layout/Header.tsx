@@ -10,7 +10,8 @@ import {
   MapPin,
   User,
   Heart,
-  ChevronDown
+  ChevronDown,
+  BookOpen
 } from 'lucide-react';
 import type { RootState } from '../../store';
 import { useAuth } from '../../hooks/useAuth';
@@ -133,7 +134,9 @@ export const Header = () => {
               <Link to="/stores" className="flex items-center hover:text-primary-500 transition-colors">
                 <MapPin size={12} className="mr-1.5" /> Hệ thống cửa hàng
               </Link>
-              <Link to="/beauty-guide" className="hover:text-primary-500 transition-colors">Cẩm nang mua sắm</Link>
+              <Link to="/beauty-guide" className="flex items-center hover:text-primary-500 transition-colors">
+                <BookOpen size={12} className="mr-1.5" /> Cẩm nang mua sắm
+              </Link>
             </div>
 
             <div className="flex items-center space-x-6">
@@ -452,30 +455,6 @@ export const Header = () => {
           </div>
         </div>
       </div>
-
-      {/* Floating Hotline Button */}
-      <a
-        href="tel:18001000"
-        className="fixed bottom-8 right-8 z-[60] group flex items-center justify-center"
-        aria-label="Hotline contact"
-      >
-        {/* Pulsing effect */}
-        <div className="absolute inset-0 bg-primary-500 rounded-full animate-ping opacity-25 group-hover:opacity-40 transition-opacity"></div>
-        
-        {/* Main Button */}
-        <div className="relative w-16 h-16 bg-primary-500 text-white rounded-full flex items-center justify-center shadow-[0_0_25px_rgba(243,112,33,0.4)] group-hover:scale-110 transition-transform duration-300 transform-gpu overflow-hidden">
-          <PhoneCall size={28} className="group-hover:rotate-12 transition-transform duration-300" />
-          
-          {/* Subtle reflection effect */}
-          <div className="absolute top-0 left-[-100%] w-full h-full bg-gradient-to-r from-transparent via-white/20 to-transparent group-hover:left-[100%] transition-all duration-700"></div>
-        </div>
-        
-        {/* Tooltip */}
-        <div className="absolute right-full mr-4 px-4 py-2 bg-slate-900 text-white text-xs font-bold rounded-lg opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all whitespace-nowrap hidden md:block">
-          Hotline: 1800 1000
-          <div className="absolute top-1/2 -right-1 -translate-y-1/2 border-4 border-transparent border-l-slate-900"></div>
-        </div>
-      </a>
 
       {/* Order Lookup Modal */}
       <OrderLookupModal

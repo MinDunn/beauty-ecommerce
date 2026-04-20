@@ -65,8 +65,15 @@ const Category = () => {
   }, [slug]);
 
   useEffect(() => {
+    // Luôn cuộn lên đầu khi URL thay đổi
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+    
+    // Đồng bộ state từ URL
+    setSelectedOnSale(onSaleParam);
     if (onSaleParam) {
       setCategoryName('Khuyến mãi HOT Deal');
+      // Nếu là Hot Deal thì mặc định là mới nhất nếu không có sort khác
+      if (!sortParamFromUrl) setSortBy('newest');
     } else if (sortParamFromUrl === 'latest') {
       setCategoryName('Hàng mới về');
       setSortBy('newest');
@@ -109,8 +116,9 @@ const Category = () => {
       if (sortBy === 'price-desc') sortParam = 'currentPrice,desc';
       if (sortBy === 'trending') sortParam = 'trending';
 
-      // TRƯỜNG HỢP ĐẶC BIỆT: Yêu thích nhất tuần (Trending)
-      if (sortBy === 'trending') {
+      // TRƯỜNG HỢP ĐẶC BIỆT: Yêu thích nhất tuần (Trending) 
+      // Chỉ dùng API trending riêng biệt nếu KHÔNG có lọc sale hoặc các lọc khác
+      if (sortBy === 'trending' && !selectedOnSale && !selectedPriceRange && !selectedSkinType) {
         const trendingRes = await productService.getTrendingProducts(100);
         const allTrending = trendingRes.data || [];
         
@@ -124,6 +132,8 @@ const Category = () => {
         setTotalPages(Math.ceil(allTrending.length / pageSize));
         setTotalElements(allTrending.length);
         setLoading(false);
+        // Cuộn lên đầu khi có dữ liệu mới
+        window.scrollTo({ top: 0, behavior: 'smooth' });
         return;
       }
 
@@ -141,6 +151,8 @@ const Category = () => {
       setProducts(res.content);
       setTotalPages(res.totalPages);
       setTotalElements(res.totalElements);
+      // Cuộn lên đầu khi có dữ liệu mới
+      window.scrollTo({ top: 0, behavior: 'smooth' });
     } catch (err) {
       console.error("Failed to fetch products", err);
     } finally {
@@ -284,6 +296,7 @@ const Category = () => {
                     originalPrice={product.originalPrice}
                     image={product.imageUrl}
                     reviewCount={product.reviewCount}
+                    views={product.viewCount || 0}
                   />
                 ))}
               </div>

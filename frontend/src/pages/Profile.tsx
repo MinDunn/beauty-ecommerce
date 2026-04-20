@@ -203,6 +203,7 @@ const Profile = () => {
                   price={product.currentPrice}
                   originalPrice={product.originalPrice}
                   image={product.imageUrl || ''}
+                  views={product.viewCount || 0}
                 />
                 <button 
                   onClick={(e) => { e.preventDefault(); handleRemove(String(product.id)); }}
