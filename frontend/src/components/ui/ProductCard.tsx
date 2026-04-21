@@ -19,6 +19,7 @@ interface ProductCardProps {
   reviewCount?: number;
   views?: number;
   categoryId?: number;
+  stockQuantity?: number;
 }
 
 const resolveProductImage = (image?: string) => {
@@ -39,7 +40,8 @@ export const ProductCard = ({
   brand = "Glowzy",
   reviewCount,
   views = 0,
-  categoryId
+  categoryId,
+  stockQuantity = 100 // Default to in stock if not provided
 }: ProductCardProps) => {
   const dispatch = useDispatch();
   const { user, isAuthenticated } = useSelector((state: RootState) => state.auth);
@@ -63,6 +65,12 @@ export const ProductCard = ({
   const handleAddToCart = (e: React.MouseEvent) => {
     e.preventDefault();
     e.stopPropagation();
+
+    if (stockQuantity <= 0) {
+      toast.error('Sản phẩm đã hết hàng');
+      return;
+    }
+
     dispatch(addItem({
       id,
       name,
@@ -141,13 +149,29 @@ export const ProductCard = ({
           onError={(e) => {
             (e.target as HTMLImageElement).src = 'https://placehold.co/600x600/f8fafc/64748b?text=Glowzy+Beauty';
           }}
-          className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-700"
+          className={cn(
+            "w-full h-full object-cover group-hover:scale-105 transition-transform duration-700",
+            stockQuantity <= 0 && "grayscale opacity-60"
+          )}
         />
+        {stockQuantity <= 0 && (
+          <div className="absolute inset-0 flex items-center justify-center z-10">
+            <div className="bg-black/60 text-white px-4 py-2 rounded-xl text-[10px] font-black uppercase tracking-widest backdrop-blur-sm border border-white/20">
+              Đã hết hàng
+            </div>
+          </div>
+        )}
         {/* Quick Add Button overlay */}
         <button 
           onClick={handleAddToCart}
-          className="absolute bottom-4 right-4 bg-primary-500 text-white p-2.5 rounded-full shadow-lg translate-y-2 opacity-0 group-hover:translate-y-0 group-hover:opacity-100 z-20 hover:scale-110 active:scale-95 transition-all duration-300"
-          title="Thêm nhanh vào giỏ"
+          disabled={stockQuantity <= 0}
+          className={cn(
+            "absolute bottom-4 right-4 p-2.5 rounded-full shadow-lg translate-y-2 opacity-0 group-hover:translate-y-0 group-hover:opacity-100 z-20 transition-all duration-300",
+            stockQuantity <= 0 
+              ? "bg-gray-400 cursor-not-allowed" 
+              : "bg-primary-500 text-white hover:scale-110 active:scale-95"
+          )}
+          title={stockQuantity <= 0 ? "Hết hàng" : "Thêm nhanh vào giỏ"}
         >
           <ShoppingCart size={16} />
         </button>

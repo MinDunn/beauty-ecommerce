@@ -4,7 +4,7 @@ import jakarta.persistence.*;
 import lombok.*;
 import org.hibernate.annotations.CreationTimestamp;
 
-import java.time.LocalDateTime;
+import java.time.Instant;
 
 @Entity
 @Table(name = "chat_messages")
@@ -24,6 +24,7 @@ public class ChatMessage {
     @Column(length = 100)
     private String senderName;
 
+    @Builder.Default
     @Column(nullable = false, length = 50)
     private String recipientId = "ADMIN";
 
@@ -39,9 +40,10 @@ public class ChatMessage {
     @Column(nullable = false, length = 20)
     private String type; // USER, GUEST, ADMIN
 
+    @Builder.Default
     @Column(nullable = false)
     private boolean isRead = false;
 
     @CreationTimestamp
-    private LocalDateTime createdAt;
+    private Instant createdAt;
 }

@@ -10,6 +10,7 @@ export interface CartItem {
   variantName?: string | null;
   selected?: boolean;
   categoryId?: number;
+  stockQuantity?: number;
 }
 
 interface CartState {

@@ -1,7 +1,7 @@
 import axiosInstance from './axiosInstance';
 
 export const productService = {
-  searchProducts: async (params: { keyword?: string; categoryId?: number; minPrice?: number; maxPrice?: number; sortBy?: string; onSale?: boolean; skinType?: string; page?: number; size?: number }) => {
+  searchProducts: async (params: { keyword?: string; categoryId?: number; minPrice?: number; maxPrice?: number; sortBy?: string; onSale?: boolean; skinType?: string; includeHidden?: boolean; page?: number; size?: number }) => {
     const response = await axiosInstance.get('/products', { params });
     return response.data; // This returns a Page object from Spring Data
   },
@@ -40,8 +40,30 @@ export const productService = {
     return response.data;
   },
   adminDeleteProduct: async (id: number) => {
+    // Backend bây giờ xử lý soft-delete (chuyển status thành HIDDEN)
     await axiosInstance.delete(`/admin/products/${id}`);
   },
+
+  adminUpdateProductStatus: async (id: number, status: string) => {
+    await axiosInstance.patch(`/admin/products/${id}/status`, { status });
+  },
+
+  adminAdjustStock: async (productId: number, quantity: number, reason: string, compensationAmount?: number, variantName?: string) => {
+    const response = await axiosInstance.post('/admin/inventory/adjustments', {
+      productId,
+      quantity,
+      reason,
+      compensationAmount,
+      variantName
+    });
+    return response.data;
+  },
+
+  adminGetInventoryAdjustments: async () => {
+    const response = await axiosInstance.get('/admin/inventory/adjustments');
+    return response.data.data;
+  },
+
   incrementViewCount: async (id: number) => {
     try {
       await axiosInstance.post(`/products/${id}/view`);

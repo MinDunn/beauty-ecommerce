@@ -1,7 +1,6 @@
 package com.beauty.ecommerce.product.application.service;
 
 import com.beauty.ecommerce.product.application.port.in.ManageProductUseCase;
-import com.beauty.ecommerce.product.application.port.out.DeleteProductPort;
 import com.beauty.ecommerce.product.application.port.out.SaveProductPort;
 import com.beauty.ecommerce.product.application.port.out.UploadImagePort;
 import com.beauty.ecommerce.product.adapter.out.persistence.ProductJpaEntity;
@@ -20,8 +19,8 @@ import java.time.LocalDateTime;
 public class ProductManagementService implements ManageProductUseCase {
 
     private final SaveProductPort saveProductPort;
-    private final DeleteProductPort deleteProductPort;
     private final UploadImagePort uploadImagePort;
+    private final com.beauty.ecommerce.product.adapter.out.persistence.ProductRepository productRepository;
 
     @Override
     @Transactional
@@ -52,6 +51,7 @@ public class ProductManagementService implements ManageProductUseCase {
                 .instructions(command.getInstructions())
                 .ingredients(command.getIngredients())
                 .skinType(command.getSkinType())
+                .status("ACTIVE")
                 .imageUrl(mainImageUrl)
                 .images(galleryImages)
                 .variants(command.getVariants() != null ? command.getVariants().stream()
@@ -184,6 +184,7 @@ public class ProductManagementService implements ManageProductUseCase {
                 .ingredients(entity.getIngredients())
                 .skinType(entity.getSkinType())
                 .createdAt(entity.getCreatedAt())
+                .status(entity.getStatus())
                 .images(entity.getImages() != null ? entity.getImages().stream()
                         .map(ProductImageJpaEntity::getImageUrl)
                         .collect(java.util.stream.Collectors.toList()) : new java.util.ArrayList<>())
@@ -198,9 +199,23 @@ public class ProductManagementService implements ManageProductUseCase {
                         .collect(java.util.stream.Collectors.toList()) : new java.util.ArrayList<>())
                 .build();
     }
+
+    @Override
+    @Transactional
+    public void updateProductStatus(Long id, String status) {
+        ProductJpaEntity entity = productRepository.findById(id)
+                .orElseThrow(() -> new RuntimeException("Sản phẩm không tồn tại"));
+        entity.setStatus(status);
+        productRepository.save(entity);
+    }
+
     @Override
     @Transactional
     public void deleteProduct(Long id) {
-        deleteProductPort.deleteProduct(id);
+        // Thay vì xóa thật, chúng ta chuyển trạng thái thành HIDDEN
+        ProductJpaEntity entity = productRepository.findById(id)
+                .orElseThrow(() -> new RuntimeException("Sản phẩm không tồn tại"));
+        entity.setStatus("HIDDEN");
+        productRepository.save(entity);
     }
 }

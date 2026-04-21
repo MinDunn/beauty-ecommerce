@@ -494,7 +494,7 @@ export const AdminDashboard = () => {
                     verticalAlign="bottom" 
                     align="center"
                     iconType="circle"
-                    formatter={(value, entry: any) => (
+                    formatter={(_value, entry: any) => (
                       <span className="text-[9px] font-black text-slate-500 uppercase tracking-widest ml-1">
                         {entry.payload.name.length > 12 ? entry.payload.name.slice(0, 12) + '…' : entry.payload.name}
                       </span>

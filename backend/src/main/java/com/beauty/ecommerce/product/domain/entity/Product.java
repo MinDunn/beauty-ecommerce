@@ -31,6 +31,7 @@ public class Product {
     private Integer sold;
     private java.util.List<String> images;
     private java.util.List<ProductVariant> variants;
+    private String status;
 
     @Getter
     @Setter

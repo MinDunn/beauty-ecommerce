@@ -5,15 +5,15 @@ import lombok.Builder;
 import lombok.Getter;
 import org.springframework.web.multipart.MultipartFile;
 
-import java.math.BigDecimal;
-
 public interface ManageProductUseCase {
 
     Product createProduct(CreateProductCommand command, java.util.List<MultipartFile> images);
 
     Product updateProduct(Long id, UpdateProductCommand command, java.util.List<MultipartFile> images);
+    
+    void updateProductStatus(Long id, String status);
 
-    void deleteProduct(Long id);
+    void deleteProduct(Long id); // Note: Should be implemented as soft-delete/hide
 
     @Getter
     @Builder

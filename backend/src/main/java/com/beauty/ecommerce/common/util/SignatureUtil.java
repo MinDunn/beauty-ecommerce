@@ -20,10 +20,11 @@ public class SignatureUtil {
     }
 
     private static String toHexString(byte[] bytes) {
-        Formatter formatter = new Formatter();
-        for (byte b : bytes) {
-            formatter.format("%02x", b);
+        try (Formatter formatter = new Formatter()) {
+            for (byte b : bytes) {
+                formatter.format("%02x", b);
+            }
+            return formatter.toString();
         }
-        return formatter.toString();
     }
 }

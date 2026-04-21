@@ -17,6 +17,16 @@ const Cart = () => {
     const item = cartItems.find(i => i.id === id && i.variantName === variantName);
     if (!item) return;
 
+    if (delta > 0) {
+      if (item.quantity + delta > (item.stockQuantity || 0)) {
+        toast.error(`Xin lỗi, chỉ còn ${item.stockQuantity} sản phẩm trong kho`);
+        return;
+      }
+      toast.success(`Đã tăng số lượng ${name}${variantName ? ` (${variantName})` : ''}`);
+    } else {
+      toast.success(`Đã giảm số lượng ${name}${variantName ? ` (${variantName})` : ''}`);
+    }
+    
     dispatch(updateQuantity({ id, variantName, delta }));
 
     if (user) {
@@ -29,12 +39,6 @@ const Cart = () => {
       } catch (error) {
         console.error("Failed to sync quantity with backend", error);
       }
-    }
-
-    if (delta > 0) {
-      toast.success(`Đã tăng số lượng ${name}${variantName ? ` (${variantName})` : ''}`);
-    } else {
-      toast.success(`Đã giảm số lượng ${name}${variantName ? ` (${variantName})` : ''}`);
     }
   };
 
@@ -60,8 +64,8 @@ const Cart = () => {
     dispatch(toggleAllSelection(e.target.checked));
   };
 
-  const selectedItems = cartItems.filter(item => item.selected);
-  const isAllSelected = cartItems.length > 0 && cartItems.every(item => item.selected);
+  const selectedItems = cartItems.filter(item => item.selected && (item.stockQuantity || 0) > 0);
+  const isAllSelected = cartItems.length > 0 && cartItems.every(item => (item.stockQuantity || 0) <= 0 || item.selected);
   
   const selectedSubTotal = selectedItems.reduce((sum, item) => sum + (item.price * item.quantity), 0);
   const discount = selectedSubTotal > 1000000 ? 50000 : 0;
@@ -109,17 +113,25 @@ const Cart = () => {
                   </div>
 
                   <div className="glowzy-card overflow-hidden">
-                    {cartItems.map((item, index) => (
-                       <div key={`${item.id}-${item.variantName || 'none'}`} className={`grid grid-cols-1 md:grid-cols-12 gap-6 items-center p-8 group ${index !== cartItems.length - 1 ? 'border-b border-gray-100' : ''} ${item.selected ? 'bg-white' : 'bg-gray-50/30'}`}>
-                          {/* Selector */}
-                          <div className="col-span-1 flex items-center justify-center">
-                             <input 
-                               type="checkbox" 
-                               checked={!!item.selected}
-                               onChange={() => handleToggleSelection(item.id, item.variantName)}
-                               className="w-6 h-6 rounded-xl border-2 border-gray-200 text-primary-500 focus:ring-primary-400 cursor-pointer transition-all hover:scale-110 checked:border-primary-500"
-                             />
-                          </div>
+                    {cartItems.map((item, index) => {
+                       const isOutOfStock = (item.stockQuantity || 0) <= 0;
+                       const isInsufficient = (item.stockQuantity || 0) < item.quantity;
+                       
+                       return (
+                        <div key={`${item.id}-${item.variantName || 'none'}`} className={`grid grid-cols-1 md:grid-cols-12 gap-6 items-center p-8 group ${index !== cartItems.length - 1 ? 'border-b border-gray-100' : ''} ${item.selected ? 'bg-white' : 'bg-gray-50/30'} ${isOutOfStock ? 'opacity-70 grayscale' : ''}`}>
+                           {/* Selector */}
+                           <div className="col-span-1 flex items-center justify-center">
+                              <input 
+                                type="checkbox" 
+                                checked={!!item.selected && !isOutOfStock}
+                                disabled={isOutOfStock}
+                                onChange={() => handleToggleSelection(item.id, item.variantName)}
+                                className={cn(
+                                   "w-6 h-6 rounded-xl border-2 border-gray-200 text-primary-500 focus:ring-primary-400 transition-all hover:scale-110 checked:border-primary-500",
+                                   isOutOfStock ? "cursor-not-allowed opacity-30" : "cursor-pointer"
+                                )}
+                              />
+                           </div>
 
                           {/* Product Image & Info */}
                           <div className="col-span-1 md:col-span-5 flex items-start gap-6">
@@ -139,8 +151,18 @@ const Cart = () => {
                                       Loại: {item.variantName}
                                    </div>
                                 )}
-                             </div>
-                          </div>
+                                 
+                                 <div className="mt-2 flex flex-wrap gap-2">
+                                    {isOutOfStock ? (
+                                       <span className="text-[10px] font-black text-red-600 bg-red-50 px-2 py-1 rounded-lg uppercase tracking-tighter border border-red-100">Hết hàng</span>
+                                    ) : isInsufficient ? (
+                                       <span className="text-[10px] font-black text-orange-600 bg-orange-50 px-2 py-1 rounded-lg uppercase tracking-tighter border border-orange-100">Chỉ còn {item.stockQuantity} sp</span>
+                                    ) : (
+                                       <span className="text-[10px] font-black text-green-600 bg-green-50 px-2 py-1 rounded-lg uppercase tracking-tighter border border-green-100 italic">Còn {item.stockQuantity} sản phẩm</span>
+                                    )}
+                                 </div>
+                              </div>
+                           </div>
   
                          {/* Price (Desktop) */}
                          <div className="hidden md:block col-span-3 text-center">
@@ -150,17 +172,25 @@ const Cart = () => {
                           {/* Controls */}
                           <div className="col-span-1 md:col-span-2 flex items-center justify-between md:justify-center">
                             <div className="md:hidden font-black text-primary-600 text-xl">{item.price.toLocaleString('vi-VN')} đ</div>
-                            <div className="flex items-center border-2 border-gray-100 rounded-2xl overflow-hidden bg-white shadow-sm">
-                               <button onClick={() => handleUpdateQuantity(item.id, item.variantName, -1, item.name)} className="w-10 h-10 flex items-center justify-center text-gray-400 hover:bg-gray-100 hover:text-primary-600 transition-all">
-                                 <Minus size={14} />
-                               </button>
-                               <div className="w-12 h-10 flex items-center justify-center font-black text-gray-900 text-sm border-x-2 border-gray-100 bg-gray-50/20">
-                                 {item.quantity}
-                               </div>
-                               <button onClick={() => handleUpdateQuantity(item.id, item.variantName, 1, item.name)} className="w-10 h-10 flex items-center justify-center text-gray-400 hover:bg-gray-100 hover:text-primary-600 transition-all">
-                                 <Plus size={14} />
-                               </button>
-                            </div>
+                             <div className="flex items-center border-2 border-gray-100 rounded-2xl overflow-hidden bg-white shadow-sm">
+                                <button 
+                                  onClick={() => handleUpdateQuantity(item.id, item.variantName, -1, item.name)} 
+                                  disabled={isOutOfStock}
+                                  className="w-10 h-10 flex items-center justify-center text-gray-400 hover:bg-gray-100 hover:text-primary-600 transition-all disabled:opacity-30"
+                                >
+                                  <Minus size={14} />
+                                </button>
+                                <div className="w-12 h-10 flex items-center justify-center font-black text-gray-900 text-sm border-x-2 border-gray-100 bg-gray-50/20">
+                                  {isOutOfStock ? 0 : item.quantity}
+                                </div>
+                                <button 
+                                  onClick={() => handleUpdateQuantity(item.id, item.variantName, 1, item.name)}
+                                  disabled={isOutOfStock || (item.stockQuantity || 0) <= item.quantity}
+                                  className="w-10 h-10 flex items-center justify-center text-gray-400 hover:bg-gray-100 hover:text-primary-600 transition-all disabled:opacity-30"
+                                >
+                                  <Plus size={14} />
+                                </button>
+                             </div>
                           </div>
    
                           {/* Delete Button */}
@@ -169,8 +199,8 @@ const Cart = () => {
                                 <Trash2 size={20} />
                              </button>
                           </div>
-                      </div>
-                    ))}
+                       </div>
+                    )})}
                   </div>
                 </>
              )}

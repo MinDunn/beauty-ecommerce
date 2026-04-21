@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { useChat } from '../../hooks/useChat';
 import { type ChatterDTO, chatService } from '../../api/chatService';
-import { User, Send, Search, MessageSquare, Paperclip, Bell } from 'lucide-react';
+import { User, Send, Search, MessageSquare, Paperclip } from 'lucide-react';
 import { format } from 'date-fns';
 import { vi } from 'date-fns/locale';
 

@@ -8,4 +8,8 @@ import java.util.List;
 @Repository
 public interface InventoryReceiptRepository extends JpaRepository<InventoryReceiptJpaEntity, Long> {
     List<InventoryReceiptJpaEntity> findAllByOrderByReceivedAtDesc();
+    
+    java.util.Optional<InventoryReceiptJpaEntity> findFirstByProductIdOrderByReceivedAtDesc(Long productId);
+    
+    java.util.Optional<InventoryReceiptJpaEntity> findFirstByProductIdAndVariantNameOrderByReceivedAtDesc(Long productId, String variantName);
 }

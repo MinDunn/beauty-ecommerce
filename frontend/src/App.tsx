@@ -31,6 +31,7 @@ import { UserManagement } from './pages/admin/UserManagement';
 import { Categories } from './pages/admin/Categories';
 import { Coupons } from './pages/admin/Coupons';
 import { InventoryReceiptsPage } from './pages/admin/InventoryReceiptsPage';
+import { InventoryAdjustmentsPage } from './pages/admin/InventoryAdjustmentsPage';
 import { Activities } from './pages/Activities';
 import { useAuth } from './hooks/useAuth';
 import { VoucherWidget } from './components/checkout/VoucherWidget';
@@ -53,6 +54,7 @@ function AdminLayout({ logout }: { logout: () => void }) {
             <Route path="coupons" element={<Coupons />} />
             <Route path="orders" element={<Orders />} />
             <Route path="inventory-receipts" element={<InventoryReceiptsPage />} />
+            <Route path="inventory-adjustments" element={<InventoryAdjustmentsPage />} />
             <Route path="users" element={<UserManagement />} />
             <Route path="feedback" element={<FeedbackPage />} />
             <Route path="activities" element={<Activities />} />

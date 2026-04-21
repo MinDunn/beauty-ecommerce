@@ -20,6 +20,7 @@ export type Product = {
   }[];
   skinType?: string;
   createdAt?: string;
+  status: 'ACTIVE' | 'HIDDEN' | 'DISCONTINUED';
 };
 
 export type Category = {
@@ -44,6 +45,7 @@ export type CartItem = {
   image: string;
   brand: string;
   quantity: number;
+  stockQuantity?: number;
   variantName?: string | null;
   price: number;
   subTotal: number;

@@ -31,6 +31,8 @@ public class CartController {
                         .productImageUrl(item.getProductImageUrl())
                         .price(item.getPrice())
                         .quantity(item.getQuantity())
+                        .variantName(item.getVariantName())
+                        .stockQuantity(item.getStockQuantity())
                         .subTotal(item.getPrice().multiply(new BigDecimal(item.getQuantity())))
                         .build())
                 .collect(Collectors.toList());

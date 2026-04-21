@@ -59,6 +59,7 @@ class ProductServiceTest {
     }
 
     @Test
+    @SuppressWarnings("unchecked")
     void getAllProducts_ShouldReturnPage() {
         Product domainProduct = Product.builder().id(1L).name("Son môi").build();
         Page<ProductJpaEntity> productPage = new PageImpl<>(Arrays.asList(productEntity));
@@ -68,7 +69,7 @@ class ProductServiceTest {
         when(productMapper.mapToDomainEntity(any(ProductJpaEntity.class)))
                 .thenReturn(domainProduct);
 
-        Page<Product> result = productService.getAllProducts(1L, null, null, "son", "latest", null, null, Pageable.unpaged());
+        Page<Product> result = productService.getAllProducts(1L, null, null, "son", "latest", null, null, false, Pageable.unpaged());
 
         assertNotNull(result);
         assertEquals(1, result.getContent().size());

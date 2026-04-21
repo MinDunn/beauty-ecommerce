@@ -40,6 +40,7 @@ public class ProductController {
             @RequestParam(required = false, defaultValue = "latest") String sortBy,
             @RequestParam(required = false) Boolean onSale,
             @RequestParam(required = false) String skinType,
+            @RequestParam(required = false, defaultValue = "false") Boolean includeHidden,
             @RequestParam(required = false, defaultValue = "0") int page,
             @RequestParam(required = false, defaultValue = "10") int size
     ) {
@@ -99,7 +100,7 @@ public class ProductController {
         }
 
         Pageable pageable = PageRequest.of(page, size, sort);
-        Page<Product> productPage = productUseCase.getAllProducts(categoryId, minPrice, maxPrice, keyword, sortBy, onSale, skinType, pageable);
+        Page<Product> productPage = productUseCase.getAllProducts(categoryId, minPrice, maxPrice, keyword, sortBy, onSale, skinType, includeHidden, pageable);
         
         // Giải quyết N+1 bằng cách lấy rating hàng loạt
         List<Long> productIds = productPage.getContent().stream()
@@ -168,6 +169,7 @@ public class ProductController {
                 .reviewCount(reviewCount != null ? reviewCount : 0L)
                 .viewCount(product.getViewCount())
                 .sold(product.getSold())
+                .status(product.getStatus())
                 .build();
     }
  
@@ -200,6 +202,7 @@ public class ProductController {
                 .averageRating(avgRating)
                 .viewCount(product.getViewCount())
                 .sold(product.getSold())
+                .status(product.getStatus())
                 .build();
     }
 }

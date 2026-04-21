@@ -54,10 +54,13 @@ export const useChat = (recipientId: string = 'ADMIN') => {
             const sameContent = (m.content || '') === (msg.content || '');
             const sameMedia = (m.mediaUrl || '') === (msg.mediaUrl || '');
             const sameSender = m.senderId === msg.senderId;
-            const timeDiff = Math.abs(new Date(m.createdAt!).getTime() - new Date(msg.createdAt!).getTime());
+            const diff = Math.abs(new Date(m.createdAt!).getTime() - new Date(msg.createdAt!).getTime());
             
-            const duplicate = sameContent && sameMedia && sameSender && timeDiff < 2000;
-            if (duplicate) console.log('[CHAT] Phát hiện tin nhắn trùng lặp, đang bỏ qua chuyển đổi UI.');
+            // Check for direct match (few seconds) OR exact timezone shift (7 hours)
+            const isTimeMatch = diff < 10000 || Math.abs(diff - 7 * 3600 * 1000) < 10000;
+            const duplicate = sameContent && sameMedia && sameSender && isTimeMatch;
+            
+            if (duplicate) console.log('[CHAT] Phát hiện tin nhắn trùng lặp (có thể do lệch múi giờ), đang bỏ qua.');
             return duplicate;
           });
           if (isDuplicate) return prev;

@@ -35,6 +35,7 @@ public class ProductMapper {
                                 .stockQuantity(v.getStockQuantity())
                                 .build())
                         .collect(java.util.stream.Collectors.toList()) : new java.util.ArrayList<>())
+                .status(jpaEntity.getStatus())
                 .build();
     }
 
@@ -54,6 +55,7 @@ public class ProductMapper {
                 .createdAt(domainEntity.getCreatedAt())
                 .viewCount(domainEntity.getViewCount() != null ? domainEntity.getViewCount() : 0L)
                 .sold(domainEntity.getSold() != null ? domainEntity.getSold() : 0)
+                .status(domainEntity.getStatus())
                 .build();
 
         if (domainEntity.getImages() != null) {

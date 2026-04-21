@@ -147,7 +147,7 @@ const BeautyGuide = () => {
 
         <div ref={articlesRef} className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-10 scroll-mt-24">
            <AnimatePresence mode="popLayout">
-           {filteredArticles.map((item, i) => (
+           {filteredArticles.map((item) => (
              <motion.div 
               layout
               initial={{ opacity: 0, scale: 0.9 }}

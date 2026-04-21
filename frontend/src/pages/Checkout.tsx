@@ -88,6 +88,16 @@ const Checkout = () => {
     const item = selectedItems.find(i => i.id === id && i.variantName === variantName);
     if (!item) return;
 
+    if (delta > 0) {
+      if (item.quantity + delta > (item.stockQuantity || 0)) {
+        toast.error(`Xin lỗi, chỉ còn ${item.stockQuantity} sản phẩm trong kho`);
+        return;
+      }
+      toast.success(`Đã tăng số lượng ${name}`);
+    } else {
+      toast.success(`Đã giảm số lượng ${name}`);
+    }
+
     dispatch(updateQuantity({ id, variantName, delta }));
 
     if (user) {
@@ -100,12 +110,6 @@ const Checkout = () => {
       } catch (error) {
         console.error("Failed to sync quantity with backend", error);
       }
-    }
-
-    if (delta > 0) {
-      toast.success(`Đã tăng số lượng ${name}`);
-    } else {
-      toast.success(`Đã giảm số lượng ${name}`);
     }
   };
 

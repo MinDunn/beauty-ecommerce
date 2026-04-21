@@ -31,4 +31,5 @@ public class ProductListResponse {
     private String skinType;
     private Long viewCount;
     private Integer sold;
+    private String status;
 }

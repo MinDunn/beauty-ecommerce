@@ -33,12 +33,17 @@ public class ProductReaderService implements GetProductUseCase {
     private final TrendingProductService trendingProductService;
 
     @Override
-    public Page<Product> getAllProducts(Long categoryId, BigDecimal minPrice, BigDecimal maxPrice, String keyword, String sortBy, Boolean onSale, String skinType, Pageable pageable) {
-        log.info("Đang lấy danh sách sản phẩm với bộ lọc: categoryId={}, minPrice={}, maxPrice={}, keyword={}, sortBy={}, onSale={}, skinType={}", 
-                categoryId, minPrice, maxPrice, keyword, sortBy, onSale, skinType);
+    public Page<Product> getAllProducts(Long categoryId, BigDecimal minPrice, BigDecimal maxPrice, String keyword, String sortBy, Boolean onSale, String skinType, Boolean includeHidden, Pageable pageable) {
+        log.info("Đang lấy danh sách sản phẩm với bộ lọc: categoryId={}, minPrice={}, maxPrice={}, keyword={}, sortBy={}, onSale={}, skinType={}, includeHidden={}", 
+                categoryId, minPrice, maxPrice, keyword, sortBy, onSale, skinType, includeHidden);
         
         Specification<ProductJpaEntity> spec = (root, query, cb) -> {
             List<Predicate> predicates = new ArrayList<>();
+
+            // Mặc định chỉ lấy sản phẩm ACTIVE nếu không yêu cầu xem hàng ẩn
+            if (includeHidden == null || !includeHidden) {
+                predicates.add(cb.equal(root.get("status"), "ACTIVE"));
+            }
 
             if (categoryId != null) {
                 List<Long> allCategoryIds = getAllChildCategoryIds(categoryId);

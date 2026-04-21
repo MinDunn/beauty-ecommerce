@@ -66,7 +66,7 @@ public class TrendingProductService {
 
         if (rankedProductIds.isEmpty()) {
             log.info("Không có dữ liệu Trending (Tim/5 Sao), chuyển sang lấy sản phẩm nhiều lượt xem nhất");
-            return productRepository.findTop10ByOrderByViewCountDesc().stream()
+            return productRepository.findTop10ByStatusOrderByViewCountDesc("ACTIVE").stream()
                     .limit(limit)
                     .map(productMapper::mapToDomainEntity)
                     .collect(Collectors.toList());
@@ -75,9 +75,12 @@ public class TrendingProductService {
         // 5. Lấy thông tin chi tiết sản phẩm và giữ nguyên thứ tự xếp hạng
         List<ProductJpaEntity> entities = productRepository.findAllById(rankedProductIds);
         
-        // Sắp xếp lại danh sách entities theo đúng thứ tự của rankedProductIds
+        // Sắp xếp lại danh sách entities theo đúng thứ tự của rankedProductIds và CHỈ LẤY ACTIVE
         return rankedProductIds.stream()
-                .map(id -> entities.stream().filter(e -> e.getId().equals(id)).findFirst().orElse(null))
+                .map(id -> entities.stream()
+                        .filter(e -> e.getId().equals(id) && "ACTIVE".equals(e.getStatus()))
+                        .findFirst()
+                        .orElse(null))
                 .filter(java.util.Objects::nonNull)
                 .map(productMapper::mapToDomainEntity)
                 .collect(Collectors.toList());

@@ -50,9 +50,7 @@ public class PaymentController {
             String orderType = (String) ipnData.get("orderType");
             String transId = String.valueOf(ipnData.get("transId"));
             String message = (String) ipnData.get("message");
-            String localMessage = (String) ipnData.get("localMessage");
             String responseTime = (String) ipnData.get("responseTime");
-            String errorCode = String.valueOf(ipnData.get("errorCode"));
             String payType = (String) ipnData.get("payType");
             String extraData = (String) ipnData.get("extraData");
             String signature = (String) ipnData.get("signature");

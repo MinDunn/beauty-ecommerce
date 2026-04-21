@@ -53,7 +53,8 @@ public class MoMoService {
                 .build();
 
         try {
-            Map<String, Object> response = restTemplate.postForObject(moMoConfig.getPayUrl(), request, Map.class);
+            @SuppressWarnings("unchecked")
+            Map<String, Object> response = (Map<String, Object>) restTemplate.postForObject(moMoConfig.getPayUrl(), request, Map.class);
             if (response != null && response.containsKey("payUrl")) {
                 return (String) response.get("payUrl");
             }
@@ -93,7 +94,8 @@ public class MoMoService {
         try {
             // MoMo refund endpoint is usually /v2/gateway/api/refund
             String refundUrl = moMoConfig.getPayUrl().replace("/create", "/refund");
-            Map<String, Object> response = restTemplate.postForObject(refundUrl, request, Map.class);
+            @SuppressWarnings("unchecked")
+            Map<String, Object> response = (Map<String, Object>) restTemplate.postForObject(refundUrl, request, Map.class);
             
             if (response != null) {
                 Integer resultCode = (Integer) response.get("resultCode");

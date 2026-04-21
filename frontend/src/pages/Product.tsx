@@ -1,4 +1,5 @@
 import { useState, useEffect } from "react";
+import { Link } from "react-router-dom";
 import type { Product, Category } from "../types";
 import { Table } from "../components/admin/Table";
 import { Modal } from "../components/admin/Modal";
@@ -6,7 +7,7 @@ import { productService } from "../api/productService";
 import { categoryService } from "../api/categoryService";
 import { inventoryService } from "../api/inventoryService";
 import { toast } from "react-hot-toast";
-import { Plus, Save, Package, DollarSign, Tag, Image as ImageIcon, Loader2, Edit2, Trash2, Search, Warehouse, X, AlertCircle } from "lucide-react";
+import { Plus, Save, Package, DollarSign, Tag, Image as ImageIcon, Loader2, Edit2, Trash2, Search, Warehouse, X, AlertCircle, Eye, EyeOff, ClipboardList, History } from "lucide-react";
 import { cn } from "../utils/cn";
 
 const getNowLocalDatetime = () => {
@@ -28,7 +29,9 @@ export const Products = () => {
   const [searchQuery, setSearchQuery] = useState("");
   const [filterCategory, setFilterCategory] = useState<string>("all");
   const [filterStock, setFilterStock] = useState<"all" | "low" | "out">("all");
+  const [filterStatus, setFilterStatus] = useState<"all" | "ACTIVE" | "HIDDEN">("all");
   const [filterSale, setFilterSale] = useState<boolean>(false);
+  const [showAdjustModal, setShowAdjustModal] = useState(false);
 
   // Bulk restock state
   const [showBulkRestockModal, setShowBulkRestockModal] = useState(false);
@@ -62,10 +65,22 @@ export const Products = () => {
     items: [] as { variantName: string, quantity: string, costPrice: string }[]
   });
 
+  const [adjustData, setAdjustData] = useState({
+    productId: 0,
+    productName: "",
+    quantity: "",
+    reason: "Hết hạn",
+    compensationAmount: "",
+    variantName: ""
+  });
+
   const fetchProducts = async () => {
     setIsLoading(true);
     try {
-      const data = await productService.searchProducts({ size: 1000 });
+      const data = await productService.searchProducts({ 
+        size: 1000,
+        includeHidden: true 
+      });
       setProducts(data.content);
     } catch (error) {
       toast.error("Không thể tải danh sách sản phẩm");
@@ -309,7 +324,7 @@ export const Products = () => {
 
   const handleRestock = async (e: React.FormEvent) => {
     e.preventDefault();
-    const itemsToSubmit = restockData.items.filter(item => parseInt(item.quantity) > 0);
+    const itemsToSubmit = restockData.items.filter((item: any) => parseInt(item.quantity) > 0);
     
     if (itemsToSubmit.length === 0) {
       toast.error("Vui lòng nhập số lượng cho ít nhất một biến thể");
@@ -318,7 +333,7 @@ export const Products = () => {
 
     setIsSaving(true);
     try {
-      await inventoryService.bulkCreateReceipts(itemsToSubmit.map(item => ({
+      await inventoryService.bulkCreateReceipts(itemsToSubmit.map((item: any) => ({
         productId: restockData.productId,
         costPrice: parseFloat(item.costPrice) || 0,
         quantity: parseInt(item.quantity),
@@ -332,6 +347,45 @@ export const Products = () => {
       toast.error("Lỗi khi nhập hàng");
     } finally {
       setIsSaving(false);
+    }
+  };
+
+  const handleAdjustStock = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!adjustData.quantity || parseInt(adjustData.quantity) <= 0) {
+      toast.error("Vui lòng nhập số lượng hợp lý");
+      return;
+    }
+
+    setIsSaving(true);
+    try {
+      // Vì là điều chỉnh giảm (hết hạn, hư hỏng...), ta gửi số âm
+      const quantity = -Math.abs(parseInt(adjustData.quantity));
+      await productService.adminAdjustStock(
+        adjustData.productId,
+        quantity,
+        adjustData.reason,
+        adjustData.compensationAmount ? parseFloat(adjustData.compensationAmount) : 0,
+        adjustData.variantName
+      );
+      toast.success("Điều chỉnh kho thành công!");
+      setShowAdjustModal(false);
+      fetchProducts();
+    } catch (error) {
+      toast.error("Lỗi khi điều chỉnh kho");
+    } finally {
+      setIsSaving(false);
+    }
+  };
+
+  const handleToggleStatus = async (id: number, currentStatus: string) => {
+    const newStatus = currentStatus === 'HIDDEN' ? 'ACTIVE' : 'HIDDEN';
+    try {
+      await productService.adminUpdateProductStatus(id, newStatus);
+      toast.success(newStatus === 'ACTIVE' ? "Đã hiển thị sản phẩm" : "Đã ẩn sản phẩm");
+      fetchProducts();
+    } catch (error) {
+      toast.error("Lỗi khi cập nhật trạng thái");
     }
   };
 
@@ -361,9 +415,10 @@ export const Products = () => {
     const matchesStock = filterStock === "all" || 
                         (filterStock === "low" && p.stockQuantity > 0 && p.stockQuantity < 10) ||
                         (filterStock === "out" && p.stockQuantity <= 0);
+    const matchesStatus = filterStatus === "all" || p.status === filterStatus;
     const matchesSale = !filterSale || (p.originalPrice || 0) > (p.currentPrice || 0);
 
-    return matchesSearch && matchesCategory && matchesStock && matchesSale;
+    return matchesSearch && matchesCategory && matchesStock && matchesSale && matchesStatus;
   });
 
   const tableData = filteredProducts.map(p => ({
@@ -393,14 +448,16 @@ export const Products = () => {
     ),
     category: categories.find(c => String(c.id) === String(p.categoryId))?.name || "Đang tải...",
     skinType: (
-      <span className="px-3 py-1 rounded-full text-[10px] font-black uppercase tracking-tight bg-primary-500/10 text-primary-500 border border-primary-500/20">
+      <span className="px-3 py-1 rounded-full text-[10px] font-black uppercase tracking-tight bg-primary-500/10 text-primary-500 border border-primary-500/20 whitespace-nowrap inline-flex items-center justify-center">
         {p.skinType || "---"}
       </span>
     ),
     stock: (
       <div className="relative group/stock inline-block">
-        <span className={`px-3 py-1 rounded-full text-[10px] font-black uppercase tracking-tight cursor-help ${p.stockQuantity < 10 ? "bg-rose-500/10 text-rose-500" : "bg-emerald-500/10 text-emerald-500"
-          }`}>
+        <span className={cn(
+          "px-3 py-1 rounded-full text-[10px] font-black uppercase tracking-tight cursor-help whitespace-nowrap inline-flex items-center justify-center min-w-[32px]",
+          p.stockQuantity < 10 ? "bg-rose-500/10 text-rose-500" : "bg-emerald-500/10 text-emerald-500"
+        )}>
           {p.stockQuantity}
         </span>
         {p.variants && p.variants.length > 0 && (
@@ -431,14 +488,54 @@ export const Products = () => {
         )}
       </div>
     ),
+    status: (
+      <span className={cn(
+        "px-3 py-1.5 rounded-full text-[10px] font-black uppercase tracking-tight whitespace-nowrap inline-flex items-center justify-center min-w-[80px]",
+        p.status === 'ACTIVE' ? "bg-emerald-500/10 text-emerald-500 border border-emerald-500/20" : 
+        p.status === 'HIDDEN' ? "bg-slate-500/10 text-slate-400 border border-slate-700" : "bg-rose-500/10 text-rose-500 border border-rose-500/20"
+      )}>
+        {p.status === 'ACTIVE' ? "Đang bán" : p.status === 'HIDDEN' ? "Đã ẩn" : "Ngừng bán"}
+      </span>
+    ),
     actions: (
-      <div className="flex items-center gap-2">
+      <div className="flex items-center gap-1">
         <button
           type="button"
           onClick={(e) => { e.stopPropagation(); handleOpenModal(p); }}
           className="p-2.5 hover:bg-slate-800 rounded-xl text-primary-500 transition-all active:scale-90"
+          title="Chỉnh sửa"
         >
           <Edit2 size={16} />
+        </button>
+        <button
+          type="button"
+          onClick={(e) => {
+            e.stopPropagation();
+            setAdjustData({
+              productId: p.id,
+              productName: p.name,
+              quantity: "",
+              reason: "Hết hạn",
+              compensationAmount: "",
+              variantName: p.variants?.[0]?.variantName || ""
+            });
+            setShowAdjustModal(true);
+          }}
+          className="p-2.5 hover:bg-slate-800 rounded-xl text-amber-500 transition-all active:scale-90"
+          title="Điều chỉnh kho (Giảm)"
+        >
+          <ClipboardList size={16} />
+        </button>
+        <button
+          type="button"
+          onClick={(e) => { e.stopPropagation(); handleToggleStatus(p.id, p.status); }}
+          className={cn(
+            "p-2.5 hover:bg-slate-800 rounded-xl transition-all active:scale-90",
+            p.status === 'HIDDEN' ? "text-emerald-500" : "text-slate-500"
+          )}
+          title={p.status === 'HIDDEN' ? "Hiển thị lại" : "Ẩn sản phẩm"}
+        >
+          {p.status === 'HIDDEN' ? <Eye size={16} /> : <EyeOff size={16} />}
         </button>
         <button
           type="button"
@@ -506,6 +603,14 @@ export const Products = () => {
             <Plus size={18} />
             <span className="hidden sm:inline">Thêm sản phẩm</span>
           </button>
+
+          <Link
+            to="/admin/inventory-adjustments"
+            className="bg-slate-800 hover:bg-slate-700 text-amber-500 p-3 rounded-2xl transition-all border border-slate-700 active:scale-95 shrink-0"
+            title="Lịch sử điều chỉnh kho"
+          >
+            <History size={18} />
+          </Link>
         </div>
       </div>
 
@@ -558,6 +663,29 @@ export const Products = () => {
           Đang giảm giá
         </button>
 
+        <div className="h-8 w-[1px] bg-slate-800 hidden md:block" />
+
+        <div className="flex items-center gap-2 bg-slate-800/50 p-1.5 rounded-2xl border border-slate-700">
+           <button 
+             onClick={() => setFilterStatus("all")}
+             className={cn("px-4 py-2 rounded-xl text-[10px] font-black uppercase tracking-widest transition-all", filterStatus === "all" ? "bg-primary-500 text-white shadow-lg shadow-primary-500/20" : "text-slate-400 hover:text-white")}
+           >
+             Mọi trạng thái
+           </button>
+           <button 
+             onClick={() => setFilterStatus("ACTIVE")}
+             className={cn("px-4 py-2 rounded-xl text-[10px] font-black uppercase tracking-widest transition-all", filterStatus === "ACTIVE" ? "bg-emerald-500 text-white shadow-lg shadow-emerald-500/20" : "text-slate-400 hover:text-emerald-500")}
+           >
+             Đang bán
+           </button>
+           <button 
+             onClick={() => setFilterStatus("HIDDEN")}
+             className={cn("px-4 py-2 rounded-xl text-[10px] font-black uppercase tracking-widest transition-all", filterStatus === "HIDDEN" ? "bg-slate-700 text-white" : "text-slate-400 hover:text-white")}
+           >
+             Đã ẩn
+           </button>
+        </div>
+
         <div className="flex-1" />
         
         <button 
@@ -605,6 +733,7 @@ export const Products = () => {
                 { header: "Loại da", key: "skinType" },
                 { header: "Danh mục", key: "category" },
                 { header: "Số lượng", key: "stock" },
+                { header: "Trạng thái", key: "status" },
                 { header: "Thao tác", key: "actions" }
               ]}
               data={tableData}
@@ -1295,6 +1424,108 @@ export const Products = () => {
               </div>
             )}
           </div>
+        </Modal>
+      )}
+
+      {/* Adjustment Modal */}
+      {showAdjustModal && (
+        <Modal onClose={() => !isSaving && setShowAdjustModal(false)}>
+          <div className="mb-6">
+            <h2 className="text-xl font-black text-amber-500 uppercase tracking-tight flex items-center gap-3">
+              <ClipboardList />
+              Điều chỉnh kho (Giảm số lượng)
+            </h2>
+            <p className="text-slate-500 text-xs font-medium mt-1 italic">
+              Sử dụng khi hàng bị lỗi, hết hạn hoặc hư hỏng. Ghi lại số tiền đền bù nếu có.
+            </p>
+          </div>
+
+          <form onSubmit={handleAdjustStock} className="space-y-4">
+            <div className="bg-slate-800/40 p-4 rounded-2xl border border-slate-700/50 mb-4">
+               <p className="text-[10px] text-slate-500 uppercase font-black tracking-widest">Sản phẩm điều chỉnh</p>
+               <p className="text-white font-bold text-lg mt-1">{adjustData.productName}</p>
+            </div>
+
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+               <div className="space-y-2">
+                 <label className="text-[10px] font-black text-slate-500 uppercase tracking-widest ml-1">Số lượng bớt đi *</label>
+                 <div className="relative">
+                   <Package className="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-500" />
+                   <input
+                     required
+                     type="number"
+                     placeholder="Ví dụ: 5"
+                     className="bg-slate-800/50 border border-slate-700 w-full pl-11 pr-4 py-3.5 rounded-2xl text-white outline-none focus:border-amber-500/50 transition-all font-bold"
+                     value={adjustData.quantity}
+                     onChange={e => setAdjustData({ ...adjustData, quantity: e.target.value })}
+                   />
+                 </div>
+               </div>
+
+               <div className="space-y-2">
+                 <label className="text-[10px] font-black text-slate-500 uppercase tracking-widest ml-1">Lý do điều chỉnh *</label>
+                 <select
+                   className="bg-slate-800/50 border border-slate-700 w-full px-4 py-3.5 rounded-2xl text-white outline-none focus:border-amber-500/50 transition-all font-medium appearance-none"
+                   value={adjustData.reason}
+                   onChange={e => setAdjustData({ ...adjustData, reason: e.target.value })}
+                 >
+                   <option value="Hết hạn">Hết hạn sử dụng</option>
+                   <option value="Hư hỏng / Lỗi">Hư hỏng / Lỗi sản phẩm</option>
+                   <option value="Mất mát">Mất mát / Thất thoát</option>
+                   <option value="Trả hàng NCC">Trả hàng cho Nhà cung cấp</option>
+                   <option value="Khác">Lý do khác...</option>
+                 </select>
+               </div>
+            </div>
+
+            <div className="space-y-2">
+              <label className="text-[10px] font-black text-slate-500 uppercase tracking-widest ml-1">Tiền đền bù nhận được (nếu có)</label>
+              <div className="relative">
+                <DollarSign className="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 text-emerald-500" />
+                <input
+                  type="number"
+                  placeholder="Nhập số tiền đền bù..."
+                  className="bg-slate-800/50 border border-slate-700 w-full pl-11 pr-4 py-3.5 rounded-2xl text-white outline-none focus:border-emerald-500/50 transition-all font-bold"
+                  value={adjustData.compensationAmount}
+                  onChange={e => setAdjustData({ ...adjustData, compensationAmount: e.target.value })}
+                />
+              </div>
+              <p className="text-[10px] text-slate-500 italic ml-1">Ví dụ: Tiền bên vận chuyển đền khi làm hư hàng</p>
+            </div>
+
+            {/* Variant selector if any */}
+            {products.find(p => p.id === adjustData.productId)?.variants?.length ? (
+               <div className="space-y-2">
+                 <label className="text-[10px] font-black text-slate-500 uppercase tracking-widest ml-1">Chọn phân loại (Biến thể)</label>
+                 <select
+                   className="bg-slate-800/50 border border-slate-700 w-full px-4 py-3.5 rounded-2xl text-white outline-none focus:border-amber-500/50 transition-all font-medium"
+                   value={adjustData.variantName}
+                   onChange={e => setAdjustData({ ...adjustData, variantName: e.target.value })}
+                 >
+                   {products.find(p => p.id === adjustData.productId)?.variants?.map(v => (
+                     <option key={v.variantName} value={v.variantName}>{v.variantName} (Tồn: {v.stockQuantity})</option>
+                   ))}
+                 </select>
+               </div>
+            ) : null}
+
+            <div className="flex justify-end gap-3 pt-6">
+              <button 
+                type="button"
+                onClick={() => setShowAdjustModal(false)}
+                className="px-6 py-3 rounded-2xl text-slate-400 font-black uppercase text-[10px] tracking-widest hover:bg-slate-800 transition-all"
+              >
+                Hủy
+              </button>
+              <button 
+                type="submit"
+                disabled={isSaving}
+                className="px-8 py-3 bg-amber-500 hover:bg-amber-600 text-white rounded-2xl font-black uppercase text-[10px] tracking-widest shadow-lg shadow-amber-500/20 transition-all flex items-center gap-2 active:scale-95"
+              >
+                {isSaving ? <Loader2 className="animate-spin" /> : <span>Xác nhận điều chỉnh</span>}
+              </button>
+            </div>
+          </form>
         </Modal>
       )}
     </div>

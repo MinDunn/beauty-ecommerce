@@ -1,5 +1,6 @@
 package com.beauty.ecommerce.inventory.adapter.in.web;
 
+import com.beauty.ecommerce.inventory.adapter.out.persistence.InventoryAdjustmentJpaEntity;
 import com.beauty.ecommerce.inventory.adapter.out.persistence.InventoryReceiptJpaEntity;
 import com.beauty.ecommerce.inventory.application.service.InventoryService;
 import lombok.Data;
@@ -42,6 +43,33 @@ public class AdminInventoryController {
     @org.springframework.web.bind.annotation.GetMapping("/receipts")
     public ResponseEntity<com.beauty.ecommerce.common.dto.ApiResponse<List<InventoryService.InventoryReceiptResponse>>> getAllReceipts() {
         return ResponseEntity.ok(com.beauty.ecommerce.common.dto.ApiResponse.success(inventoryService.getAllReceipts()));
+    }
+
+    @PostMapping("/adjustments")
+    public ResponseEntity<InventoryAdjustmentJpaEntity> createAdjustment(@RequestBody InventoryAdjustmentRequest request) {
+        InventoryAdjustmentJpaEntity adjustment = inventoryService.adjustStock(
+                request.getProductId(),
+                request.getQuantity(),
+                request.getReason(),
+                request.getCompensationAmount(),
+                request.getVariantName(),
+                "ADMIN" // In real app, get from SecurityContext
+        );
+        return ResponseEntity.ok(adjustment);
+    }
+
+    @org.springframework.web.bind.annotation.GetMapping("/adjustments")
+    public ResponseEntity<com.beauty.ecommerce.common.dto.ApiResponse<List<InventoryService.InventoryAdjustmentResponse>>> getAllAdjustments() {
+        return ResponseEntity.ok(com.beauty.ecommerce.common.dto.ApiResponse.success(inventoryService.getAllAdjustments()));
+    }
+
+    @Data
+    public static class InventoryAdjustmentRequest {
+        private Long productId;
+        private Integer quantity;
+        private String reason;
+        private java.math.BigDecimal compensationAmount;
+        private String variantName;
     }
 
     @Data

@@ -63,9 +63,13 @@ public class ProductJpaEntity {
     @jakarta.persistence.Column(name = "skin_type")
     private String skinType;
 
-    @jakarta.persistence.OneToMany(mappedBy = "product", cascade = jakarta.persistence.CascadeType.ALL, orphanRemoval = true, fetch = jakarta.persistence.FetchType.EAGER)
+    @jakarta.persistence.Column(name = "status")
+    @Builder.Default
+    private String status = "ACTIVE"; // ACTIVE, HIDDEN, DISCONTINUED
+
+    @jakarta.persistence.OneToMany(mappedBy = "product", cascade = jakarta.persistence.CascadeType.ALL, orphanRemoval = true, fetch = jakarta.persistence.FetchType.LAZY)
     private java.util.List<ProductImageJpaEntity> images;
 
-    @jakarta.persistence.OneToMany(mappedBy = "product", cascade = jakarta.persistence.CascadeType.ALL, orphanRemoval = true, fetch = jakarta.persistence.FetchType.EAGER)
+    @jakarta.persistence.OneToMany(mappedBy = "product", cascade = jakarta.persistence.CascadeType.ALL, orphanRemoval = true, fetch = jakarta.persistence.FetchType.LAZY)
     private java.util.List<ProductVariantJpaEntity> variants;
 }

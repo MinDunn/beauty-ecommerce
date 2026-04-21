@@ -94,8 +94,16 @@ public class AdminProductController {
     @DeleteMapping("/{id}")
     public ResponseEntity<Void> deleteProduct(@PathVariable Long id) {
         manageProductUseCase.deleteProduct(id);
-        activityLogService.logActivity(null, "ADMIN", com.beauty.ecommerce.common.application.service.ActivityLogService.GROUP_SYSTEM, "DELETE_PRODUCT", "Admin xóa sản phẩm ID: " + id);
+        activityLogService.logActivity(null, "ADMIN", com.beauty.ecommerce.common.application.service.ActivityLogService.GROUP_SYSTEM, "DELETE_PRODUCT", "Admin ẩn sản phẩm ID: " + id);
         return ResponseEntity.noContent().build();
+    }
+
+    @PatchMapping("/{id}/status")
+    public ResponseEntity<Void> updateProductStatus(@PathVariable Long id, @RequestBody java.util.Map<String, String> statusMap) {
+        String status = statusMap.get("status");
+        manageProductUseCase.updateProductStatus(id, status);
+        activityLogService.logActivity(null, "ADMIN", com.beauty.ecommerce.common.application.service.ActivityLogService.GROUP_SYSTEM, "UPDATE_PRODUCT_STATUS", "Admin cập nhật trạng thái sản phẩm ID: " + id + " thành " + status);
+        return ResponseEntity.ok().build();
     }
 
     private ProductResponse mapToResponse(Product product) {
@@ -121,6 +129,7 @@ public class AdminProductController {
                                 .stockQuantity(v.getStockQuantity())
                                 .build())
                         .collect(java.util.stream.Collectors.toList()) : new java.util.ArrayList<>())
+                .status(product.getStatus())
                 .build();
     }
 }

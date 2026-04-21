@@ -7,5 +7,5 @@ import java.util.List;
 
 @Repository
 public interface ProductRepository extends JpaRepository<ProductJpaEntity, Long>, JpaSpecificationExecutor<ProductJpaEntity> {
-    List<ProductJpaEntity> findTop10ByOrderByViewCountDesc();
+    List<ProductJpaEntity> findTop10ByStatusOrderByViewCountDesc(String status);
 }

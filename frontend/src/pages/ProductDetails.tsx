@@ -79,7 +79,8 @@ const ProductDetails = () => {
         ingredients: data.ingredients,
         images: images,
         variants: data.variants || [],
-        categoryId: data.categoryId
+        categoryId: data.categoryId,
+        stockQuantity: data.stockQuantity || 0
       };
 
       setProduct(mappedProduct);
@@ -285,8 +286,15 @@ const ProductDetails = () => {
       brand: product.brand,
       quantity: quantity,
       variantName: selectedVariant?.variantName || null,
-      categoryId: product.categoryId
+      categoryId: product.categoryId,
+      stockQuantity: product.stockQuantity
     };
+
+    const currentStock = selectedVariant ? selectedVariant.stockQuantity : product.stockQuantity;
+    if (currentStock <= 0) {
+      toast.error('Xin lỗi, sản phẩm này hiện đã hết hàng');
+      return;
+    }
 
     dispatch(addItem(payload));
 
@@ -306,6 +314,11 @@ const ProductDetails = () => {
   };
 
   const handleBuyNow = async () => {
+    const currentStock = selectedVariant ? selectedVariant.stockQuantity : product.stockQuantity;
+    if (currentStock <= 0) {
+      toast.error('Xin lỗi, sản phẩm này hiện đã hết hàng');
+      return;
+    }
     await handleAddToCart();
     dispatch(selectOnlyItems([{
       id: product.id,
@@ -516,27 +529,67 @@ const ProductDetails = () => {
               <h3 className="text-[10px] font-black text-gray-400 uppercase tracking-[0.3em] mb-4">Số lượng sản phẩm</h3>
               <div className="flex items-center">
                 <div className="flex items-center border-2 border-gray-100 rounded-2xl overflow-hidden bg-white shadow-sm">
-                  <button onClick={() => setQuantity(Math.max(1, quantity - 1))} className="w-14 h-14 flex items-center justify-center text-gray-400 hover:bg-gray-50 hover:text-primary-500 transition-colors">
+                  <button 
+                    onClick={() => setQuantity(Math.max(1, quantity - 1))} 
+                    disabled={(selectedVariant ? selectedVariant.stockQuantity : product.stockQuantity) <= 0}
+                    className="w-14 h-14 flex items-center justify-center text-gray-400 hover:bg-gray-50 hover:text-primary-500 transition-colors disabled:opacity-30 disabled:cursor-not-allowed"
+                  >
                     <Minus size={20} />
                   </button>
                   <div className="w-20 h-14 flex items-center justify-center font-black text-gray-900 text-lg border-x-2 border-gray-100 bg-gray-50/20">
-                    {quantity}
+                    {(selectedVariant ? selectedVariant.stockQuantity : product.stockQuantity) <= 0 ? 0 : quantity}
                   </div>
-                  <button onClick={() => setQuantity(quantity + 1)} className="w-14 h-14 flex items-center justify-center text-gray-400 hover:bg-gray-50 hover:text-primary-500 transition-colors">
+                  <button 
+                    onClick={() => {
+                      const max = (selectedVariant ? selectedVariant.stockQuantity : product.stockQuantity);
+                      if (quantity < max) setQuantity(quantity + 1);
+                      else toast.error(`Xin lỗi, chỉ còn ${max} sản phẩm`);
+                    }} 
+                    disabled={(selectedVariant ? selectedVariant.stockQuantity : product.stockQuantity) <= 0}
+                    className="w-14 h-14 flex items-center justify-center text-gray-400 hover:bg-gray-50 hover:text-primary-500 transition-colors disabled:opacity-30 disabled:cursor-not-allowed"
+                  >
                     <Plus size={20} />
                   </button>
                 </div>
-                <span className="ml-6 text-[10px] text-green-600 font-black uppercase tracking-[0.2em] bg-green-50 px-5 py-2.5 rounded-xl border border-green-100 italic">Giao ngay trong 2h</span>
+                <div className="ml-6 flex flex-col gap-1">
+                  <span className={cn(
+                    "text-[10px] font-black uppercase tracking-[0.2em] px-4 py-2 rounded-xl border italic",
+                    (selectedVariant ? selectedVariant.stockQuantity : product.stockQuantity) > 0 
+                      ? "text-primary-600 bg-primary-50 border-primary-100" 
+                      : "text-red-600 bg-red-50 border-red-100"
+                  )}>
+                    {(selectedVariant ? selectedVariant.stockQuantity : product.stockQuantity) > 0 
+                      ? `Còn lại: ${(selectedVariant ? selectedVariant.stockQuantity : product.stockQuantity)} sản phẩm` 
+                      : "Hết hàng"}
+                  </span>
+                  {(selectedVariant ? selectedVariant.stockQuantity : product.stockQuantity) > 0 && (
+                    <span className="text-[9px] text-green-600 font-bold uppercase tracking-widest pl-2 italic">Giao ngay trong 2h</span>
+                  )}
+                </div>
               </div>
             </div>
 
             <div className="flex flex-col sm:flex-row gap-4 mb-8">
-              <button onClick={handleAddToCart} className="glowzy-btn-secondary flex-1 py-5 flex items-center justify-center gap-4">
+              <button 
+                onClick={handleAddToCart} 
+                disabled={(selectedVariant ? selectedVariant.stockQuantity : product.stockQuantity) <= 0}
+                className={cn(
+                  "glowzy-btn-secondary flex-1 py-5 flex items-center justify-center gap-4 transition-all",
+                  (selectedVariant ? selectedVariant.stockQuantity : product.stockQuantity) <= 0 && "opacity-50 grayscale cursor-not-allowed"
+                )}
+              >
                 <ShoppingCart size={22} strokeWidth={3} />
-                <span>Thêm vào giỏ</span>
+                <span>{(selectedVariant ? selectedVariant.stockQuantity : product.stockQuantity) <= 0 ? 'Hết hàng' : 'Thêm vào giỏ'}</span>
               </button>
-              <button onClick={handleBuyNow} className="glowzy-btn-primary flex-[1.5] py-5 shadow-primary-500/40">
-                Mua ngay bây giờ
+              <button 
+                onClick={handleBuyNow} 
+                disabled={(selectedVariant ? selectedVariant.stockQuantity : product.stockQuantity) <= 0}
+                className={cn(
+                  "glowzy-btn-primary flex-[1.5] py-5 shadow-primary-500/40 transition-all",
+                  (selectedVariant ? selectedVariant.stockQuantity : product.stockQuantity) <= 0 && "opacity-50 grayscale cursor-not-allowed"
+                )}
+              >
+                {(selectedVariant ? selectedVariant.stockQuantity : product.stockQuantity) <= 0 ? 'Tạm hết hàng' : 'Mua ngay bây giờ'}
               </button>
               <button
                 onClick={handleToggleWishlist}

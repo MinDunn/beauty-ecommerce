@@ -263,6 +263,7 @@ export const ProductGrid = ({
                         views={product.viewCount || 0}
                         categoryId={product.categoryId}
                         brand={product.brand}
+                        stockQuantity={product.stockQuantity}
                       />
                     </div>
                   ))}

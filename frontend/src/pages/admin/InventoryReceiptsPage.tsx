@@ -34,8 +34,8 @@ export const InventoryReceiptsPage = () => {
 
   const filteredReceipts = useMemo(() => {
     return receipts.filter((receipt) => {
-      const receiptDate = new Date(receipt.receivedAt);
-      const receiptDateText = receipt.receivedAt.slice(0, 10);
+      const receiptDate = receipt.receivedAt ? new Date(receipt.receivedAt) : new Date();
+      const receiptDateText = receipt.receivedAt?.slice(0, 10) || '';
       const receiptHour = receiptDate.getHours().toString().padStart(2, '0');
       const searchable = normalizeText(
         `${receipt.id} ${receipt.productId} ${receipt.productName ?? ''}`

@@ -23,7 +23,8 @@ public class CloudinaryService {
     public String uploadMedia(MultipartFile file, String resourceType) {
         try {
             log.info("Đang tải {} lên Cloudinary: {}", resourceType, file.getOriginalFilename());
-            Map uploadResult = cloudinary.uploader().upload(file.getBytes(), 
+            @SuppressWarnings("unchecked")
+            Map<String, Object> uploadResult = (Map<String, Object>) cloudinary.uploader().upload(file.getBytes(), 
                 ObjectUtils.asMap("resource_type", resourceType));
             return uploadResult.get("secure_url").toString();
         } catch (Exception e) {

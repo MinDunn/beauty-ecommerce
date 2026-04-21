@@ -21,5 +21,6 @@ public class CartItem {
     private String variantName;
     private BigDecimal price;
     private Integer quantity;
+    private Integer stockQuantity;
     private Long userId;
 }
