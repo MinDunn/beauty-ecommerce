@@ -28,15 +28,15 @@ const Privacy = () => {
                    <div className="p-2 bg-primary-50 text-primary-500 rounded-lg">
                      <Eye size={20} />
                    </div>
-                   <h2 className="text-xl font-black uppercase tracking-tight">1. Thu thập thông tin</h2>
+                   <h2 className="text-xl font-black uppercase tracking-tight">1. Thu thập thông tin cá nhân</h2>
                  </div>
                  <div className="text-gray-600 font-medium leading-relaxed space-y-4">
-                   <p>Tại Glowzy, chúng tôi thu nộp các loại thông tin sau để cung cấp dịch vụ tốt nhất cho bạn:</p>
+                   <p>Tại Glowzy, chúng tôi cam kết bảo vệ sự riêng tư của bạn. Để cung cấp dịch vụ tốt nhất, chúng tôi thu thập các thông tin sau:</p>
                    <ul className="list-disc pl-6 space-y-2">
-                     <li>Thông tin định danh cá nhân: Tên, địa chỉ email, số điện thoại, địa chỉ giao hàng.</li>
-                     <li>Thông tin tài khoản: Tên đăng nhập, mật khẩu được mã hóa.</li>
-                     <li>Thông tin giao dịch: Chi tiết đơn hàng, lịch sử mua sắm và phương thức thanh toán.</li>
-                     <li>Thông tin thiết bị: Địa chỉ IP, loại trình duyệt để đảm bảo an ninh hệ thống.</li>
+                     <li><strong>Thông tin định danh:</strong> Họ tên, ngày sinh (để gửi quà sinh nhật), giới tính.</li>
+                     <li><strong>Thông tin liên lạc:</strong> Địa chỉ email, số điện thoại, địa chỉ giao hàng và địa chỉ thanh toán.</li>
+                     <li><strong>Thông tin giao dịch:</strong> Chi tiết các sản phẩm bạn đã mua, phương thức thanh toán và lịch sử đơn hàng.</li>
+                     <li><strong>Thông tin kỹ thuật:</strong> Địa chỉ IP, loại trình duyệt, thời gian truy cập và các trang bạn đã xem trên website của chúng tôi.</li>
                    </ul>
                  </div>
               </section>
@@ -46,10 +46,13 @@ const Privacy = () => {
                    <div className="p-2 bg-primary-50 text-primary-500 rounded-lg">
                      <Lock size={20} />
                    </div>
-                   <h2 className="text-xl font-black uppercase tracking-tight">2. Mục đích sử dụng</h2>
+                   <h2 className="text-xl font-black uppercase tracking-tight">2. Mục đích sử dụng thông tin</h2>
                  </div>
                  <p className="text-gray-600 font-medium leading-relaxed">
-                   Chúng tôi sử dụng thông tin của bạn để xử lý đơn hàng, gửi thông báo cập nhật vận chuyển, cung cấp các ưu đãi cá nhân hóa và cải thiện trải nghiệm mua sắm tại Glowzy. Thông tin của bạn sẽ KHÔNG bao giờ được bán cho bên thứ ba.
+                   Chúng tôi sử dụng thông tin của bạn cho các mục đích chính đáng bao gồm: Xử lý và giao đơn hàng; Gửi thông báo về trạng thái đơn hàng; Cung cấp dịch vụ hỗ trợ khách hàng; Gửi thông tin khuyến mãi và ưu đãi cá nhân hóa (nếu bạn đồng ý nhận); Cải thiện giao diện và trải nghiệm người dùng trên website.
+                 </p>
+                 <p className="text-gray-600 font-medium leading-relaxed">
+                   Glowzy cam kết <strong>KHÔNG</strong> bán, cho thuê hoặc chia sẻ thông tin cá nhân của bạn với bất kỳ bên thứ ba nào vì mục đích quảng cáo mà không có sự đồng ý của bạn.
                  </p>
               </section>
 
@@ -58,10 +61,10 @@ const Privacy = () => {
                    <div className="p-2 bg-primary-50 text-primary-500 rounded-lg">
                      <ShieldCheck size={20} />
                    </div>
-                   <h2 className="text-xl font-black uppercase tracking-tight">3. Bảo mật dữ liệu</h2>
+                   <h2 className="text-xl font-black uppercase tracking-tight">3. Bảo mật và Lưu trữ</h2>
                  </div>
                  <p className="text-gray-600 font-medium leading-relaxed">
-                   Chúng tôi áp dụng các công nghệ mã hóa SSL 256-bit và các quy trình kiểm soát truy cập nghiêm ngặt để bảo vệ dữ liệu của bạn khỏi các hành vi truy cập trái phép.
+                   Dữ liệu của bạn được lưu trữ trên hệ thống máy chủ an toàn với các lớp bảo mật đa tầng. Chúng tôi sử dụng công nghệ mã hóa <strong>SSL (Secure Sockets Layer) 256-bit</strong> để bảo vệ thông tin trong quá trình truyền tải. Đội ngũ kỹ thuật của chúng tôi thường xuyên giám sát hệ thống để ngăn chặn các truy cập trái phép.
                  </p>
               </section>
 
@@ -72,9 +75,12 @@ const Privacy = () => {
                  <div className="relative z-10 flex flex-col md:flex-row md:items-center justify-between gap-6">
                     <div>
                       <h4 className="text-lg font-black mb-1">Cần hỗ trợ về quyền riêng tư?</h4>
-                      <p className="text-slate-400 text-sm font-medium">Chúng tôi luôn sẵn sàng giải đáp thắc mắc của bạn 24/7.</p>
+                      <p className="text-slate-400 text-sm font-medium">Chúng tôi luôn sẵn sàng giải đáp thắc mắc của bạn qua email: security@glowzy.vn</p>
                     </div>
-                    <button className="bg-primary-500 hover:bg-primary-600 text-white px-8 py-3 rounded-xl font-black text-xs uppercase tracking-widest transition-all">
+                    <button 
+                      onClick={() => window.location.href = '/contact'}
+                      className="bg-primary-500 hover:bg-primary-600 text-white px-8 py-3 rounded-xl font-black text-xs uppercase tracking-widest transition-all"
+                    >
                        Gửi yêu cầu hỗ trợ
                     </button>
                  </div>
