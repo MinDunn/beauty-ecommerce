@@ -12,4 +12,6 @@ public interface InventoryReceiptRepository extends JpaRepository<InventoryRecei
     java.util.Optional<InventoryReceiptJpaEntity> findFirstByProductIdOrderByReceivedAtDesc(Long productId);
     
     java.util.Optional<InventoryReceiptJpaEntity> findFirstByProductIdAndVariantNameOrderByReceivedAtDesc(Long productId, String variantName);
+
+    List<InventoryReceiptJpaEntity> findByProductIdOrderByExpiryDateAscReceivedAtAsc(Long productId);
 }

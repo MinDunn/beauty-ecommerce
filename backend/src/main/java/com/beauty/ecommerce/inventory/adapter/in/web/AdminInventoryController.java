@@ -28,7 +28,8 @@ public class AdminInventoryController {
                 request.getCostPrice(),
                 request.getQuantity(),
                 request.getReceivedAt(),
-                request.getVariantName()
+                request.getVariantName(),
+                request.getExpiryDate()
         );
         return ResponseEntity.ok(receipt);
     }
@@ -109,6 +110,7 @@ public class AdminInventoryController {
         private BigDecimal costPrice;
         private Integer quantity;
         private String variantName;
+        private java.time.LocalDate expiryDate;
         private LocalDateTime receivedAt;
     }
 }

@@ -71,6 +71,7 @@ export const Products = () => {
     productName: "",
     receivedAt: getNowLocalDatetime(),
     totalPriceManual: "" as string | null,
+    expiryDate: "",
     items: [] as { variantName: string, quantity: string, costPrice: string }[]
   });
 
@@ -297,6 +298,7 @@ export const Products = () => {
       setBulkRestockItems([...bulkRestockItems, {
         productId: prod.id,
         name: prod.name,
+        expiryDate: "",
         items: prod.variants && prod.variants.length > 0 
           ? prod.variants.map((v: any) => ({ variantName: v.variantName, quantity: "", costPrice: (prod.currentPrice || 0).toString() }))
           : [{ variantName: "", quantity: "", costPrice: (prod.currentPrice || 0).toString() }]
@@ -323,6 +325,7 @@ export const Products = () => {
             quantity: parseInt(item.quantity),
             costPrice: parseFloat(item.costPrice) || 0,
             variantName: item.variantName,
+            expiryDate: productItem.expiryDate,
             receivedAt: getNowLocalDatetime()
           }))
       );
@@ -369,6 +372,7 @@ export const Products = () => {
         costPrice: parseFloat(item.costPrice) || 0,
         quantity: parseInt(item.quantity),
         variantName: item.variantName,
+        expiryDate: restockData.expiryDate,
         receivedAt: restockData.receivedAt
       })));
       toast.success(`Đã nhập hàng thành công cho ${itemsToSubmit.length} biến thể`);
@@ -652,6 +656,7 @@ export const Products = () => {
               productName: p.name,
               receivedAt: getNowLocalDatetime(),
               totalPriceManual: null,
+              expiryDate: "",
               items: p.variants && p.variants.length > 0 
                 ? p.variants.map((v: any) => ({ variantName: v.variantName, quantity: "", costPrice: (p.currentPrice || 0).toString() }))
                 : [{ variantName: "", quantity: "", costPrice: (p.currentPrice || 0).toString() }]
@@ -1296,6 +1301,22 @@ export const Products = () => {
               </select>
             </div>
 
+            {/* Expiry Date for this Batch */}
+            <div className="space-y-2">
+              <label className="text-[10px] font-black text-primary-500 uppercase tracking-widest ml-1 animate-pulse">Hạn sử dụng lô hàng này *</label>
+              <div className="relative group">
+                <AlertCircle className="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 text-primary-500" />
+                <input
+                  type="date"
+                  required
+                  className="bg-primary-500/5 border-2 border-primary-500/20 w-full pl-11 pr-4 py-3.5 rounded-2xl text-white outline-none focus:border-primary-500 transition-all font-bold"
+                  value={restockData.expiryDate}
+                  onChange={e => setRestockData({ ...restockData, expiryDate: e.target.value })}
+                />
+              </div>
+              <p className="text-[9px] text-slate-500 italic ml-1">Lưu ý: Tất cả các biến thể nhập trong lô này sẽ dùng chung hạn sử dụng này.</p>
+            </div>
+
             {/* Step 2: Variant Table */}
             {restockData.productId > 0 && (
               <div className="space-y-4 animate-in fade-in duration-500">
@@ -1454,21 +1475,36 @@ export const Products = () => {
               ) : (
                 bulkRestockItems.map((productItem, productIdx) => (
                   <div key={productItem.productId} className="bg-slate-800/40 rounded-3xl border border-slate-700/50 overflow-hidden animate-in slide-in-from-right-4 duration-300">
-                    <div className="bg-slate-800/60 p-4 flex justify-between items-center border-b border-slate-700/50">
+                    <div className="bg-slate-800/60 p-4 flex flex-col md:flex-row justify-between md:items-center border-b border-slate-700/50 gap-3">
                       <div className="flex items-center gap-2 text-primary-500">
                         <Package size={16} />
                         <span className="font-bold text-white text-sm">{productItem.name}</span>
                       </div>
-                      <button
-                        type="button"
-                        onClick={() => {
-                          setBulkRestockItems(bulkRestockItems.filter((_, i) => i !== productIdx));
-                          setBulkTotalPriceManual(null);
-                        }}
-                        className="p-1 hover:bg-rose-500/20 text-slate-500 hover:text-rose-500 rounded-lg transition-all"
-                      >
-                        <X size={16} />
-                      </button>
+                      
+                      <div className="flex items-center gap-2">
+                        <span className="text-[9px] font-black text-slate-500 uppercase tracking-widest">Hạn dùng lô này:</span>
+                        <input 
+                          type="date"
+                          required
+                          className="bg-slate-900 border border-slate-700 rounded-xl px-3 py-1.5 text-white text-[10px] font-bold outline-none focus:border-primary-500"
+                          value={productItem.expiryDate || ""}
+                          onChange={(e) => {
+                            const newBulk = [...bulkRestockItems];
+                            newBulk[productIdx].expiryDate = e.target.value;
+                            setBulkRestockItems(newBulk);
+                          }}
+                        />
+                        <button
+                          type="button"
+                          onClick={() => {
+                            setBulkRestockItems(bulkRestockItems.filter((_, i) => i !== productIdx));
+                            setBulkTotalPriceManual(null);
+                          }}
+                          className="p-1.5 hover:bg-rose-500/20 text-slate-500 hover:text-rose-500 rounded-lg transition-all ml-2"
+                        >
+                          <X size={16} />
+                        </button>
+                      </div>
                     </div>
                     
                     <div className="p-0">

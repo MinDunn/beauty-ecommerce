@@ -40,6 +40,9 @@ public class InventoryReceiptJpaEntity {
     @Column(name = "variant_name")
     private String variantName;
     
+    @Column(name = "expiry_date")
+    private java.time.LocalDate expiryDate;
+    
     @Column(name = "received_at")
     @Builder.Default
     private LocalDateTime receivedAt = LocalDateTime.now();

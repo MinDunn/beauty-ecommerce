@@ -27,11 +27,11 @@ public class InventoryService {
 
     @Transactional
     public InventoryReceiptJpaEntity addStock(Long productId, BigDecimal costPrice, Integer quantity) {
-        return addStock(productId, costPrice, quantity, null, null);
+        return addStock(productId, costPrice, quantity, null, null, null);
     }
 
     @Transactional
-    public InventoryReceiptJpaEntity addStock(Long productId, BigDecimal costPrice, Integer quantity, LocalDateTime receivedAt, String variantName) {
+    public InventoryReceiptJpaEntity addStock(Long productId, BigDecimal costPrice, Integer quantity, LocalDateTime receivedAt, String variantName, java.time.LocalDate expiryDate) {
         // 1. Load product
         ProductJpaEntity product = productRepository.findById(productId)
                 .orElseThrow(() -> new RuntimeException("Sản phẩm không tồn tại với ID: " + productId));
@@ -42,6 +42,7 @@ public class InventoryService {
                 .costPrice(costPrice)
                 .quantity(quantity)
                 .variantName(variantName)
+                .expiryDate(expiryDate)
                 .receivedAt(receivedAt != null ? receivedAt : LocalDateTime.now())
                 .build();
         
@@ -63,13 +64,16 @@ public class InventoryService {
             productRepository.save(product);
         }
 
+        // 4. Sync Product Expiry Date (FEFO)
+        syncProductExpiryDate(productId);
+
         return savedReceipt;
     }
 
     @Transactional
     public void addStockBulk(java.util.List<com.beauty.ecommerce.inventory.adapter.in.web.AdminInventoryController.InventoryReceiptRequest> requests) {
         for (com.beauty.ecommerce.inventory.adapter.in.web.AdminInventoryController.InventoryReceiptRequest request : requests) {
-            addStock(request.getProductId(), request.getCostPrice(), request.getQuantity(), request.getReceivedAt(), request.getVariantName());
+            addStock(request.getProductId(), request.getCostPrice(), request.getQuantity(), request.getReceivedAt(), request.getVariantName(), request.getExpiryDate());
         }
     }
 
@@ -111,6 +115,9 @@ public class InventoryService {
             product.setStockQuantity((product.getStockQuantity() != null ? product.getStockQuantity() : 0) + quantity);
             productRepository.save(product);
         }
+
+        // 5. Sync Product Expiry Date (FEFO)
+        syncProductExpiryDate(productId);
     }
 
     @Transactional
@@ -147,7 +154,6 @@ public class InventoryService {
             
             Integer oldStock = product.getStockQuantity();
             if (oldStock == null || oldStock != currentSum) {
-                // Log the sync discrepancy as an adjustment if there's a difference
                 if (oldStock != null) {
                     int discrepancy = currentSum - oldStock;
                     BigDecimal estimatedLoss = calculateEstimatedLoss(productId, null, discrepancy);
@@ -168,6 +174,44 @@ public class InventoryService {
                 product.setStockQuantity(currentSum);
                 productRepository.save(product);
             }
+            
+            // Sync expiry date after stock sync
+            syncProductExpiryDate(productId);
+        }
+    }
+
+    @Transactional
+    public void syncProductExpiryDate(Long productId) {
+        ProductJpaEntity product = productRepository.findById(productId).orElse(null);
+        if (product == null) return;
+
+        // FEFO Logic
+        List<InventoryReceiptJpaEntity> allReceipts = receiptRepository.findByProductIdOrderByExpiryDateAscReceivedAtAsc(productId);
+        
+        long totalIn = allReceipts.stream().mapToLong(r -> r.getQuantity() != null ? r.getQuantity() : 0).sum();
+        int currentStock = product.getStockQuantity() != null ? product.getStockQuantity() : 0;
+        
+        if (currentStock <= 0) {
+            product.setExpiryDate(null);
+            productRepository.save(product);
+            return;
+        }
+
+        long soldCount = totalIn - currentStock;
+        long runningSum = 0;
+        java.time.LocalDate currentExpiryDate = null;
+        
+        for (InventoryReceiptJpaEntity receipt : allReceipts) {
+            runningSum += (receipt.getQuantity() != null ? receipt.getQuantity() : 0);
+            if (runningSum > soldCount) {
+                currentExpiryDate = receipt.getExpiryDate();
+                break;
+            }
+        }
+        
+        if (currentExpiryDate != null && !currentExpiryDate.equals(product.getExpiryDate())) {
+            product.setExpiryDate(currentExpiryDate);
+            productRepository.save(product);
         }
     }
 
@@ -203,8 +247,6 @@ public class InventoryService {
         if (quantity == 0) return BigDecimal.ZERO;
         BigDecimal unitCost = getUnitCost(productId, variantName);
         BigDecimal totalValue = unitCost.multiply(BigDecimal.valueOf(Math.abs(quantity)));
-        
-        // If quantity is positive (surplus/gain), return as negative loss
         return quantity > 0 ? totalValue.negate() : totalValue;
     }
 
@@ -249,6 +291,7 @@ public class InventoryService {
                         receipt.getCostPrice(),
                         receipt.getQuantity(),
                         receipt.getVariantName(),
+                        receipt.getExpiryDate(),
                         receipt.getReceivedAt()
                 ))
                 .toList();
@@ -275,6 +318,7 @@ public class InventoryService {
             BigDecimal costPrice,
             Integer quantity,
             String variantName,
+            java.time.LocalDate expiryDate,
             LocalDateTime receivedAt
     ) {
     }
