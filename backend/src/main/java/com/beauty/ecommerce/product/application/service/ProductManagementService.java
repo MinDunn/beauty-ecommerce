@@ -153,6 +153,12 @@ public class ProductManagementService implements ManageProductUseCase {
                             .build();
                     })
                     .collect(java.util.stream.Collectors.toList()));
+
+            // Auto-heal: Ensure total stock matches variants
+            int totalStock = productEntity.getVariants().stream()
+                    .mapToInt(v -> v.getStockQuantity() != null ? v.getStockQuantity() : 0)
+                    .sum();
+            productEntity.setStockQuantity(totalStock);
         }
 
         try {

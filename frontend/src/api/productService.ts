@@ -48,13 +48,21 @@ export const productService = {
     await axiosInstance.patch(`/admin/products/${id}/status`, { status });
   },
 
-  adminAdjustStock: async (productId: number, quantity: number, reason: string, compensationAmount?: number, variantName?: string) => {
+  adminAdjustStock: async (productId: number, quantity: number, reason: string, compensationAmount?: number, variantName?: string, remarks?: string) => {
     const response = await axiosInstance.post('/admin/inventory/adjustments', {
       productId,
       quantity,
       reason,
       compensationAmount,
-      variantName
+      variantName,
+      remarks
+    });
+    return response.data;
+  },
+
+  adminGetUnitCost: async (productId: number, variantName?: string) => {
+    const response = await axiosInstance.get('/admin/inventory/unit-cost', {
+      params: { productId, variantName }
     });
     return response.data;
   },

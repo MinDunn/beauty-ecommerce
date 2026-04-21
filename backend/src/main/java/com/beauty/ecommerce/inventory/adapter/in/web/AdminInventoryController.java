@@ -1,6 +1,5 @@
 package com.beauty.ecommerce.inventory.adapter.in.web;
 
-import com.beauty.ecommerce.inventory.adapter.out.persistence.InventoryAdjustmentJpaEntity;
 import com.beauty.ecommerce.inventory.adapter.out.persistence.InventoryReceiptJpaEntity;
 import com.beauty.ecommerce.inventory.application.service.InventoryService;
 import lombok.Data;
@@ -46,16 +45,40 @@ public class AdminInventoryController {
     }
 
     @PostMapping("/adjustments")
-    public ResponseEntity<InventoryAdjustmentJpaEntity> createAdjustment(@RequestBody InventoryAdjustmentRequest request) {
-        InventoryAdjustmentJpaEntity adjustment = inventoryService.adjustStock(
+    public ResponseEntity<Void> createAdjustment(@RequestBody InventoryAdjustmentRequest request) {
+        inventoryService.adjustStock(
                 request.getProductId(),
                 request.getQuantity(),
                 request.getReason(),
                 request.getCompensationAmount(),
                 request.getVariantName(),
+                request.getRemarks(),
                 "ADMIN" // In real app, get from SecurityContext
         );
-        return ResponseEntity.ok(adjustment);
+        return ResponseEntity.ok().build();
+    }
+
+    @org.springframework.web.bind.annotation.GetMapping("/unit-cost")
+    public ResponseEntity<BigDecimal> getUnitCost(
+            @org.springframework.web.bind.annotation.RequestParam Long productId,
+            @org.springframework.web.bind.annotation.RequestParam(required = false) String variantName) {
+        return ResponseEntity.ok(inventoryService.getUnitCost(productId, variantName));
+    }
+
+    @PostMapping("/audit")
+    public ResponseEntity<Void> auditStock(@RequestBody InventoryAuditRequest request) {
+        inventoryService.auditStock(
+                request.getProductId(),
+                request.getVariantName(),
+                request.getPhysicalQuantity()
+        );
+        return ResponseEntity.ok().build();
+    }
+
+    @PostMapping("/sync-all")
+    public ResponseEntity<Void> syncAll() {
+        inventoryService.syncAllProducts();
+        return ResponseEntity.ok().build();
     }
 
     @org.springframework.web.bind.annotation.GetMapping("/adjustments")
@@ -70,6 +93,14 @@ public class AdminInventoryController {
         private String reason;
         private java.math.BigDecimal compensationAmount;
         private String variantName;
+        private String remarks;
+    }
+
+    @Data
+    public static class InventoryAuditRequest {
+        private Long productId;
+        private String variantName;
+        private Integer physicalQuantity;
     }
 
     @Data

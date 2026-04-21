@@ -14,6 +14,7 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageImpl;
 import org.springframework.data.domain.Pageable;
+import org.springframework.data.domain.Sort;
 import org.springframework.data.jpa.domain.Specification;
 import org.springframework.stereotype.Service;
 
@@ -96,7 +97,20 @@ public class ProductReaderService implements GetProductUseCase {
 
         // Các trường hợp sắp xếp thông thường
         log.info("Thực hiện truy vấn với Sort: {}", pageable.getSort());
-        Page<ProductJpaEntity> entities = productRepository.findAll(spec, pageable);
+        
+        // Luôn luôn ưu tiên hàng còn hàng lên đầu tiên (availabilityPriority DESC)
+        Sort customSort = Sort.by(Sort.Order.desc("availabilityPriority"));
+        if (pageable.getSort().isSorted()) {
+            customSort = customSort.and(pageable.getSort());
+        }
+        
+        org.springframework.data.domain.PageRequest customPageable = org.springframework.data.domain.PageRequest.of(
+                pageable.getPageNumber(),
+                pageable.getPageSize(),
+                customSort
+        );
+
+        Page<ProductJpaEntity> entities = productRepository.findAll(spec, customPageable);
         
         List<Product> domainProducts = entities.getContent().stream()
                 .map(productMapper::mapToDomainEntity)

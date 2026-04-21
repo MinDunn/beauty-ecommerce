@@ -4,7 +4,7 @@ import lombok.AllArgsConstructor;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 
-import java.time.LocalDateTime;
+import java.time.Instant;
 
 @Data
 @AllArgsConstructor
@@ -13,6 +13,6 @@ public class ChatterDTO {
     private String userId;
     private String senderName;
     private String lastMessage;
-    private LocalDateTime lastMessageTime;
+    private Instant lastMessageTime;
     private long unreadCount;
 }

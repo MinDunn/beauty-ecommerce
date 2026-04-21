@@ -47,17 +47,20 @@ public class InventoryService {
         
         InventoryReceiptJpaEntity savedReceipt = receiptRepository.save(receipt);
 
-        // 3. Update product stock (always update total stock)
-        product.setStockQuantity((product.getStockQuantity() != null ? product.getStockQuantity() : 0) + quantity);
-        productRepository.save(product);
-
-        // 4. Update variant stock if provided
+        // 3. Update variant stock if provided
         if (variantName != null && !variantName.trim().isEmpty()) {
             com.beauty.ecommerce.product.adapter.out.persistence.ProductVariantJpaEntity variant = variantRepository.findByProductIdAndVariantName(productId, variantName)
                     .orElseThrow(() -> new RuntimeException("Biến thể '" + variantName + "' không tồn tại cho sản phẩm này."));
             
             variant.setStockQuantity((variant.getStockQuantity() != null ? variant.getStockQuantity() : 0) + quantity);
             variantRepository.save(variant);
+            
+            // Auto-heal/Sync: Recalculate total product stock from variants
+            syncProductStock(productId);
+        } else {
+            // Update product stock directly if no variant
+            product.setStockQuantity((product.getStockQuantity() != null ? product.getStockQuantity() : 0) + quantity);
+            productRepository.save(product);
         }
 
         return savedReceipt;
@@ -71,31 +74,12 @@ public class InventoryService {
     }
 
     @Transactional
-    public InventoryAdjustmentJpaEntity adjustStock(Long productId, Integer quantity, String reason, java.math.BigDecimal compensation, String variantName, String createdBy) {
-        // 1. Load product
+    public void adjustStock(Long productId, Integer quantity, String reason, BigDecimal compensationAmount, String variantName, String remarks, String createdBy) {
         ProductJpaEntity product = productRepository.findById(productId)
                 .orElseThrow(() -> new RuntimeException("Sản phẩm không tồn tại với ID: " + productId));
 
         // 2. Calculate estimated loss if quantity < 0 (decreasing stock)
-        BigDecimal estimatedLoss = BigDecimal.ZERO;
-        if (quantity < 0) {
-            java.util.Optional<InventoryReceiptJpaEntity> latestReceipt = java.util.Optional.empty();
-            
-            // Try specific variant first if provided
-            if (variantName != null && !variantName.trim().isEmpty()) {
-                latestReceipt = receiptRepository.findFirstByProductIdAndVariantNameOrderByReceivedAtDesc(productId, variantName);
-            }
-            
-            // Fallback to latest receipt of this product regardless of variant if not found yet
-            if (latestReceipt.isEmpty()) {
-                latestReceipt = receiptRepository.findFirstByProductIdOrderByReceivedAtDesc(productId);
-            }
-            
-            if (latestReceipt.isPresent()) {
-                BigDecimal costPrice = latestReceipt.get().getCostPrice();
-                estimatedLoss = costPrice.multiply(BigDecimal.valueOf(Math.abs(quantity)));
-            }
-        }
+        BigDecimal estimatedLoss = calculateEstimatedLoss(productId, variantName, quantity);
 
         // 3. Create and save adjustment log
         InventoryAdjustmentJpaEntity adjustment = InventoryAdjustmentJpaEntity.builder()
@@ -103,28 +87,125 @@ public class InventoryService {
                 .variantName(variantName)
                 .quantity(quantity)
                 .reason(reason)
-                .compensationAmount(compensation)
+                .compensationAmount(compensationAmount)
                 .estimatedLossAmount(estimatedLoss)
+                .remarks(remarks)
                 .createdBy(createdBy)
                 .createdAt(LocalDateTime.now())
                 .build();
         
-        InventoryAdjustmentJpaEntity savedAdjustment = adjustmentRepository.save(adjustment);
+        adjustmentRepository.save(adjustment);
 
-        // 4. Update product stock
-        product.setStockQuantity((product.getStockQuantity() != null ? product.getStockQuantity() : 0) + quantity);
-        productRepository.save(product);
-
-        // 5. Update variant stock if provided
+        // 4. Update variant stock if provided
         if (variantName != null && !variantName.trim().isEmpty()) {
             com.beauty.ecommerce.product.adapter.out.persistence.ProductVariantJpaEntity variant = variantRepository.findByProductIdAndVariantName(productId, variantName)
                     .orElseThrow(() -> new RuntimeException("Biến thể '" + variantName + "' không tồn tại cho sản phẩm này."));
             
             variant.setStockQuantity((variant.getStockQuantity() != null ? variant.getStockQuantity() : 0) + quantity);
             variantRepository.save(variant);
+            
+            // Auto-heal/Sync
+            syncProductStock(productId);
+        } else {
+            // Update product stock directly if no variant
+            product.setStockQuantity((product.getStockQuantity() != null ? product.getStockQuantity() : 0) + quantity);
+            productRepository.save(product);
+        }
+    }
+
+    @Transactional
+    public void auditStock(Long productId, String variantName, Integer physicalQuantity) {
+        ProductJpaEntity product = productRepository.findById(productId)
+                .orElseThrow(() -> new RuntimeException("Sản phẩm không tồn tại"));
+
+        Integer currentStock = 0;
+        if (variantName != null && !variantName.trim().isEmpty()) {
+            com.beauty.ecommerce.product.adapter.out.persistence.ProductVariantJpaEntity variant = variantRepository.findByProductIdAndVariantName(productId, variantName)
+                    .orElseThrow(() -> new RuntimeException("Biến thể không tồn tại"));
+            currentStock = variant.getStockQuantity() != null ? variant.getStockQuantity() : 0;
+        } else {
+            currentStock = product.getStockQuantity() != null ? product.getStockQuantity() : 0;
         }
 
-        return savedAdjustment;
+        int delta = physicalQuantity - currentStock;
+        if (delta != 0) {
+            adjustStock(productId, delta, "Kiểm kê thực tế", BigDecimal.ZERO, variantName, null, "ADMIN");
+        }
+    }
+
+    @Transactional
+    public void syncProductStock(Long productId) {
+        ProductJpaEntity product = productRepository.findById(productId)
+                .orElseThrow(() -> new RuntimeException("Sản phẩm không tồn tại"));
+
+        List<com.beauty.ecommerce.product.adapter.out.persistence.ProductVariantJpaEntity> variants = variantRepository.findByProductId(productId);
+        
+        if (variants != null && !variants.isEmpty()) {
+            int currentSum = variants.stream()
+                    .mapToInt(v -> v.getStockQuantity() != null ? v.getStockQuantity() : 0)
+                    .sum();
+            
+            Integer oldStock = product.getStockQuantity();
+            if (oldStock == null || oldStock != currentSum) {
+                // Log the sync discrepancy as an adjustment if there's a difference
+                if (oldStock != null) {
+                    int discrepancy = currentSum - oldStock;
+                    BigDecimal estimatedLoss = calculateEstimatedLoss(productId, null, discrepancy);
+                    
+                    InventoryAdjustmentJpaEntity adjustment = InventoryAdjustmentJpaEntity.builder()
+                            .productId(productId)
+                            .quantity(discrepancy)
+                            .reason("Hệ thống tự đồng bộ (Auto-healing)")
+                            .compensationAmount(BigDecimal.ZERO)
+                            .estimatedLossAmount(estimatedLoss)
+                            .remarks(null)
+                            .createdBy("SYSTEM")
+                            .createdAt(LocalDateTime.now())
+                            .build();
+                    adjustmentRepository.save(adjustment);
+                }
+                
+                product.setStockQuantity(currentSum);
+                productRepository.save(product);
+            }
+        }
+    }
+
+    @Transactional
+    public void syncAllProducts() {
+        List<ProductJpaEntity> products = productRepository.findAll();
+        for (ProductJpaEntity product : products) {
+            syncProductStock(product.getId());
+        }
+    }
+
+    public BigDecimal getUnitCost(Long productId, String variantName) {
+        java.util.Optional<InventoryReceiptJpaEntity> latestReceipt = java.util.Optional.empty();
+        
+        if (variantName != null && !variantName.trim().isEmpty()) {
+            latestReceipt = receiptRepository.findFirstByProductIdAndVariantNameOrderByReceivedAtDesc(productId, variantName);
+        }
+        
+        if (latestReceipt.isEmpty()) {
+            latestReceipt = receiptRepository.findFirstByProductIdOrderByReceivedAtDesc(productId);
+        }
+        
+        if (latestReceipt.isPresent()) {
+            return latestReceipt.get().getCostPrice();
+        }
+        
+        return productRepository.findById(productId)
+                .map(p -> p.getOriginalPrice() != null ? p.getOriginalPrice() : BigDecimal.ZERO)
+                .orElse(BigDecimal.ZERO);
+    }
+
+    private BigDecimal calculateEstimatedLoss(Long productId, String variantName, Integer quantity) {
+        if (quantity == 0) return BigDecimal.ZERO;
+        BigDecimal unitCost = getUnitCost(productId, variantName);
+        BigDecimal totalValue = unitCost.multiply(BigDecimal.valueOf(Math.abs(quantity)));
+        
+        // If quantity is positive (surplus/gain), return as negative loss
+        return quantity > 0 ? totalValue.negate() : totalValue;
     }
 
     public List<InventoryAdjustmentResponse> getAllAdjustments() {
@@ -145,6 +226,7 @@ public class InventoryService {
                         adj.getCompensationAmount(),
                         adj.getEstimatedLossAmount(),
                         adj.getVariantName(),
+                        adj.getRemarks(),
                         adj.getCreatedAt(),
                         adj.getCreatedBy()
                 ))
@@ -181,6 +263,7 @@ public class InventoryService {
             java.math.BigDecimal compensationAmount,
             java.math.BigDecimal estimatedLossAmount,
             String variantName,
+            String remarks,
             LocalDateTime adjustedAt,
             String createdBy
     ) {}

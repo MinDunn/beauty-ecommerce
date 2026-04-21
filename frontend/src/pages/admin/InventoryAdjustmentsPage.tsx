@@ -14,6 +14,7 @@ interface InventoryAdjustment {
   compensationAmount: number;
   estimatedLossAmount: number;
   variantName?: string;
+  remarks?: string;
   adjustedAt: string;
 }
 
@@ -179,11 +180,28 @@ export const InventoryAdjustmentsPage = () => {
                         {adj.quantity > 0 ? `+${adj.quantity}` : adj.quantity}
                       </span>
                     </td>
-                    <td className="p-6 italic text-sm text-slate-400 max-w-[200px] truncate" title={adj.reason}>
-                      {adj.reason}
+                    <td className="p-6 italic text-sm text-slate-400 max-w-[200px]" title={adj.reason}>
+                      <div className="flex flex-col gap-1">
+                        <span className="truncate" title={adj.reason}>{adj.reason}</span>
+                        {adj.remarks && (
+                          <span className="text-[10px] text-slate-500 font-medium not-italic leading-relaxed bg-slate-800/50 p-2 rounded-lg mt-1 border border-slate-700/50">
+                            Ghi chú: {adj.remarks}
+                          </span>
+                        )}
+                      </div>
                     </td>
-                    <td className="p-6 text-sm font-black text-rose-500 text-right">
-                      {adj.estimatedLossAmount > 0 ? `${adj.estimatedLossAmount.toLocaleString('vi-VN')} đ` : '---'}
+                    <td className={cn(
+                      "p-6 text-sm font-black text-right",
+                      adj.estimatedLossAmount < 0 ? "text-emerald-500" : (adj.estimatedLossAmount > 0 ? "text-rose-500" : "text-slate-500")
+                    )}>
+                      {adj.estimatedLossAmount !== 0 ? (
+                        <div className="flex flex-col">
+                           <span>{adj.estimatedLossAmount < 0 ? '+' : ''}{Math.abs(adj.estimatedLossAmount).toLocaleString('vi-VN')} đ</span>
+                           <span className="text-[9px] uppercase tracking-tighter opacity-70">
+                              {adj.estimatedLossAmount < 0 ? 'Hồi lại (Thặng dư)' : 'Thiệt hại (Vốn)'}
+                           </span>
+                        </div>
+                      ) : (adj.quantity !== 0 ? '0 đ' : '---')}
                     </td>
                     <td className="p-6 text-sm font-black text-emerald-500 text-right">
                       {adj.compensationAmount > 0 ? `${adj.compensationAmount.toLocaleString('vi-VN')} đ` : '---'}

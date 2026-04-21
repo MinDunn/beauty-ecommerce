@@ -43,4 +43,7 @@ public class InventoryAdjustmentJpaEntity {
     
     @Column(name = "created_by")
     private String createdBy;
+
+    @Column(name = "remarks", columnDefinition = "TEXT")
+    private String remarks; // Ghi chú chi tiết không bắt buộc
 }

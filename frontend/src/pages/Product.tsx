@@ -7,7 +7,7 @@ import { productService } from "../api/productService";
 import { categoryService } from "../api/categoryService";
 import { inventoryService } from "../api/inventoryService";
 import { toast } from "react-hot-toast";
-import { Plus, Save, Package, DollarSign, Tag, Image as ImageIcon, Loader2, Edit2, Trash2, Search, Warehouse, X, AlertCircle, Eye, EyeOff, ClipboardList, History } from "lucide-react";
+import { Plus, Save, Package, DollarSign, Tag, Image as ImageIcon, Loader2, Edit2, Trash2, Search, Warehouse, X, AlertCircle, Eye, EyeOff, ClipboardList, History, CheckCircle2, RefreshCw } from "lucide-react";
 import { cn } from "../utils/cn";
 
 const getNowLocalDatetime = () => {
@@ -32,6 +32,14 @@ export const Products = () => {
   const [filterStatus, setFilterStatus] = useState<"all" | "ACTIVE" | "HIDDEN">("all");
   const [filterSale, setFilterSale] = useState<boolean>(false);
   const [showAdjustModal, setShowAdjustModal] = useState(false);
+  const [showAuditModal, setShowAuditModal] = useState(false);
+  const [isSyncing, setIsSyncing] = useState(false);
+  const [auditData, setAuditData] = useState({
+    productId: 0,
+    variantName: "",
+    productName: "",
+    physicalQuantity: ""
+  });
 
   // Bulk restock state
   const [showBulkRestockModal, setShowBulkRestockModal] = useState(false);
@@ -65,14 +73,16 @@ export const Products = () => {
     items: [] as { variantName: string, quantity: string, costPrice: string }[]
   });
 
-  const [adjustData, setAdjustData] = useState({
-    productId: 0,
+  const [adjustData, setAdjustData] = useState<any>({
+    productId: null,
     productName: "",
     quantity: "",
     reason: "Hết hạn",
     compensationAmount: "",
-    variantName: ""
+    variantName: "",
+    remarks: ""
   });
+  const [currentUnitCost, setCurrentUnitCost] = useState<number | null>(null);
 
   const fetchProducts = async () => {
     setIsLoading(true);
@@ -140,6 +150,24 @@ export const Products = () => {
     fetchProducts();
     fetchCategories();
   }, []);
+
+  // Fetch unit cost for adjustment preview
+  useEffect(() => {
+    if (showAdjustModal && adjustData.productId) {
+      const fetchUnitCost = async () => {
+        try {
+          const cost = await productService.adminGetUnitCost(adjustData.productId, adjustData.variantName);
+          setCurrentUnitCost(cost);
+        } catch (error) {
+          console.error("Failed to fetch unit cost", error);
+          setCurrentUnitCost(0);
+        }
+      };
+      fetchUnitCost();
+    } else if (!showAdjustModal) {
+      setCurrentUnitCost(null);
+    }
+  }, [showAdjustModal, adjustData.productId, adjustData.variantName]);
 
   // Auto-calculate sale price
   useEffect(() => {
@@ -366,7 +394,8 @@ export const Products = () => {
         quantity,
         adjustData.reason,
         adjustData.compensationAmount ? parseFloat(adjustData.compensationAmount) : 0,
-        adjustData.variantName
+        adjustData.variantName,
+        adjustData.remarks
       );
       toast.success("Điều chỉnh kho thành công!");
       setShowAdjustModal(false);
@@ -386,6 +415,47 @@ export const Products = () => {
       fetchProducts();
     } catch (error) {
       toast.error("Lỗi khi cập nhật trạng thái");
+    }
+  };
+
+  const handleSyncAll = async () => {
+    if (!window.confirm("Bạn có chắc muốn đồng bộ lại toàn bộ tồn kho? Hệ thống sẽ tính toán lại tổng số lượng dựa trên các biến thể cho tất cả sản phẩm.")) return;
+    
+    setIsSyncing(true);
+    try {
+      await inventoryService.syncAll();
+      toast.success("Đồng bộ kho thành công");
+      fetchProducts();
+    } catch (error) {
+      console.error("Error syncing stock:", error);
+      toast.error("Lỗi khi đồng bộ kho");
+    } finally {
+      setIsSyncing(false);
+    }
+  };
+
+  const handleAuditSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!auditData.physicalQuantity || isNaN(parseInt(auditData.physicalQuantity))) {
+      toast.error("Vui lòng nhập số lượng thực tế hợp lệ");
+      return;
+    }
+
+    setIsSaving(true);
+    try {
+      await inventoryService.auditStock({
+        productId: auditData.productId,
+        variantName: auditData.variantName,
+        physicalQuantity: parseInt(auditData.physicalQuantity)
+      });
+      toast.success("Kiểm kê thành công");
+      setShowAuditModal(false);
+      fetchProducts();
+    } catch (error) {
+      console.error("Error auditing stock:", error);
+      toast.error("Lỗi khi gửi kết quả kiểm kê");
+    } finally {
+      setIsSaving(false);
     }
   };
 
@@ -528,6 +598,23 @@ export const Products = () => {
         </button>
         <button
           type="button"
+          onClick={(e) => {
+            e.stopPropagation();
+            setAuditData({
+              productId: p.id,
+              productName: p.name,
+              variantName: p.variants?.[0]?.variantName || "",
+              physicalQuantity: (p.variants?.[0]?.stockQuantity || p.stockQuantity || 0).toString()
+            });
+            setShowAuditModal(true);
+          }}
+          className="p-2.5 hover:bg-slate-800 rounded-xl text-emerald-500 transition-all active:scale-90"
+          title="Kiểm kê thực tế (Nâng cao)"
+        >
+          <CheckCircle2 size={16} />
+        </button>
+        <button
+          type="button"
           onClick={(e) => { e.stopPropagation(); handleToggleStatus(p.id, p.status); }}
           className={cn(
             "p-2.5 hover:bg-slate-800 rounded-xl transition-all active:scale-90",
@@ -587,6 +674,16 @@ export const Products = () => {
               className="w-full bg-slate-900 border border-slate-800 text-slate-200 pl-11 pr-4 py-3 rounded-2xl focus:outline-none focus:ring-2 focus:ring-primary-500/20 focus:border-primary-500 transition-all font-medium placeholder:text-slate-600"
             />
           </div>
+
+          <button
+            onClick={handleSyncAll}
+            disabled={isSyncing}
+            className="bg-primary-500/10 hover:bg-primary-500/20 text-primary-500 px-6 py-3 rounded-2xl font-black text-xs uppercase tracking-widest flex items-center gap-2 transition-all border border-primary-500/20 active:scale-95 shrink-0 disabled:opacity-50"
+            title="Đồng bộ lại toàn bộ tồn kho dựa trên biến thể"
+          >
+            {isSyncing ? <Loader2 size={18} className="animate-spin" /> : <RefreshCw size={18} />}
+            <span className="hidden sm:inline">Đồng bộ</span>
+          </button>
 
           <button
             onClick={() => setShowBulkRestockModal(true)}
@@ -1509,6 +1606,33 @@ export const Products = () => {
                </div>
             ) : null}
 
+            <div className="space-y-2">
+              <label className="text-[10px] font-black text-slate-500 uppercase tracking-widest ml-1">Ghi chú chi tiết (Không bắt buộc)</label>
+              <textarea
+                placeholder="Nhập ghi chú chi tiết về lý do điều chỉnh..."
+                className="bg-slate-800/50 border border-slate-700 w-full px-4 py-3.5 rounded-2xl text-white outline-none focus:border-amber-500/50 transition-all font-medium min-h-[100px] resize-none"
+                value={adjustData.remarks}
+                onChange={e => setAdjustData({ ...adjustData, remarks: e.target.value })}
+              />
+            </div>
+
+            {/* Price Preview */}
+            <div className="bg-amber-500/5 border border-amber-500/20 p-4 rounded-2xl flex justify-between items-center">
+              <div>
+                <p className="text-[9px] font-black text-amber-500 uppercase tracking-widest">Thiệt hại dự kiến</p>
+                <p className="text-xl font-black text-white">
+                  {currentUnitCost !== null && adjustData.quantity ? 
+                    (currentUnitCost * Math.abs(parseInt(adjustData.quantity))).toLocaleString('vi-VN') : '0'} đ
+                </p>
+              </div>
+              <div className="text-right">
+                 <p className="text-[9px] font-black text-slate-500 uppercase tracking-widest">Giá vốn/đơn vị</p>
+                 <p className="text-xs font-bold text-slate-400">
+                    {currentUnitCost !== null ? currentUnitCost.toLocaleString('vi-VN') : '...'} đ
+                 </p>
+              </div>
+            </div>
+
             <div className="flex justify-end gap-3 pt-6">
               <button 
                 type="button"
@@ -1523,6 +1647,116 @@ export const Products = () => {
                 className="px-8 py-3 bg-amber-500 hover:bg-amber-600 text-white rounded-2xl font-black uppercase text-[10px] tracking-widest shadow-lg shadow-amber-500/20 transition-all flex items-center gap-2 active:scale-95"
               >
                 {isSaving ? <Loader2 className="animate-spin" /> : <span>Xác nhận điều chỉnh</span>}
+              </button>
+            </div>
+          </form>
+        </Modal>
+      )}
+
+      {/* Inventory Audit Modal */}
+      {showAuditModal && (
+        <Modal onClose={() => !isSaving && setShowAuditModal(false)}>
+          <div className="mb-6">
+            <h2 className="text-xl font-black text-emerald-500 uppercase tracking-tight flex items-center gap-3">
+              <CheckCircle2 />
+              Kiểm kê thực tế
+            </h2>
+            <p className="text-slate-500 text-xs font-medium mt-1 italic">
+              Nhập số lượng thực tế bạn đếm được trên kệ. Hệ thống sẽ tự động cân bằng số liệu.
+            </p>
+          </div>
+
+          <form onSubmit={handleAuditSubmit} className="space-y-5">
+            <div className="bg-slate-800/40 p-4 rounded-2xl border border-slate-700/50">
+               <p className="text-[10px] text-slate-500 uppercase font-black tracking-widest">Sản phẩm kiểm kê</p>
+               <p className="text-white font-bold text-lg mt-1">{auditData.productName}</p>
+            </div>
+
+            {products.find(p => p.id === auditData.productId)?.variants?.length ? (
+               <div className="space-y-2">
+                 <label className="text-[10px] font-black text-slate-500 uppercase tracking-widest ml-1">Chọn phân loại (Biến thể)</label>
+                 <select
+                   className="bg-slate-800/50 border border-slate-700 w-full px-4 py-3.5 rounded-2xl text-white outline-none focus:border-emerald-500/50 transition-all font-medium"
+                   value={auditData.variantName}
+                   onChange={e => {
+                     const variant = products.find(p => p.id === auditData.productId)?.variants?.find(v => v.variantName === e.target.value);
+                     setAuditData({ 
+                       ...auditData, 
+                       variantName: e.target.value,
+                       physicalQuantity: (variant?.stockQuantity || 0).toString()
+                     });
+                   }}
+                 >
+                   {products.find(p => p.id === auditData.productId)?.variants?.map(v => (
+                     <option key={v.variantName} value={v.variantName}>{v.variantName}</option>
+                   ))}
+                 </select>
+               </div>
+            ) : null}
+
+            <div className="grid grid-cols-2 gap-4">
+              <div className="bg-slate-900 border border-slate-800 p-4 rounded-2xl">
+                <p className="text-[9px] font-black text-slate-500 uppercase tracking-widest mb-1">Số lượng hệ thống</p>
+                <div className="text-2xl font-black text-slate-300">
+                  {(() => {
+                    const product = products.find(p => p.id === auditData.productId);
+                    if (auditData.variantName) {
+                      return product?.variants?.find(v => v.variantName === auditData.variantName)?.stockQuantity || 0;
+                    }
+                    return product?.stockQuantity || 0;
+                  })()}
+                </div>
+              </div>
+
+              <div className="bg-primary-500/5 border border-primary-500/20 p-4 rounded-2xl">
+                <p className="text-[9px] font-black text-primary-500 uppercase tracking-widest mb-1">Số lượng thực tế</p>
+                <input
+                  required
+                  type="number"
+                  autoFocus
+                  className="bg-transparent text-2xl font-black text-white w-full outline-none"
+                  value={auditData.physicalQuantity}
+                  onChange={e => setAuditData({ ...auditData, physicalQuantity: e.target.value })}
+                />
+              </div>
+            </div>
+
+            <div className="flex items-center justify-between px-4 py-3 bg-slate-800/50 rounded-2xl border border-slate-700/50">
+              <span className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">Chênh lệch:</span>
+              <div className={cn(
+                "font-black text-lg",
+                (() => {
+                  const current = auditData.variantName 
+                    ? products.find(p => p.id === auditData.productId)?.variants?.find(v => v.variantName === auditData.variantName)?.stockQuantity || 0
+                    : products.find(p => p.id === auditData.productId)?.stockQuantity || 0;
+                  const diff = (parseInt(auditData.physicalQuantity) || 0) - current;
+                  return diff > 0 ? "text-emerald-500" : diff < 0 ? "text-rose-500" : "text-slate-500";
+                })()
+              )}>
+                {(() => {
+                  const current = auditData.variantName 
+                    ? products.find(p => p.id === auditData.productId)?.variants?.find(v => v.variantName === auditData.variantName)?.stockQuantity || 0
+                    : products.find(p => p.id === auditData.productId)?.stockQuantity || 0;
+                  const diff = (parseInt(auditData.physicalQuantity) || 0) - current;
+                  return diff > 0 ? `+${diff}` : diff;
+                })()}
+              </div>
+            </div>
+
+            <div className="flex justify-end gap-3 pt-4">
+              <button 
+                type="button" 
+                onClick={() => setShowAuditModal(false)} 
+                className="px-6 py-3 rounded-2xl text-slate-400 font-black uppercase text-[10px] tracking-widest hover:bg-slate-800 transition-all"
+              >
+                Hủy
+              </button>
+              <button 
+                type="submit" 
+                disabled={isSaving} 
+                className="px-8 py-3 bg-emerald-500 hover:bg-emerald-600 text-white rounded-2xl font-black uppercase text-[10px] tracking-widest shadow-lg shadow-emerald-500/20 transition-all flex items-center gap-2 active:scale-95 disabled:opacity-50"
+              >
+                {isSaving ? <Loader2 className="animate-spin" size={16} /> : <span>Cập nhật số thực tế</span>}
               </button>
             </div>
           </form>

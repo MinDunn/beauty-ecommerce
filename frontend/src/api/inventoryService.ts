@@ -8,6 +8,14 @@ export const inventoryService = {
   bulkCreateReceipts: async (receipts: { productId: number; costPrice: number; quantity: number; variantName?: string; receivedAt?: string }[]) => {
     const response = await axiosInstance.post('/admin/inventory/receipts/bulk', receipts);
     return response.data;
+  },
+  auditStock: async (auditData: { productId: number; variantName?: string; physicalQuantity: number }) => {
+    const response = await axiosInstance.post('/admin/inventory/audit', auditData);
+    return response.data;
+  },
+  syncAll: async () => {
+    const response = await axiosInstance.post('/admin/inventory/sync-all');
+    return response.data;
   }
 };
 

@@ -13,6 +13,7 @@ import lombok.Setter;
 
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
+import org.hibernate.annotations.Formula;
 
 @Entity
 @Table(name = "products")
@@ -66,6 +67,9 @@ public class ProductJpaEntity {
     @jakarta.persistence.Column(name = "status")
     @Builder.Default
     private String status = "ACTIVE"; // ACTIVE, HIDDEN, DISCONTINUED
+
+    @Formula("case when stock_quantity > 0 then 1 else 0 end")
+    private int availabilityPriority;
 
     @jakarta.persistence.OneToMany(mappedBy = "product", cascade = jakarta.persistence.CascadeType.ALL, orphanRemoval = true, fetch = jakarta.persistence.FetchType.LAZY)
     private java.util.List<ProductImageJpaEntity> images;
