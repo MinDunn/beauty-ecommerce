@@ -14,11 +14,13 @@ import {
   RefreshCcw,
   Eye,
   Star,
+  AlertCircle,
   type LucideIcon
 } from "lucide-react";
 
 import { motion, AnimatePresence } from "framer-motion";
 import { adminService, type DashboardStats } from "../../api/adminService";
+import { productService } from "../../api/productService";
 import { toast } from "react-hot-toast";
 import { useNavigate } from "react-router-dom";
 import {
@@ -44,7 +46,7 @@ interface StatCardProps {
   trend: 'up' | 'down';
 }
 
-const StatCard = ({ title, value, change, icon: Icon, trend, onClick }: StatCardProps & { onClick?: () => void }) => (
+const StatCard = ({ title, value, change, icon: Icon, trend, onClick, subtitle }: StatCardProps & { onClick?: () => void; subtitle?: string }) => (
   <motion.div 
     initial={{ opacity: 0, y: 20 }}
     animate={{ opacity: 1, y: 0 }}
@@ -55,13 +57,16 @@ const StatCard = ({ title, value, change, icon: Icon, trend, onClick }: StatCard
       <div className="p-3 rounded-2xl bg-slate-800 group-hover:bg-primary-500/10 transition-colors">
         <Icon className="w-6 h-6 text-slate-400 group-hover:text-primary-500 transition-colors" />
       </div>
-      <div className={`flex items-center gap-1 text-sm font-bold ${trend === 'up' ? 'text-emerald-500' : 'text-rose-500'}`}>
-        {trend === 'up' ? <ArrowUpRight className="w-4 h-4" /> : <ArrowDownRight className="w-4 h-4" />}
+      <div className={`flex items-center gap-1 text-[10px] font-black ${trend === 'up' ? 'text-emerald-500' : 'text-rose-500'}`}>
+        {trend === 'up' ? <ArrowUpRight className="w-3 h-3" /> : <ArrowDownRight className="w-3 h-3" />}
         {change}%
       </div>
     </div>
     <p className="text-slate-500 text-[10px] uppercase font-black tracking-widest mb-1">{title}</p>
-    <h3 className="text-3xl font-black text-white">{value}</h3>
+    <div className="flex items-baseline gap-2">
+      <h3 className="text-3xl font-black text-white">{value}</h3>
+      {subtitle && <span className="text-[10px] font-bold text-slate-500 uppercase tracking-tighter truncate">{subtitle}</span>}
+    </div>
   </motion.div>
 );
 
@@ -73,6 +78,9 @@ export const AdminDashboard = () => {
   const [days, setDays] = useState(7);
   const [showDaysDropdown, setShowDaysDropdown] = useState(false);
   const [showOrdersMenu, setShowOrdersMenu] = useState(false);
+  const [lowStockCount, setLowStockCount] = useState(0);
+  const [expiringSoonCount, setExpiringSoonCount] = useState(0);
+  const [recentReceipts, setRecentReceipts] = useState<any[]>([]);
   const navigate = useNavigate();
 
   const fetchStats = async (rangeDays: number) => {
@@ -87,8 +95,36 @@ export const AdminDashboard = () => {
     }
   };
 
+  const fetchInventoryStats = async () => {
+    try {
+      // Get products to find low stock
+      const pResp = await productService.searchProducts({ size: 100, includeHidden: true });
+      const allProducts = pResp.content || [];
+      
+      const lowStock = allProducts.filter((p: any) => p.stockQuantity < 10 && p.stockQuantity > 0).length;
+      setLowStockCount(lowStock);
+
+      // Filter products expiring in next 6 months
+      const sixMonthsFromNow = new Date();
+      sixMonthsFromNow.setMonth(sixMonthsFromNow.getMonth() + 6);
+      const expiring = allProducts.filter((p: any) => {
+        if (!p.expiryDate) return false;
+        const expiry = new Date(p.expiryDate);
+        return expiry <= sixMonthsFromNow && expiry > new Date();
+      }).length;
+      setExpiringSoonCount(expiring);
+
+      // Get recent receipts
+      const receipts = await adminService.getInventoryReceipts();
+      setRecentReceipts(receipts.slice(0, 5));
+    } catch (error) {
+      console.error("Failed to fetch inventory stats for dashboard", error);
+    }
+  };
+
   useEffect(() => {
     fetchStats(days);
+    fetchInventoryStats();
   }, [days]);
 
   const handleExport = async () => {
@@ -217,7 +253,44 @@ export const AdminDashboard = () => {
           trend={(stats?.feedbackGrowth || 0) >= 0 ? 'up' : 'down'} 
           onClick={() => navigate('/admin/feedback')}
         />
+        <StatCard 
+          title="Tồn kho thấp" 
+          value={lowStockCount.toString()} 
+          change="0" 
+          icon={ShoppingBag} 
+          trend="down" 
+          onClick={() => navigate('/admin/products')}
+          subtitle="Sản phẩm"
+        />
       </div>
+
+      {/* Alert Banner / Insights */}
+      {(lowStockCount > 0 || expiringSoonCount > 0) && (
+        <motion.div 
+          initial={{ opacity: 0, y: -20 }}
+          animate={{ opacity: 1, y: 0 }}
+          className="bg-rose-500/10 border border-rose-500/20 p-4 rounded-2xl flex items-center justify-between gap-4"
+        >
+          <div className="flex items-center gap-4">
+             <div className="w-10 h-10 bg-rose-500/20 rounded-xl flex items-center justify-center text-rose-500">
+                <AlertCircle size={20} />
+             </div>
+             <div>
+                <p className="text-[10px] font-black text-rose-500 uppercase tracking-widest">Cảnh báo tồn kho & hạn dùng</p>
+                <p className="text-sm font-bold text-slate-300">
+                  {lowStockCount > 0 && `Có ${lowStockCount} sản phẩm sắp hết hàng.`} 
+                  {expiringSoonCount > 0 && ` Có ${expiringSoonCount} sản phẩm sắp hết hạn trong 6 tháng tới.`}
+                </p>
+             </div>
+          </div>
+          <button 
+            onClick={() => navigate('/admin/inventory/receipts')}
+            className="px-4 py-2 bg-rose-500 text-white text-[10px] font-black uppercase tracking-widest rounded-lg hover:bg-rose-600 transition-all"
+          >
+            Xử lý ngay
+          </button>
+        </motion.div>
+      )}
 
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
         {/* Chart Section */}
@@ -510,6 +583,41 @@ export const AdminDashboard = () => {
               </div>
             </div>
           )}
+        </div>
+
+        {/* Recent Inventory Receipts (New Widget) */}
+        <div className="bg-slate-900 border border-slate-800 p-8 rounded-[2.5rem] shadow-xl">
+           <div className="flex items-center justify-between mb-8">
+              <h3 className="text-xl font-bold text-white uppercase tracking-tight">Lô hàng mới nhập</h3>
+              <button 
+                onClick={() => navigate('/admin/inventory/receipts')}
+                className="text-[10px] font-black text-primary-500 uppercase tracking-widest hover:underline"
+              >
+                Tất cả
+              </button>
+           </div>
+           
+           <div className="space-y-6">
+              {recentReceipts.length === 0 ? (
+                <div className="text-center py-10 opacity-50">Chưa có dữ liệu nhập hàng</div>
+              ) : (
+                recentReceipts.map((receipt, idx) => (
+                  <div key={idx} className="flex items-center gap-4 transition-all hover:translate-x-2">
+                     <div className="w-10 h-10 rounded-xl bg-slate-800 border border-slate-700 flex items-center justify-center text-primary-500 font-black text-[10px]">
+                        IN
+                     </div>
+                     <div className="flex-1 min-w-0">
+                        <p className="text-sm font-black text-white truncate">{receipt.productName}</p>
+                        <p className="text-[10px] text-slate-500 font-bold uppercase tracking-widest">SL: {receipt.quantity} • HSD: {receipt.expiryDate || 'N/A'}</p>
+                     </div>
+                     <div className="text-right">
+                        <p className="text-xs font-black text-emerald-500">+{receipt.quantity}</p>
+                        <p className="text-[9px] text-slate-500 font-medium italic">{new Date(receipt.receivedAt).toLocaleDateString()}</p>
+                     </div>
+                  </div>
+                ))
+              )}
+           </div>
         </div>
 
       </div>

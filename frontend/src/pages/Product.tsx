@@ -7,7 +7,8 @@ import { productService } from "../api/productService";
 import { categoryService } from "../api/categoryService";
 import { inventoryService } from "../api/inventoryService";
 import { toast } from "react-hot-toast";
-import { Plus, Save, Package, DollarSign, Tag, Image as ImageIcon, Loader2, Edit2, Trash2, Search, Warehouse, X, AlertCircle, Eye, EyeOff, ClipboardList, History, CheckCircle2, RefreshCw } from "lucide-react";
+import { Plus, Save, Package, DollarSign, Tag, Image as ImageIcon, Loader2, Edit2, Trash2, Search, Warehouse, X, AlertCircle, Eye, EyeOff, ClipboardList, History, CheckCircle2, RefreshCcw } from "lucide-react";
+import { motion, AnimatePresence } from "framer-motion";
 import { cn } from "../utils/cn";
 
 const getNowLocalDatetime = () => {
@@ -22,6 +23,10 @@ export const Products = () => {
   const [products, setProducts] = useState<Product[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [showModal, setShowModal] = useState(false);
+  const [showAdjustModal, setShowAdjustModal] = useState(false);
+  const [showAuditModal, setShowAuditModal] = useState(false);
+  const [deleteId, setDeleteId] = useState<number | null>(null);
+  const [showSyncConfirm, setShowSyncConfirm] = useState(false);
   const [isSaving, setIsSaving] = useState(false);
   const [showRestockModal, setShowRestockModal] = useState(false);
   const [categories, setCategories] = useState<Category[]>([]);
@@ -31,9 +36,6 @@ export const Products = () => {
   const [filterStock, setFilterStock] = useState<"all" | "low" | "out">("all");
   const [filterStatus, setFilterStatus] = useState<"all" | "ACTIVE" | "HIDDEN">("all");
   const [filterSale, setFilterSale] = useState<boolean>(false);
-  const [showAdjustModal, setShowAdjustModal] = useState(false);
-  const [showAuditModal, setShowAuditModal] = useState(false);
-  const [isSyncing, setIsSyncing] = useState(false);
   const [auditData, setAuditData] = useState({
     productId: 0,
     variantName: "",
@@ -279,15 +281,30 @@ export const Products = () => {
     }
   };
 
-  const handleDelete = async (id: number) => {
-    if (window.confirm("Bạn có chắc chắn muốn xóa sản phẩm này?")) {
-      try {
-        await productService.adminDeleteProduct(id);
-        toast.success("Xóa thành công");
-        fetchProducts();
-      } catch (error) {
-        toast.error("Lỗi khi xóa sản phẩm");
-      }
+  const handleDelete = async () => {
+    if (!deleteId) return;
+    try {
+      await productService.adminDeleteProduct(deleteId);
+      toast.success("Xóa sản phẩm thành công");
+      setDeleteId(null);
+      fetchProducts();
+    } catch (error) {
+      toast.error("Không thể xóa sản phẩm này");
+    }
+  };
+
+  const handleSyncAllProducts = async () => {
+    setShowSyncConfirm(false);
+    const loadingToast = toast.loading("Đang đồng bộ lại toàn bộ kho...");
+    setIsSaving(true);
+    try {
+      await inventoryService.syncAll();
+      toast.success("Đồng bộ kho thành công!", { id: loadingToast });
+      fetchProducts();
+    } catch (error) {
+      toast.error("Đồng bộ kho thất bại", { id: loadingToast });
+    } finally {
+      setIsSaving(false);
     }
   };
 
@@ -422,22 +439,6 @@ export const Products = () => {
       fetchProducts();
     } catch (error) {
       toast.error("Lỗi khi cập nhật trạng thái");
-    }
-  };
-
-  const handleSyncAll = async () => {
-    if (!window.confirm("Bạn có chắc muốn đồng bộ lại toàn bộ tồn kho? Hệ thống sẽ tính toán lại tổng số lượng dựa trên các biến thể cho tất cả sản phẩm.")) return;
-    
-    setIsSyncing(true);
-    try {
-      await inventoryService.syncAll();
-      toast.success("Đồng bộ kho thành công");
-      fetchProducts();
-    } catch (error) {
-      console.error("Error syncing stock:", error);
-      toast.error("Lỗi khi đồng bộ kho");
-    } finally {
-      setIsSyncing(false);
     }
   };
 
@@ -670,7 +671,7 @@ export const Products = () => {
         </button>
         <button
           type="button"
-          onClick={(e) => { e.stopPropagation(); handleDelete(p.id); }}
+          onClick={(e) => { e.stopPropagation(); setDeleteId(p.id); }}
           className="p-2.5 hover:bg-slate-800 rounded-xl text-rose-500 transition-all active:scale-90"
         >
           <Trash2 size={16} />
@@ -700,12 +701,12 @@ export const Products = () => {
           </div>
 
           <button
-            onClick={handleSyncAll}
-            disabled={isSyncing}
+            onClick={() => setShowSyncConfirm(true)}
+            disabled={isLoading || isSaving}
             className="bg-primary-500/10 hover:bg-primary-500/20 text-primary-500 px-6 py-3 rounded-2xl font-black text-xs uppercase tracking-widest flex items-center gap-2 transition-all border border-primary-500/20 active:scale-95 shrink-0 disabled:opacity-50"
             title="Đồng bộ lại toàn bộ tồn kho dựa trên biến thể"
           >
-            {isSyncing ? <Loader2 size={18} className="animate-spin" /> : <RefreshCw size={18} />}
+            {isSaving ? <Loader2 size={18} className="animate-spin" /> : <RefreshCcw size={18} />}
             <span className="hidden sm:inline">Đồng bộ</span>
           </button>
 
@@ -1833,6 +1834,101 @@ export const Products = () => {
           </form>
         </Modal>
       )}
+
+      {/* Delete Confirmation Modal */}
+      <AnimatePresence>
+        {deleteId && (
+          <div className="fixed inset-0 z-[110] flex items-center justify-center p-4">
+            <motion.div 
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              exit={{ opacity: 0 }}
+              onClick={() => setDeleteId(null)}
+              className="absolute inset-0 bg-slate-950/90 backdrop-blur-sm"
+            />
+            <motion.div 
+              initial={{ opacity: 0, scale: 0.9 }}
+              animate={{ opacity: 1, scale: 1 }}
+              exit={{ opacity: 0, scale: 0.9 }}
+              className="relative w-full max-w-sm bg-slate-900 border border-slate-800 p-8 rounded-[2rem] text-center shadow-2xl"
+            >
+              <div className="w-16 h-16 bg-rose-500/10 text-rose-500 rounded-full flex items-center justify-center mx-auto mb-6">
+                <AlertCircle size={32} />
+              </div>
+              <h3 className="text-xl font-black text-white uppercase mb-2">Xóa sản phẩm?</h3>
+              <p className="text-sm text-slate-500 font-medium mb-8 italic">
+                Hành động này sẽ xóa vĩnh viễn sản phẩm khỏi hệ thống. Bạn có chắc chắn không?
+              </p>
+              
+              <div className="flex gap-4">
+                <button 
+                  onClick={() => setDeleteId(null)}
+                  className="flex-1 py-3 bg-slate-800 text-slate-400 font-black rounded-xl hover:bg-slate-700 transition-all uppercase text-[10px]"
+                >
+                  Quay lại
+                </button>
+                <button 
+                  onClick={handleDelete}
+                  className="flex-1 py-3 bg-rose-500 text-white font-black rounded-xl hover:bg-rose-600 transition-all uppercase text-[10px] shadow-lg shadow-rose-500/20"
+                >
+                  Đồng ý xóa
+                </button>
+              </div>
+            </motion.div>
+          </div>
+        )}
+      </AnimatePresence>
+
+      {/* Sync Confirmation Modal */}
+      <AnimatePresence>
+        {showSyncConfirm && (
+          <div className="fixed inset-0 z-[110] flex items-center justify-center p-4">
+            <motion.div 
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              exit={{ opacity: 0 }}
+              onClick={() => setShowSyncConfirm(false)}
+              className="absolute inset-0 bg-slate-950/90 backdrop-blur-sm"
+            />
+            <motion.div 
+              initial={{ opacity: 0, scale: 0.9 }}
+              animate={{ opacity: 1, scale: 1 }}
+              exit={{ opacity: 0, scale: 0.9 }}
+              className="relative w-full max-w-md bg-slate-900 border border-slate-800 p-10 rounded-[2.5rem] text-center shadow-2xl"
+            >
+              <div className="w-16 h-16 bg-emerald-500/10 text-emerald-500 rounded-full flex items-center justify-center mx-auto mb-6">
+                <RefreshCcw size={32} />
+              </div>
+              <h3 className="text-xl font-black text-white uppercase mb-2">Đồng bộ toàn bộ kho?</h3>
+              <div className="bg-slate-800/50 p-4 rounded-2xl border border-slate-700 mb-8">
+                <p className="text-xs text-slate-400 font-medium italic text-left">
+                  Hệ thống sẽ thực hiện các bước sau:
+                </p>
+                <ul className="text-left text-[10px] text-slate-300 font-bold space-y-1 mt-2 list-disc list-inside uppercase">
+                  <li>Tính toán lại tổng tồn kho từ các biến thể</li>
+                  <li>Đồng bộ hạn sử dụng theo thuật toán FEFO</li>
+                  <li>Sửa lỗi sai lệch dữ liệu (nếu có)</li>
+                </ul>
+              </div>
+              
+              <div className="flex gap-4">
+                <button 
+                  onClick={() => setShowSyncConfirm(false)}
+                  className="flex-1 py-4 bg-slate-800 text-slate-400 font-black rounded-2xl hover:bg-slate-700 transition-all uppercase text-[10px]"
+                >
+                  Hủy bỏ
+                </button>
+                <button 
+                  onClick={handleSyncAllProducts}
+                  className="flex-[2] py-4 bg-emerald-500 text-white font-black rounded-2xl hover:bg-emerald-600 transition-all uppercase text-[10px] shadow-lg shadow-emerald-500/20 active:scale-95"
+                >
+                  Bắt đầu đồng bộ
+                </button>
+              </div>
+            </motion.div>
+          </div>
+        )}
+      </AnimatePresence>
     </div>
   );
 };

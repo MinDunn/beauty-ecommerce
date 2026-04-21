@@ -1,5 +1,6 @@
 package com.beauty.ecommerce.product.adapter.out.persistence;
 
+import com.beauty.ecommerce.inventory.application.service.InventoryService;
 import com.beauty.ecommerce.product.application.port.out.LoadProductPort;
 import com.beauty.ecommerce.product.application.port.out.SaveProductPort;
 import com.beauty.ecommerce.product.application.port.out.UpdateProductStockPort;
@@ -7,6 +8,7 @@ import com.beauty.ecommerce.product.application.port.out.DeleteProductPort;
 import com.beauty.ecommerce.product.domain.entity.Product;
 import com.beauty.ecommerce.product.adapter.out.persistence.mapper.ProductMapper;
 import lombok.RequiredArgsConstructor;
+import org.springframework.context.annotation.Lazy;
 import org.springframework.stereotype.Component;
 
 import java.util.List;
@@ -19,6 +21,8 @@ public class ProductPersistenceAdapter implements LoadProductPort, UpdateProduct
 
     private final ProductRepository productRepository;
     private final ProductMapper productMapper;
+    @Lazy
+    private final InventoryService inventoryService;
 
     @Override
     public List<Product> loadAllProducts() {
@@ -44,6 +48,9 @@ public class ProductPersistenceAdapter implements LoadProductPort, UpdateProduct
         
         product.setStockQuantity(product.getStockQuantity() - quantity);
         productRepository.save(product);
+        
+        // Sync Expiry Date (FEFO) after stock reduction
+        inventoryService.syncProductExpiryDate(productId);
     }
 
     @Override
@@ -52,6 +59,9 @@ public class ProductPersistenceAdapter implements LoadProductPort, UpdateProduct
                 .orElseThrow(() -> new RuntimeException("Product not found"));
         product.setStockQuantity(product.getStockQuantity() + quantity);
         productRepository.save(product);
+        
+        // Sync Expiry Date (FEFO) after stock restore
+        inventoryService.syncProductExpiryDate(productId);
     }
 
     @Override
