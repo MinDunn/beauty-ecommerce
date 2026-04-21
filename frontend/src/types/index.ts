@@ -20,6 +20,7 @@ export type Product = {
   }[];
   skinType?: string;
   createdAt?: string;
+  expiryDate: string;
   status: 'ACTIVE' | 'HIDDEN' | 'DISCONTINUED';
 };
 

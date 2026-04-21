@@ -32,6 +32,7 @@ public class ProductResponse {
     private Double averageRating;
     private Long viewCount;
     private Integer sold;
+    private java.time.LocalDate expiryDate;
     private String status;
 
     @Getter

@@ -28,6 +28,9 @@ public class AdminProductRequest {
     private String instructions;
     private String ingredients;
     private String skinType;
+    @jakarta.validation.constraints.NotNull(message = "Expiry date is required")
+    private java.time.LocalDate expiryDate;
+
     private String imageUrl;
     
     private java.util.List<String> existingImages;

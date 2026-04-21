@@ -38,6 +38,7 @@ public class AdminProductController {
                 .ingredients(request.getIngredients())
                 .skinType(request.getSkinType())
                 .imageUrl(request.getImageUrl())
+                .expiryDate(request.getExpiryDate())
                 .existingImages(request.getExistingImages())
                 .variants(request.getVariants() != null ? request.getVariants().stream()
                         .map(v -> ManageProductUseCase.VariantCommand.builder()
@@ -74,6 +75,7 @@ public class AdminProductController {
                 .ingredients(request.getIngredients())
                 .skinType(request.getSkinType())
                 .imageUrl(request.getImageUrl())
+                .expiryDate(request.getExpiryDate())
                 .existingImages(request.getExistingImages())
                 .variants(request.getVariants() != null ? request.getVariants().stream()
                         .map(v -> ManageProductUseCase.VariantCommand.builder()
@@ -130,6 +132,7 @@ public class AdminProductController {
                                 .build())
                         .collect(java.util.stream.Collectors.toList()) : new java.util.ArrayList<>())
                 .status(product.getStatus())
+                .expiryDate(product.getExpiryDate())
                 .build();
     }
 }

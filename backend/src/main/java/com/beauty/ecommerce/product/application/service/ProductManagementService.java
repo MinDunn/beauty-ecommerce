@@ -52,6 +52,7 @@ public class ProductManagementService implements ManageProductUseCase {
                 .ingredients(command.getIngredients())
                 .skinType(command.getSkinType())
                 .status("ACTIVE")
+                .expiryDate(command.getExpiryDate())
                 .imageUrl(mainImageUrl)
                 .images(galleryImages)
                 .variants(command.getVariants() != null ? command.getVariants().stream()
@@ -104,6 +105,7 @@ public class ProductManagementService implements ManageProductUseCase {
         productEntity.setInstructions(command.getInstructions());
         productEntity.setIngredients(command.getIngredients());
         productEntity.setSkinType(command.getSkinType());
+        productEntity.setExpiryDate(command.getExpiryDate());
 
         // Handle images updates
         java.util.List<String> finalImageUrls = new java.util.ArrayList<>();
@@ -191,6 +193,7 @@ public class ProductManagementService implements ManageProductUseCase {
                 .skinType(entity.getSkinType())
                 .createdAt(entity.getCreatedAt())
                 .status(entity.getStatus())
+                .expiryDate(entity.getExpiryDate())
                 .images(entity.getImages() != null ? entity.getImages().stream()
                         .map(ProductImageJpaEntity::getImageUrl)
                         .collect(java.util.stream.Collectors.toList()) : new java.util.ArrayList<>())

@@ -29,6 +29,7 @@ public interface ManageProductUseCase {
         private String skinType;
         private String imageUrl;
         private java.util.List<String> existingImages;
+        private java.time.LocalDate expiryDate;
         private java.util.List<VariantCommand> variants;
     }
  
@@ -46,6 +47,7 @@ public interface ManageProductUseCase {
         private String skinType;
         private String imageUrl;
         private java.util.List<String> existingImages;
+        private java.time.LocalDate expiryDate;
         private java.util.List<VariantCommand> variants;
     }
 

@@ -11,7 +11,7 @@ import { reviewService } from "../../api/reviewService";
 type AdminNotification = {
   id: string;
   title: string;
-  type: "ĐƠN MỚI" | "FEEDBACK" | "TỒN KHO" | "NHẬP KHO" | "ĐÁNH GIÁ";
+  type: "ĐƠN MỚI" | "FEEDBACK" | "TỒN KHO" | "NHẬP KHO" | "ĐÁNH GIÁ" | "HẾT HẠN";
   time: string;
   read: boolean;
   route: string;
@@ -51,6 +51,12 @@ export const Header = ({ logout, onToggleMenu }: { logout: () => void, onToggleM
       const newFeedbacks = (feedbacks || []).filter((feedback: any) => within48Hours(feedback.createdAt));
       const newReviews = (reviews || []).filter((review: any) => within48Hours(review.createdAt));
       const lowStockProducts = (productsPage?.content || []).filter((product: any) => Number(product.stockQuantity) > 0 && Number(product.stockQuantity) < 10);
+      const expiringProducts = (productsPage?.content || []).filter((product: any) => {
+        if (!product.expiryDate) return false;
+        const expiry = new Date(product.expiryDate).getTime();
+        const diff = expiry - now.getTime();
+        return diff > 0 && diff < 180 * 24 * 60 * 60 * 1000; // Under 6 months
+      });
       const recentReceipts = (receipts || []).filter((receipt: any) => within48Hours(receipt.receivedAt));
 
       const generated: AdminNotification[] = [];
@@ -97,6 +103,17 @@ export const Header = ({ logout, onToggleMenu }: { logout: () => void, onToggleM
           title: `${lowStockProducts.length} sản phẩm sắp hết hàng (dưới 10 đơn vị)`,
           type: "TỒN KHO",
           time: "Cập nhật gần nhất",
+          read: false,
+          route: "/admin/products"
+        });
+      }
+
+      if (expiringProducts.length > 0) {
+        generated.push({
+          id: "expiring-alert",
+          title: `Có ${expiringProducts.length} sản phẩm sắp hết hạn trong 6 tháng tới`,
+          type: "HẾT HẠN",
+          time: "Cần kiểm tra",
           read: false,
           route: "/admin/products"
         });

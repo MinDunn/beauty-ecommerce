@@ -36,6 +36,7 @@ public class ProductMapper {
                                 .build())
                         .collect(java.util.stream.Collectors.toList()) : new java.util.ArrayList<>())
                 .status(jpaEntity.getStatus())
+                .expiryDate(jpaEntity.getExpiryDate())
                 .build();
     }
 
@@ -56,6 +57,7 @@ public class ProductMapper {
                 .viewCount(domainEntity.getViewCount() != null ? domainEntity.getViewCount() : 0L)
                 .sold(domainEntity.getSold() != null ? domainEntity.getSold() : 0)
                 .status(domainEntity.getStatus())
+                .expiryDate(domainEntity.getExpiryDate())
                 .build();
 
         if (domainEntity.getImages() != null) {

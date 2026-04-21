@@ -32,4 +32,5 @@ public class ProductListResponse {
     private Long viewCount;
     private Integer sold;
     private String status;
+    private java.time.LocalDate expiryDate;
 }

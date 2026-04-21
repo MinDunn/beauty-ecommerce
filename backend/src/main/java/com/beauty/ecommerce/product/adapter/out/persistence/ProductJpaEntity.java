@@ -71,6 +71,9 @@ public class ProductJpaEntity {
     @Formula("case when stock_quantity > 0 then 1 else 0 end")
     private int availabilityPriority;
 
+    @jakarta.persistence.Column(name = "expiry_date")
+    private java.time.LocalDate expiryDate;
+
     @jakarta.persistence.OneToMany(mappedBy = "product", cascade = jakarta.persistence.CascadeType.ALL, orphanRemoval = true, fetch = jakarta.persistence.FetchType.LAZY)
     private java.util.List<ProductImageJpaEntity> images;
 

@@ -62,6 +62,7 @@ export const Products = () => {
     instructions: "",
     ingredients: "",
     skinType: "",
+    expiryDate: "",
     variants: [] as { variantName: string, price: string, imageUrl: string, stockQuantity: number, file?: File }[]
   });
 
@@ -207,6 +208,7 @@ export const Products = () => {
         instructions: product.instructions || "",
         ingredients: product.ingredients || "",
         skinType: product.skinType || "",
+        expiryDate: product.expiryDate || "",
         variants: product.variants?.map((v: any) => ({
           variantName: v.variantName,
           price: (v.price ?? 0).toString(),
@@ -253,6 +255,7 @@ export const Products = () => {
         instructions: formData.instructions,
         ingredients: formData.ingredients,
         skinType: formData.skinType,
+        expiryDate: formData.expiryDate,
         existingImages: [formData.imageUrl, ...formData.additionalImages].filter(Boolean) as string[],
         variants: variantsWithIndex
       };
@@ -474,6 +477,7 @@ export const Products = () => {
       instructions: "",
       ingredients: "",
       skinType: "",
+      expiryDate: "",
       variants: []
     });
   };
@@ -521,6 +525,21 @@ export const Products = () => {
       <span className="px-3 py-1 rounded-full text-[10px] font-black uppercase tracking-tight bg-primary-500/10 text-primary-500 border border-primary-500/20 whitespace-nowrap inline-flex items-center justify-center">
         {p.skinType || "---"}
       </span>
+    ),
+    expiryDate: (
+      <div className="flex flex-col">
+        <span className={cn(
+          "font-bold text-xs",
+          p.expiryDate && new Date(p.expiryDate).getTime() - new Date().getTime() < 180 * 24 * 60 * 60 * 1000 
+            ? "text-rose-500" 
+            : "text-slate-400"
+        )}>
+          {p.expiryDate ? new Date(p.expiryDate).toLocaleDateString('vi-VN') : "---"}
+        </span>
+        {p.expiryDate && new Date(p.expiryDate).getTime() - new Date().getTime() < 180 * 24 * 60 * 60 * 1000 && (
+          <span className="text-[8px] font-black uppercase text-rose-500 animate-pulse mt-0.5">Sắp hết hạn</span>
+        )}
+      </div>
     ),
     stock: (
       <div className="relative group/stock inline-block">
@@ -829,6 +848,7 @@ export const Products = () => {
                 { header: "Giá hiện tại", key: "price" },
                 { header: "Loại da", key: "skinType" },
                 { header: "Danh mục", key: "category" },
+                { header: "Hạn sử dụng", key: "expiryDate" },
                 { header: "Số lượng", key: "stock" },
                 { header: "Trạng thái", key: "status" },
                 { header: "Thao tác", key: "actions" }
@@ -907,6 +927,21 @@ export const Products = () => {
                   </select>
                 </div>
               )}
+
+              {/* Expiry Date */}
+              <div className="space-y-2">
+                <label className="text-[10px] font-black text-slate-500 uppercase tracking-widest ml-1">Hạn sử dụng *</label>
+                <div className="relative group">
+                   <AlertCircle className="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-500 group-focus-within:text-red-500 transition-colors" />
+                   <input
+                     type="date"
+                     required
+                     className="bg-slate-800/50 border border-slate-700 w-full pl-11 pr-4 py-3.5 rounded-2xl text-white outline-none focus:border-red-500/50 focus:ring-4 focus:ring-red-500/10 transition-all font-medium"
+                     value={formData.expiryDate}
+                     onChange={e => setFormData({ ...formData, expiryDate: e.target.value })}
+                   />
+                </div>
+              </div>
             </div>
 
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">

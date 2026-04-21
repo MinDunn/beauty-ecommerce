@@ -170,6 +170,7 @@ public class ProductController {
                 .viewCount(product.getViewCount())
                 .sold(product.getSold())
                 .status(product.getStatus())
+                .expiryDate(product.getExpiryDate())
                 .build();
     }
  
@@ -203,6 +204,7 @@ public class ProductController {
                 .viewCount(product.getViewCount())
                 .sold(product.getSold())
                 .status(product.getStatus())
+                .expiryDate(product.getExpiryDate())
                 .build();
     }
 }
