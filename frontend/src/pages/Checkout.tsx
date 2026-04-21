@@ -28,6 +28,7 @@ import { orderService } from '../api/orderService';
 import authService from '../api/authService';
 import { updateUser } from '../store/slices/authSlice';
 import { cartService } from '../api/cartService';
+import { VoucherDrawer } from '../components/checkout/VoucherDrawer';
 
 const STAGES = [
   { id: 1, name: 'Vận chuyển', icon: Truck },
@@ -129,6 +130,18 @@ const Checkout = () => {
   const [couponCode, setCouponCode] = useState('');
   const [appliedCoupon, setAppliedCoupon] = useState<(CouponData & { discountAmount?: number }) | null>(null);
   const [isApplying, setIsApplying] = useState(false);
+  const [isVoucherDrawerOpen, setIsVoucherDrawerOpen] = useState(false);
+
+
+  const handleSelectVoucher = (code: string) => {
+    setCouponCode(code);
+    setIsVoucherDrawerOpen(false);
+    // Auto apply
+    setTimeout(() => {
+       const btn = document.getElementById('apply-coupon-btn');
+       if (btn) btn.click();
+    }, 100);
+  };
 
   // Summary Calculations
   const shippingFee = useMemo(() => subTotal > 500000 ? 0 : 25000, [subTotal]);
@@ -417,7 +430,7 @@ const Checkout = () => {
                           <button onClick={() => setCurrentStep(2)} className="text-primary-500 font-black text-xs uppercase tracking-widest hover:underline">Thay đổi</button>
                        </div>
                     </div>
-
+                    
                     <p className="mt-8 text-center text-sm text-gray-400 font-medium leading-relaxed italic">
                       Bằng việc nhấn đặt hàng, bạn đồng ý với các Điều khoản & Chính sách của Glowzy về việc mua bán hàng hóa.
                     </p>
@@ -513,6 +526,7 @@ const Checkout = () => {
                        className="flex-1 bg-slate-800 border-none rounded-xl px-4 py-3 text-white font-black text-xs outline-none focus:ring-1 focus:ring-primary-500 transition-all uppercase placeholder:text-slate-600"
                       />
                       <button 
+                       id="apply-coupon-btn"
                        onClick={handleApplyCoupon}
                        disabled={isApplying || !couponCode}
                        className="px-6 bg-primary-500 text-white rounded-xl font-black text-[10px] uppercase tracking-widest hover:bg-white hover:text-primary-500 transition-all border border-transparent hover:border-primary-500 disabled:opacity-50"
@@ -520,6 +534,16 @@ const Checkout = () => {
                          {isApplying ? '...' : 'Áp dụng'}
                       </button>
                    </div>
+
+                    <button 
+                      onClick={() => setIsVoucherDrawerOpen(true)}
+                      className="mt-4 flex items-center gap-2 text-primary-500 hover:text-primary-400 transition-colors group"
+                    >
+                      <Ticket size={14} />
+                      <span className="text-[10px] font-black uppercase tracking-widest group-hover:underline">Chọn hoặc nhập mã giảm giá</span>
+                      <ChevronRight size={10} strokeWidth={3} />
+                    </button>
+
                    {appliedCoupon && (
                       <div className="mt-3 flex items-center justify-between px-3 py-2 bg-primary-500/10 rounded-lg border border-primary-500/20">
                          <span className="text-[10px] font-black text-primary-500 uppercase tracking-tight italic">Đã áp dụng: {appliedCoupon.code}</span>
@@ -563,6 +587,16 @@ const Checkout = () => {
 
         </div>
       </div>
+
+      {/* Voucher Selection Drawer */}
+      <VoucherDrawer 
+        isOpen={isVoucherDrawerOpen} 
+        onClose={() => setIsVoucherDrawerOpen(false)} 
+        onSelect={handleSelectVoucher}
+        subTotal={subTotal}
+        categoryIds={selectedItems.map(item => item.categoryId).filter(id => id !== undefined) as number[]}
+        totalQuantity={selectedItems.reduce((sum, item) => sum + item.quantity, 0)}
+      />
     </div>
   );
 };

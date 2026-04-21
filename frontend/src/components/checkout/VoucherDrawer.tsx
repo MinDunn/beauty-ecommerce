@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useMemo } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { X, Gift, Ticket, Zap, Calendar, Star, Loader2 } from "lucide-react";
 import { clsx } from "clsx";
@@ -8,6 +8,10 @@ import { VoucherCard } from "./VoucherCard";
 interface VoucherDrawerProps {
   isOpen: boolean;
   onClose: () => void;
+  onSelect?: (code: string) => void;
+  subTotal?: number;
+  categoryIds?: number[];
+  totalQuantity?: number;
 }
 
 type TabType = "all" | "percentage" | "fixed" | "comingSoon" | "expiringSoon";
@@ -20,10 +24,75 @@ const TABS: { id: TabType; label: string; icon: any }[] = [
   { id: "expiringSoon", label: "Sắp hết hạn", icon: Zap },
 ];
 
-export const VoucherDrawer = ({ isOpen, onClose }: VoucherDrawerProps) => {
+export const VoucherDrawer = ({ 
+  isOpen, 
+  onClose, 
+  onSelect, 
+  subTotal = 0, 
+  categoryIds = [], 
+  totalQuantity = 0 
+}: VoucherDrawerProps) => {
   const [activeTab, setActiveTab] = useState<TabType>("all");
-  const [vouchers, setVouchers] = useState<Record<string, CouponData[]>>({});
+  const [rawVouchers, setRawVouchers] = useState<Record<string, CouponData[]>>({});
   const [loading, setLoading] = useState(true);
+
+  const displayVouchers = useMemo(() => {
+    const vouchersMap: Record<string, any[]> = {};
+    
+    Object.entries(rawVouchers).forEach(([tab, list]) => {
+      vouchersMap[tab] = list.map(v => {
+        let isEligible = true;
+        let reason = '';
+        let potentialDiscount = 0;
+
+        // Eligibility is only calculated when in "Selection" mode (Checkout)
+        const checkEligibility = !!onSelect;
+
+        // Eligibility Checks
+        if (checkEligibility) {
+          if (v.minOrderAmount && subTotal < v.minOrderAmount) {
+            isEligible = false;
+            reason = `Mua thêm ${(v.minOrderAmount - subTotal).toLocaleString()}đ`;
+          }
+          
+          if (v.minQuantity && totalQuantity < v.minQuantity) {
+            isEligible = false;
+            reason = `Cần ít nhất ${v.minQuantity} sản phẩm`;
+          }
+
+          if (v.categoryId && !categoryIds.includes(v.categoryId)) {
+            isEligible = false;
+            reason = `Chỉ áp dụng cho danh mục nhất định`;
+          }
+        }
+
+        // Calculate potential discount for sorting
+        if (v.discountType === 'PERCENTAGE') {
+          potentialDiscount = (subTotal * v.discountValue) / 100;
+          if (v.maxDiscountAmount && potentialDiscount > v.maxDiscountAmount) {
+            potentialDiscount = v.maxDiscountAmount;
+          }
+        } else {
+          potentialDiscount = v.discountValue;
+        }
+
+        return { ...v, isEligible, reason, potentialDiscount };
+      }).sort((a, b) => {
+        // Sort: Eligible first, then by potential discount amount descending
+        if (a.isEligible !== b.isEligible) return a.isEligible ? -1 : 1;
+        return b.potentialDiscount - a.potentialDiscount;
+      });
+    });
+
+    return vouchersMap;
+  }, [rawVouchers, subTotal, categoryIds, totalQuantity]);
+
+  const handleSelect = (code: string) => {
+    if (onSelect) {
+      onSelect(code);
+      onClose();
+    }
+  };
 
   useEffect(() => {
     if (isOpen) {
@@ -31,7 +100,7 @@ export const VoucherDrawer = ({ isOpen, onClose }: VoucherDrawerProps) => {
         setLoading(true);
         try {
           const data = await couponService.getPublicVouchers();
-          setVouchers(data);
+          setRawVouchers(data);
         } catch (error) {
           console.error("Failed to fetch vouchers", error);
         } finally {
@@ -42,7 +111,7 @@ export const VoucherDrawer = ({ isOpen, onClose }: VoucherDrawerProps) => {
     }
   }, [isOpen]);
 
-  const currentVouchers = vouchers[activeTab] || [];
+  const currentVouchers = displayVouchers[activeTab] || [];
 
   return (
     <AnimatePresence>
@@ -134,6 +203,9 @@ export const VoucherDrawer = ({ isOpen, onClose }: VoucherDrawerProps) => {
                       coupon={coupon} 
                       isComingSoon={activeTab === 'comingSoon'}
                       isExpiringSoon={activeTab === 'expiringSoon'}
+                      onSelect={onSelect ? handleSelect : undefined}
+                      isEligible={coupon.isEligible}
+                      reason={coupon.reason}
                     />
                   ))}
                 </div>

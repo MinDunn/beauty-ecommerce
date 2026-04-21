@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react';
 import { ArrowRight, ChevronLeft, ChevronRight } from 'lucide-react';
+import { Link } from 'react-router-dom';
 
 const STATIC_BANNERS = [
   {
@@ -97,10 +98,13 @@ export const HeroBanner = () => {
                   </p>
                   
                   {/* Action Button */}
-                  <button className="flex items-center space-x-3 bg-slate-900 text-white px-8 py-4 rounded-2xl font-bold hover:bg-orange-600 transition-all hover:shadow-2xl hover:shadow-orange-200 hover:-translate-y-1 active:scale-95 group/btn uppercase tracking-widest text-xs">
+                  <Link 
+                    to="/category"
+                    className="inline-flex items-center space-x-3 bg-slate-900 text-white px-8 py-4 rounded-2xl font-bold hover:bg-orange-600 transition-all hover:shadow-2xl hover:shadow-orange-200 hover:-translate-y-1 active:scale-95 group/btn uppercase tracking-widest text-xs"
+                  >
                     <span>Khám phá ngay</span>
                     <ArrowRight size={20} className="group-hover/btn:translate-x-2 transition-transform duration-300" />
-                  </button>
+                  </Link>
                 </div>
               </div>
             </div>

@@ -151,6 +151,50 @@ export const Orders = () => {
     });
   };
 
+  const handleApproveCancel = (id: number) => {
+    setConfirmConfig({
+      isOpen: true,
+      title: 'Phê duyệt hủy đơn',
+      message: `Bạn có chắc chắn muốn CHẤP NHẬN yêu cầu hủy đơn hàng #GLW${id} không? Tiền (nếu đã thanh toán) sẽ cần được hoàn trả thủ công nếu cần thiết.`,
+      confirmLabel: 'Chấp nhận hủy',
+      confirmColor: 'rose',
+      icon: CheckCircle2,
+      onConfirm: async () => {
+        setConfirmConfig(null);
+        const loadingToast = toast.loading("Đang xử lý...");
+        try {
+          await orderService.adminApproveCancellation(id);
+          toast.success("Đã chấp nhận hủy đơn hàng", { id: loadingToast });
+          fetchOrders();
+        } catch (error) {
+          toast.error("Lỗi khi phê duyệt yêu cầu", { id: loadingToast });
+        }
+      }
+    });
+  };
+
+  const handleRejectCancel = (id: number) => {
+    setConfirmConfig({
+      isOpen: true,
+      title: 'Từ chối hủy đơn',
+      message: `Bạn có chắc chắn muốn TỪ CHỐI yêu cầu hủy đơn hàng #GLW${id} và tiếp tục xử lý đơn không?`,
+      confirmLabel: 'Tiếp tục đơn hàng',
+      confirmColor: 'primary',
+      icon: XCircle,
+      onConfirm: async () => {
+        setConfirmConfig(null);
+        const loadingToast = toast.loading("Đang xử lý...");
+        try {
+          await orderService.adminRejectCancellation(id);
+          toast.success("Đã từ chối yêu cầu hủy", { id: loadingToast });
+          fetchOrders();
+        } catch (error) {
+          toast.error("Lỗi khi từ chối yêu cầu", { id: loadingToast });
+        }
+      }
+    });
+  };
+
   const tableData = orders.map(order => ({
     id: order.id,
     customer: (
@@ -201,7 +245,7 @@ export const Orders = () => {
         </div>
 
         {/* Next Step Suggestion */}
-        {order.status !== 'DELIVERED' && order.status !== 'CANCELLED' && (
+        {order.status !== 'DELIVERED' && order.status !== 'CANCELLED' && order.status !== 'CANCELLATION_REQUESTED' && (
           <button
             onClick={() => {
               const nextStatus = 
@@ -216,6 +260,24 @@ export const Orders = () => {
              order.status === 'CONFIRMED' ? 'Giao hàng' : 'Hoàn thành'}
              <ArrowRight size={8} className="translate-x-0 group-hover:translate-x-1 transition-transform" />
           </button>
+        )}
+
+        {/* Cancellation Actions */}
+        {order.status === 'CANCELLATION_REQUESTED' && (
+          <div className="flex gap-2">
+            <button
+              onClick={() => handleApproveCancel(order.id)}
+              className="text-[8px] font-black uppercase text-rose-500 hover:text-rose-400 flex items-center gap-1"
+            >
+              <CheckCircle size={10} /> Đồng ý hủy
+            </button>
+            <button
+              onClick={() => handleRejectCancel(order.id)}
+              className="text-[8px] font-black uppercase text-slate-500 hover:text-slate-300 flex items-center gap-1"
+            >
+              <XCircle size={10} /> Từ chối
+            </button>
+          </div>
         )}
       </div>
     ),
@@ -447,7 +509,23 @@ export const Orders = () => {
                         <CheckCircle size={14} /> Hoàn thành
                       </button>
                     )}
-                    {selectedOrder.status !== 'CANCELLED' && selectedOrder.status !== 'DELIVERED' && (
+                    {selectedOrder.status === 'CANCELLATION_REQUESTED' && (
+                      <>
+                        <button 
+                          onClick={() => handleApproveCancel(selectedOrder.id)}
+                          className="px-6 py-3 bg-rose-500 text-white rounded-xl text-[10px] font-black uppercase tracking-widest hover:bg-black transition-all flex items-center gap-2 shadow-lg shadow-rose-500/10"
+                        >
+                          <CheckCircle size={14} /> Chấp nhận hủy đơn
+                        </button>
+                        <button 
+                          onClick={() => handleRejectCancel(selectedOrder.id)}
+                          className="px-6 py-3 bg-slate-800 text-slate-300 rounded-xl text-[10px] font-black uppercase tracking-widest hover:bg-black transition-all flex items-center gap-2 border border-slate-700"
+                        >
+                          <XCircle size={14} /> Từ chối hủy
+                        </button>
+                      </>
+                    )}
+                    {selectedOrder.status !== 'CANCELLED' && selectedOrder.status !== 'DELIVERED' && selectedOrder.status !== 'CANCELLATION_REQUESTED' && (
                       <button 
                         onClick={() => handleStatusUpdate(selectedOrder.id, 'CANCELLED')}
                         className="px-6 py-3 bg-slate-800 text-rose-500 rounded-xl text-[10px] font-black uppercase tracking-widest hover:bg-rose-500 hover:text-white transition-all flex items-center gap-2 border border-rose-500/20 hover:border-rose-500"
