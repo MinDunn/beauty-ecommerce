@@ -17,8 +17,9 @@ export type Product = {
     price: number;
     imageUrl?: string;
     stockQuantity?: number;
+    skinTypes?: string[];
   }[];
-  skinType?: string;
+  skinTypes?: string[];
   createdAt?: string;
   expiryDate: string;
   status: 'ACTIVE' | 'HIDDEN' | 'DISCONTINUED';

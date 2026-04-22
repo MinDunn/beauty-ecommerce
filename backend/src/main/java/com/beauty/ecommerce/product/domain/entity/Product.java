@@ -22,7 +22,7 @@ public class Product {
     private BigDecimal currentPrice;
     private Integer stockQuantity;
     private String imageUrl;
-    private String skinType;
+    private java.util.List<String> skinTypes;
     private Long categoryId;
     private String instructions;
     private String ingredients;
@@ -45,5 +45,6 @@ public class Product {
         private java.math.BigDecimal price;
         private String imageUrl;
         private Integer stockQuantity;
+        private java.util.List<String> skinTypes;
     }
 }

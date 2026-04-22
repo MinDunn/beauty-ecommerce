@@ -27,7 +27,7 @@ public class ProductResponse {
     private Long categoryId;
     private String instructions;
     private String ingredients;
-    private String skinType;
+    private java.util.List<String> skinTypes;
     private LocalDateTime createdAt;
     private Double averageRating;
     private Long viewCount;
@@ -46,5 +46,6 @@ public class ProductResponse {
         private java.math.BigDecimal price;
         private String imageUrl;
         private Integer stockQuantity;
+        private java.util.List<String> skinTypes;
     }
 }

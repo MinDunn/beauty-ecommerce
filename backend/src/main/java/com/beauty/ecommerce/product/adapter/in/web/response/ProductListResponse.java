@@ -28,7 +28,7 @@ public class ProductListResponse {
     private String ingredients;
     private Double averageRating;
     private Long reviewCount;
-    private String skinType;
+    private java.util.List<String> skinTypes;
     private Long viewCount;
     private Integer sold;
     private String status;

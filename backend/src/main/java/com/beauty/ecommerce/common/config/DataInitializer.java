@@ -24,8 +24,6 @@ public class DataInitializer implements CommandLineRunner {
     public void run(String... args) {
         try {
             log.info("Bắt đầu kiểm tra cấu trúc Database...");
-            ensureSkinTypeColumnExists();
-            ensureSoldAndViewColumnsExist();
             log.info("Bắt đầu khởi tạo dữ liệu mẫu...");
             initializeUsers();
             initializeCategoriesAndProducts();
@@ -100,31 +98,5 @@ public class DataInitializer implements CommandLineRunner {
         log.info("Bỏ qua khởi tạo danh mục tự động (để tránh trùng lặp dữ liệu)...");
     }
 
-    private void ensureSkinTypeColumnExists() {
-        log.info("Kiểm tra và tạo cột skin_type nếu chưa tồn tại...");
-        try {
-            // MySQL 8.0.19+ supports ADD COLUMN IF NOT EXISTS, but for better compatibility:
-            jdbcTemplate.execute("ALTER TABLE products ADD COLUMN skin_type VARCHAR(50)");
-            log.info("Đã tạo cột skin_type thành công.");
-        } catch (Exception e) {
-            // If column already exists, MySQL throws an error we can safely ignore
-            log.info("Cột skin_type đã tồn tại hoặc có lỗi (bỏ qua): {}", e.getMessage());
-        }
-    }
 
-    private void ensureSoldAndViewColumnsExist() {
-        log.info("Kiểm tra và tạo cột sold/view_count nếu chưa tồn tại...");
-        try {
-            jdbcTemplate.execute("ALTER TABLE products ADD COLUMN sold INT DEFAULT 0");
-            log.info("Đã tạo cột sold thành công.");
-        } catch (Exception e) {
-            log.info("Cột sold đã tồn tại hoặc có lỗi (bỏ qua): {}", e.getMessage());
-        }
-        try {
-            jdbcTemplate.execute("ALTER TABLE products ADD COLUMN view_count BIGINT DEFAULT 0");
-            log.info("Đã tạo cột view_count thành công.");
-        } catch (Exception e) {
-            log.info("Cột view_count đã tồn tại hoặc có lỗi (bỏ qua): {}", e.getMessage());
-        }
-    }
 }

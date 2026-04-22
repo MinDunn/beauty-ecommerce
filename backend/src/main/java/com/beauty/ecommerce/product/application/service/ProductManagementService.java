@@ -50,7 +50,6 @@ public class ProductManagementService implements ManageProductUseCase {
                 .categoryId(command.getCategoryId())
                 .instructions(command.getInstructions())
                 .ingredients(command.getIngredients())
-                .skinType(command.getSkinType())
                 .status("ACTIVE")
                 .expiryDate(command.getExpiryDate())
                 .imageUrl(mainImageUrl)
@@ -66,6 +65,7 @@ public class ProductManagementService implements ManageProductUseCase {
                                 .price(v.getPrice())
                                 .imageUrl(variantImageUrl)
                                 .stockQuantity(v.getStockQuantity())
+                                .skinTypes(v.getSkinTypes() != null ? String.join(",", v.getSkinTypes()) : null)
                                 .build();
                             variant.setProduct(null); // Will be set after builder builds productEntity and we loop
                             return variant;
@@ -73,6 +73,24 @@ public class ProductManagementService implements ManageProductUseCase {
                         .collect(java.util.stream.Collectors.toList()) : null)
                 .createdAt(LocalDateTime.now())
                 .build();
+
+        // Auto-aggregate skin types from variants to product
+        if (productEntity.getVariants() != null) {
+            java.util.Set<String> allSkinTypes = new java.util.HashSet<>();
+            if (command.getSkinTypes() != null) {
+                allSkinTypes.addAll(command.getSkinTypes());
+            }
+            productEntity.getVariants().forEach(v -> {
+                if (v.getSkinTypes() != null && !v.getSkinTypes().isBlank()) {
+                    allSkinTypes.addAll(java.util.Arrays.asList(v.getSkinTypes().split(",")));
+                }
+            });
+            if (!allSkinTypes.isEmpty()) {
+                productEntity.setSkinTypes(String.join(",", allSkinTypes));
+            }
+        } else if (command.getSkinTypes() != null) {
+            productEntity.setSkinTypes(String.join(",", command.getSkinTypes()));
+        }
 
         // Set back-references
         if (productEntity.getVariants() != null) {
@@ -104,8 +122,13 @@ public class ProductManagementService implements ManageProductUseCase {
         productEntity.setCategoryId(command.getCategoryId());
         productEntity.setInstructions(command.getInstructions());
         productEntity.setIngredients(command.getIngredients());
-        productEntity.setSkinType(command.getSkinType());
         productEntity.setExpiryDate(command.getExpiryDate());
+        
+        // Initial skin types from command
+        java.util.Set<String> allSkinTypes = new java.util.HashSet<>();
+        if (command.getSkinTypes() != null) {
+            allSkinTypes.addAll(command.getSkinTypes());
+        }
 
         // Handle images updates
         java.util.List<String> finalImageUrls = new java.util.ArrayList<>();
@@ -146,11 +169,17 @@ public class ProductManagementService implements ManageProductUseCase {
                         if (v.getImageIndex() != null && v.getImageIndex() < newUploadedUrls.size()) {
                             variantImageUrl = newUploadedUrls.get(v.getImageIndex());
                         }
+                        
+                        if (v.getSkinTypes() != null) {
+                            allSkinTypes.addAll(v.getSkinTypes());
+                        }
+
                         return ProductVariantJpaEntity.builder()
                             .variantName(v.getVariantName())
                             .price(v.getPrice())
                             .imageUrl(variantImageUrl)
                             .stockQuantity(v.getStockQuantity())
+                            .skinTypes(v.getSkinTypes() != null ? String.join(",", v.getSkinTypes()) : null)
                             .product(productEntity)
                             .build();
                     })
@@ -161,6 +190,13 @@ public class ProductManagementService implements ManageProductUseCase {
                     .mapToInt(v -> v.getStockQuantity() != null ? v.getStockQuantity() : 0)
                     .sum();
             productEntity.setStockQuantity(totalStock);
+        }
+
+        // Update product skin types from aggregated set
+        if (!allSkinTypes.isEmpty()) {
+            productEntity.setSkinTypes(String.join(",", allSkinTypes));
+        } else {
+            productEntity.setSkinTypes(null);
         }
 
         try {
@@ -190,7 +226,7 @@ public class ProductManagementService implements ManageProductUseCase {
                 .categoryId(entity.getCategoryId())
                 .instructions(entity.getInstructions())
                 .ingredients(entity.getIngredients())
-                .skinType(entity.getSkinType())
+                .skinTypes(fromCommaSeparated(entity.getSkinTypes()))
                 .createdAt(entity.getCreatedAt())
                 .status(entity.getStatus())
                 .expiryDate(entity.getExpiryDate())
@@ -204,9 +240,15 @@ public class ProductManagementService implements ManageProductUseCase {
                                 .price(v.getPrice())
                                 .imageUrl(v.getImageUrl())
                                 .stockQuantity(v.getStockQuantity())
+                                .skinTypes(fromCommaSeparated(v.getSkinTypes()))
                                 .build())
                         .collect(java.util.stream.Collectors.toList()) : new java.util.ArrayList<>())
                 .build();
+    }
+
+    private java.util.List<String> fromCommaSeparated(String str) {
+        if (str == null || str.isBlank()) return new java.util.ArrayList<>();
+        return new java.util.ArrayList<>(java.util.Arrays.asList(str.split(",")));
     }
 
     @Override

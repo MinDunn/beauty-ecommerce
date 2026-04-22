@@ -39,4 +39,7 @@ public class ProductVariantJpaEntity {
     @jakarta.persistence.Column(name = "stock_quantity")
     @Builder.Default
     private Integer stockQuantity = 0;
+
+    @jakarta.persistence.Column(name = "skin_types")
+    private String skinTypes;
 }

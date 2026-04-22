@@ -26,7 +26,7 @@ public interface ManageProductUseCase {
         private Long categoryId;
         private String instructions;
         private String ingredients;
-        private String skinType;
+        private java.util.List<String> skinTypes;
         private String imageUrl;
         private java.util.List<String> existingImages;
         private java.time.LocalDate expiryDate;
@@ -44,7 +44,7 @@ public interface ManageProductUseCase {
         private Long categoryId;
         private String instructions;
         private String ingredients;
-        private String skinType;
+        private java.util.List<String> skinTypes;
         private String imageUrl;
         private java.util.List<String> existingImages;
         private java.time.LocalDate expiryDate;
@@ -59,5 +59,6 @@ public interface ManageProductUseCase {
         private String imageUrl;
         private Integer stockQuantity;
         private Integer imageIndex;
+        private java.util.List<String> skinTypes;
     }
 }

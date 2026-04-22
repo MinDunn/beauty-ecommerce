@@ -61,8 +61,8 @@ public class ProductJpaEntity {
     @Builder.Default
     private Integer sold = 0;
 
-    @jakarta.persistence.Column(name = "skin_type")
-    private String skinType;
+    @jakarta.persistence.Column(name = "skin_types")
+    private String skinTypes;
 
     @jakarta.persistence.Column(name = "status")
     @Builder.Default

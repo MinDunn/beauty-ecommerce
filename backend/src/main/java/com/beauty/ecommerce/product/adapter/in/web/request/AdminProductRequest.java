@@ -27,8 +27,8 @@ public class AdminProductRequest {
     
     private String instructions;
     private String ingredients;
-    private String skinType;
-    @jakarta.validation.constraints.NotNull(message = "Expiry date is required")
+    private java.util.List<String> skinTypes;
+    @NotNull(message = "Expiry date is required")
     private java.time.LocalDate expiryDate;
 
     private String imageUrl;
@@ -43,5 +43,6 @@ public class AdminProductRequest {
         private String imageUrl;
         private Integer stockQuantity;
         private Integer imageIndex; // Index in the general images list
+        private java.util.List<String> skinTypes;
     }
 }

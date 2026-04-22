@@ -18,6 +18,101 @@ const getNowLocalDatetime = () => {
 
 const sanitizeCurrencyInput = (value: string) => value.replace(/[^\d]/g, "");
 
+const PREDEFINED_SKIN_TYPES = [
+  "Da dầu", 
+  "Da khô", 
+  "Da hỗn hợp", 
+  "Da mụn", 
+  "Da nhạy cảm", 
+  "Mọi loại da"
+];
+
+const SkinTypeSelector = ({ 
+  selected, 
+  onChange, 
+  label
+}: { 
+  selected: string[], 
+  onChange: (tags: string[]) => void,
+  label: string
+}) => {
+  const [inputValue, setInputValue] = useState("");
+  const [isFocused, setIsFocused] = useState(false);
+
+  const handleAdd = (tag: string) => {
+    const trimmed = tag.trim();
+    if (trimmed && !selected.includes(trimmed)) {
+      onChange([...selected, trimmed]);
+    }
+    setInputValue("");
+  };
+
+  const handleRemove = (tag: string) => {
+    onChange(selected.filter(t => t !== tag));
+  };
+
+  return (
+    <div className="space-y-1.5">
+      <label className="text-[10px] font-black text-slate-500 uppercase tracking-widest ml-1">{label}</label>
+      <div className={cn(
+        "bg-slate-800/50 border border-slate-700 rounded-2xl p-2 transition-all flex flex-wrap gap-2 min-h-[48px]",
+        isFocused && "border-primary-500/50 ring-4 ring-primary-500/5"
+      )}>
+        {selected.map(tag => (
+          <span key={tag} className="flex items-center gap-1.5 bg-primary-500/10 text-primary-500 px-2.5 py-1 rounded-xl text-xs font-bold border border-primary-500/20 group">
+            {tag}
+            <button type="button" onClick={() => handleRemove(tag)} className="hover:text-rose-500 transition-colors">
+              <X size={12} />
+            </button>
+          </span>
+        ))}
+        <input
+          placeholder={selected.length === 0 ? "Chọn hoặc gõ loại da mới..." : "Thêm..."}
+          className="flex-1 bg-transparent border-none outline-none text-white text-sm px-2 min-w-[120px]"
+          value={inputValue}
+          onFocus={() => setIsFocused(true)}
+          onBlur={() => {
+            setTimeout(() => setIsFocused(false), 200);
+            if (inputValue) handleAdd(inputValue);
+          }}
+          onChange={e => setInputValue(e.target.value)}
+          onKeyDown={e => {
+            if (e.key === 'Enter') {
+              e.preventDefault();
+              handleAdd(inputValue);
+            }
+          }}
+        />
+      </div>
+      {isFocused && (
+        <div className="relative mt-1">
+          <div className="absolute top-0 left-0 w-full bg-slate-800 border border-slate-700 rounded-2xl shadow-2xl py-2 z-[100] animate-in fade-in slide-in-from-top-2 duration-200">
+            {PREDEFINED_SKIN_TYPES.filter(t => !selected.includes(t) && t.toLowerCase().includes(inputValue.toLowerCase())).map(t => (
+              <button
+                key={t}
+                type="button"
+                onMouseDown={() => handleAdd(t)}
+                className="w-full text-left px-4 py-2 text-sm text-slate-300 hover:bg-slate-700 hover:text-white transition-colors"
+              >
+                {t}
+              </button>
+            ))}
+            {inputValue && !PREDEFINED_SKIN_TYPES.includes(inputValue) && !selected.includes(inputValue) && (
+              <button
+                type="button"
+                onMouseDown={() => handleAdd(inputValue)}
+                className="w-full text-left px-4 py-2 text-sm text-primary-500 hover:bg-primary-500/10 transition-colors font-bold"
+              >
+                + Thêm mới "{inputValue}"
+              </button>
+            )}
+          </div>
+        </div>
+      )}
+    </div>
+  );
+};
+
 export const Products = () => {
   const [products, setProducts] = useState<Product[]>([]);
   const [isLoading, setIsLoading] = useState(true);
@@ -61,9 +156,9 @@ export const Products = () => {
     categoryId: "",
     instructions: "",
     ingredients: "",
-    skinType: "",
     expiryDate: "",
-    variants: [] as { variantName: string, price: string, imageUrl: string, stockQuantity: number, file?: File }[]
+    skinTypes: [] as string[],
+    variants: [] as { variantName: string, price: string, imageUrl: string, stockQuantity: number, skinTypes: string[], file?: File }[]
   });
 
   const [restockData, setRestockData] = useState({
@@ -85,6 +180,22 @@ export const Products = () => {
     remarks: ""
   });
   const [currentUnitCost, setCurrentUnitCost] = useState<number | null>(null);
+
+  // Auto-aggregate skin types from variants to product level
+  useEffect(() => {
+    if (formData.variants.length > 0) {
+      const allVariantSkinTypes = new Set<string>();
+      formData.variants.forEach(v => {
+        v.skinTypes?.forEach(st => allVariantSkinTypes.add(st));
+      });
+      
+      const newSkinTypes = Array.from(allVariantSkinTypes);
+      // Only update if changed to avoid infinite loop
+      if (JSON.stringify(formData.skinTypes) !== JSON.stringify(newSkinTypes)) {
+        setFormData(prev => ({ ...prev, skinTypes: newSkinTypes }));
+      }
+    }
+  }, [formData.variants]);
 
   const fetchProducts = async () => {
     setIsLoading(true);
@@ -208,13 +319,14 @@ export const Products = () => {
         categoryId: product.categoryId?.toString() || "",
         instructions: product.instructions || "",
         ingredients: product.ingredients || "",
-        skinType: product.skinType || "",
         expiryDate: product.expiryDate || "",
+        skinTypes: product.skinTypes || [],
         variants: product.variants?.map((v: any) => ({
           variantName: v.variantName,
           price: (v.price ?? 0).toString(),
           imageUrl: v.imageUrl || "",
           stockQuantity: v.stockQuantity || 0,
+          skinTypes: v.skinTypes || [],
           file: undefined
         })) || []
       });
@@ -241,7 +353,8 @@ export const Products = () => {
           price: Number(sanitizeCurrencyInput(v.price || "0")),
           imageUrl: v.imageUrl,
           stockQuantity: v.stockQuantity || 0,
-          imageIndex: undefined
+          imageIndex: undefined,
+          skinTypes: v.skinTypes
         };
       });
 
@@ -255,8 +368,8 @@ export const Products = () => {
         categoryId: parseInt(formData.categoryId),
         instructions: formData.instructions,
         ingredients: formData.ingredients,
-        skinType: formData.skinType,
         expiryDate: formData.expiryDate,
+        skinTypes: formData.skinTypes,
         existingImages: [formData.imageUrl, ...formData.additionalImages].filter(Boolean) as string[],
         variants: variantsWithIndex
       };
@@ -480,8 +593,8 @@ export const Products = () => {
       categoryId: categories.length > 0 ? categories[0].id.toString() : "",
       instructions: "",
       ingredients: "",
-      skinType: "",
       expiryDate: "",
+      skinTypes: [],
       variants: []
     });
   };
@@ -525,10 +638,18 @@ export const Products = () => {
       </div>
     ),
     category: categories.find(c => String(c.id) === String(p.categoryId))?.name || "Đang tải...",
-    skinType: (
-      <span className="px-3 py-1 rounded-full text-[10px] font-black uppercase tracking-tight bg-primary-500/10 text-primary-500 border border-primary-500/20 whitespace-nowrap inline-flex items-center justify-center">
-        {p.skinType || "---"}
-      </span>
+    skinTypes: (
+      <div className="flex flex-wrap gap-1 max-w-[150px]">
+        {p.skinTypes && p.skinTypes.length > 0 ? (
+          p.skinTypes.map(st => (
+            <span key={st} className="px-2 py-0.5 rounded-full text-[8px] font-black uppercase tracking-tight bg-primary-500/10 text-primary-500 border border-primary-500/20 whitespace-nowrap">
+              {st}
+            </span>
+          ))
+        ) : (
+          <span className="text-[10px] text-slate-600">---</span>
+        )}
+      </div>
     ),
     expiryDate: (
       <div className="flex flex-col">
@@ -851,7 +972,7 @@ export const Products = () => {
               columns={[
                 { header: "Tên sản phẩm", key: "name" },
                 { header: "Giá hiện tại", key: "price" },
-                { header: "Loại da", key: "skinType" },
+                { header: "Loại da", key: "skinTypes" },
                 { header: "Danh mục", key: "category" },
                 { header: "Hạn sử dụng", key: "expiryDate" },
                 { header: "Số lượng", key: "stock" },
@@ -913,25 +1034,12 @@ export const Products = () => {
                 </select>
               </div>
 
-              {/* Skin Type conditional */}
-              {(categories.find(c => String(c.id) === formData.categoryId)?.name === "Chăm sóc da" || 
-                categories.find(c => String(c.id) === formData.categoryId)?.parentId === categories.find(p => p.name === "Chăm sóc da")?.id) && (
-                <div className="space-y-2 animate-in fade-in zoom-in duration-300">
-                  <label className="text-[10px] font-black text-primary-500 uppercase tracking-widest ml-1">Loại da phù hợp</label>
-                  <select 
-                    className="bg-primary-500/10 border-2 border-primary-500/40 w-full px-4 py-3.5 rounded-2xl text-white outline-none focus:border-primary-500 focus:ring-4 focus:ring-primary-500/20 transition-all font-bold appearance-none shadow-[0_0_15px_rgba(236,72,153,0.1)]" 
-                    value={formData.skinType} 
-                    onChange={e => setFormData({ ...formData, skinType: e.target.value })}
-                  >
-                    <option value="" className="bg-slate-900 text-white">-- Chọn loại da phù hợp --</option>
-                    <option value="Da dầu" className="bg-slate-900 text-white">Da dầu</option>
-                    <option value="Da khô" className="bg-slate-900 text-white">Da khô</option>
-                    <option value="Da nhạy cảm" className="bg-slate-900 text-white">Da nhạy cảm</option>
-                    <option value="Da hỗn hợp" className="bg-slate-900 text-white">Da hỗn hợp</option>
-                    <option value="Da thường" className="bg-slate-900 text-white">Da thường</option>
-                  </select>
-                </div>
-              )}
+              {/* Multi-tag Skin Type Selector - Always visible */}
+              <SkinTypeSelector
+                label="Loại da phù hợp (Được tổng hợp từ các biến thể)"
+                selected={formData.skinTypes}
+                onChange={tags => setFormData({ ...formData, skinTypes: tags })}
+              />
 
               {/* Expiry Date */}
               <div className="space-y-2">
@@ -1002,15 +1110,15 @@ export const Products = () => {
                 <Tag className="w-6 h-6" />
               </div>
             </div>
-            <div className="space-y-2">
-              <label className="text-[10px] font-black text-slate-500 uppercase tracking-widest ml-1">Ngày giờ nhập</label>
-              <input
-                type="datetime-local"
-                required
-                className="bg-slate-800/50 border border-slate-700 w-full px-4 py-3.5 rounded-2xl text-white outline-none focus:border-emerald-500/50 focus:ring-4 focus:ring-emerald-500/10 transition-all font-medium"
-                value={restockData.receivedAt}
-                onChange={e => setRestockData({ ...restockData, receivedAt: e.target.value })}
+            <div className="space-y-4">
+              <SkinTypeSelector
+                label="Loại da phù hợp (Sản phẩm)"
+                selected={formData.skinTypes}
+                onChange={tags => setFormData({ ...formData, skinTypes: tags })}
               />
+              <p className="text-[9px] text-slate-500 italic ml-1">
+                * Tự động tổng hợp từ tất cả các biến thể bên dưới. Bạn có thể thêm thủ công nếu cần.
+              </p>
             </div>
 
             {/* Instructions & Ingredients */}
@@ -1050,20 +1158,6 @@ export const Products = () => {
 
             {/* Variants Section */}
             <div className="space-y-4 border-t border-slate-700/50 pt-4">
-              <div className="flex justify-between items-center">
-                <label className="text-[10px] font-black text-slate-500 uppercase tracking-widest ml-1">Biến thể (Màu sắc, vị...)</label>
-                <button
-                  type="button"
-                  onClick={() => setFormData({
-                    ...formData,
-                    variants: [...formData.variants, { variantName: "", price: formData.salePrice || "0", imageUrl: "", stockQuantity: 0 }]
-                  })}
-                  className="text-[10px] font-black text-primary-500 uppercase tracking-widest hover:text-primary-400 transition-colors"
-                >
-                  + Thêm biến thể
-                </button>
-              </div>
-
               {formData.variants.map((variant, index) => {
                 const totalPrice = (Number(sanitizeCurrencyInput(formData.salePrice || "0")) + Number(variant.price || "0")).toLocaleString();
 
@@ -1081,7 +1175,7 @@ export const Products = () => {
                     </button>
 
                     <div className="grid grid-cols-2 gap-4">
-                      {/* Variant Name */}
+                      {/* Name & Price */}
                       <div className="space-y-1.5">
                         <label className="text-[10px] font-black text-slate-500 uppercase tracking-widest ml-1">Tên biến thể</label>
                         <input
@@ -1095,8 +1189,6 @@ export const Products = () => {
                           }}
                         />
                       </div>
-
-                      {/* Price Difference */}
                       <div className="space-y-1.5">
                         <label className="text-[10px] font-black text-slate-500 uppercase tracking-widest ml-1">Giá chênh lệch (đ)</label>
                         <input
@@ -1115,45 +1207,54 @@ export const Products = () => {
                     </div>
 
                     <div className="flex items-center justify-between gap-4 pt-2">
-                      {/* Image URL Input */}
+                      {/* Image Preview */}
+                      <div className="w-16 h-16 rounded-2xl border-2 border-slate-700 bg-slate-800 flex items-center justify-center overflow-hidden relative shrink-0">
+                        {variant.imageUrl ? (
+                          <img
+                            src={variant.imageUrl}
+                            className="w-full h-full object-cover"
+                            alt="variant preview"
+                            onError={(e) => {
+                              (e.target as HTMLImageElement).src = "https://via.placeholder.com/64?text=Error";
+                            }}
+                          />
+                        ) : (
+                          <ImageIcon className="text-slate-600" />
+                        )}
+                      </div>
+                      
+                      {/* Image Link Input */}
                       <div className="flex-1">
-                        <label className="text-[10px] font-black text-slate-500 uppercase tracking-widest ml-1 mb-1.5 block">Link hình ảnh biến thể</label>
-                        <div className="flex items-center gap-3">
-                          <div className="flex-1">
-                            <input
-                              placeholder="Dán link ảnh tại đây..."
-                              className="w-full bg-slate-800 border border-slate-700 rounded-2xl px-4 py-3 text-white text-sm outline-none focus:border-primary-500/50 transition-all"
-                              value={variant.imageUrl}
-                              onChange={e => {
-                                const newVariants = [...formData.variants];
-                                newVariants[index].imageUrl = e.target.value;
-                                setFormData({ ...formData, variants: newVariants });
-                              }}
-                            />
-                          </div>
-                          <div className="w-16 h-16 rounded-2xl border-2 border-slate-700 bg-slate-800 flex items-center justify-center overflow-hidden relative shrink-0">
-                            {variant.imageUrl ? (
-                              <img
-                                src={variant.imageUrl}
-                                className="w-full h-full object-cover"
-                                alt="variant preview"
-                                onError={(e) => {
-                                  (e.target as HTMLImageElement).src = "https://via.placeholder.com/64?text=Error";
-                                }}
-                              />
-                            ) : (
-                              <ImageIcon className="text-slate-600" />
-                            )}
-                          </div>
-                        </div>
+                        <label className="text-[10px] font-black text-slate-500 uppercase tracking-widest ml-1 mb-1.5 block text-xs">Link hình ảnh</label>
+                        <input
+                          placeholder="Dán link ảnh..."
+                          className="w-full bg-slate-800 border border-slate-700 rounded-2xl px-4 py-3 text-white text-xs outline-none focus:border-primary-500/50 transition-all"
+                          value={variant.imageUrl}
+                          onChange={e => {
+                            const newVariants = [...formData.variants];
+                            newVariants[index].imageUrl = e.target.value;
+                            setFormData({ ...formData, variants: newVariants });
+                          }}
+                        />
                       </div>
 
                       {/* Total Price Display */}
                       <div className="bg-primary-500/5 border border-primary-500/10 p-3 rounded-2xl text-right min-w-[140px]">
-                        <p className="text-[8px] font-black text-primary-500 uppercase tracking-widest mb-1">Giá bán tổng cộng</p>
+                        <p className="text-[8px] font-black text-primary-500 uppercase tracking-widest mb-1">Tổng cộng</p>
                         <p className="text-lg font-black text-white">{totalPrice}đ</p>
                       </div>
                     </div>
+
+                    {/* Variant Skin Types */}
+                    <SkinTypeSelector
+                      label="Loại da cho biến thể này"
+                      selected={variant.skinTypes || []}
+                      onChange={tags => {
+                        const newVariants = [...formData.variants];
+                        newVariants[index].skinTypes = tags;
+                        setFormData({ ...formData, variants: newVariants });
+                      }}
+                    />
                   </div>
                 );
               })}

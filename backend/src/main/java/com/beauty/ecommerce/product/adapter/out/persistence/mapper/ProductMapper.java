@@ -19,7 +19,7 @@ public class ProductMapper {
                 .categoryId(jpaEntity.getCategoryId())
                 .instructions(jpaEntity.getInstructions())
                 .ingredients(jpaEntity.getIngredients())
-                .skinType(jpaEntity.getSkinType())
+                .skinTypes(fromCommaSeparated(jpaEntity.getSkinTypes()))
                 .createdAt(jpaEntity.getCreatedAt())
                 .viewCount(jpaEntity.getViewCount() != null ? jpaEntity.getViewCount() : 0L)
                 .sold(jpaEntity.getSold() != null ? jpaEntity.getSold() : 0)
@@ -33,6 +33,7 @@ public class ProductMapper {
                                 .price(v.getPrice())
                                 .imageUrl(v.getImageUrl())
                                 .stockQuantity(v.getStockQuantity())
+                                .skinTypes(fromCommaSeparated(v.getSkinTypes()))
                                 .build())
                         .collect(java.util.stream.Collectors.toList()) : new java.util.ArrayList<>())
                 .status(jpaEntity.getStatus())
@@ -52,7 +53,7 @@ public class ProductMapper {
                 .categoryId(domainEntity.getCategoryId())
                 .instructions(domainEntity.getInstructions())
                 .ingredients(domainEntity.getIngredients())
-                .skinType(domainEntity.getSkinType())
+                .skinTypes(toCommaSeparated(domainEntity.getSkinTypes()))
                 .createdAt(domainEntity.getCreatedAt())
                 .viewCount(domainEntity.getViewCount() != null ? domainEntity.getViewCount() : 0L)
                 .sold(domainEntity.getSold() != null ? domainEntity.getSold() : 0)
@@ -79,6 +80,7 @@ public class ProductMapper {
                             .price(v.getPrice())
                             .imageUrl(v.getImageUrl())
                             .stockQuantity(v.getStockQuantity())
+                            .skinTypes(toCommaSeparated(v.getSkinTypes()))
                             .product(jpaEntity)
                             .build())
                     .collect(java.util.stream.Collectors.toList()));
@@ -87,5 +89,15 @@ public class ProductMapper {
         }
 
         return jpaEntity;
+    }
+
+    private java.util.List<String> fromCommaSeparated(String str) {
+        if (str == null || str.isBlank()) return new java.util.ArrayList<>();
+        return new java.util.ArrayList<>(java.util.Arrays.asList(str.split(",")));
+    }
+
+    private String toCommaSeparated(java.util.List<String> list) {
+        if (list == null || list.isEmpty()) return null;
+        return String.join(",", list);
     }
 }
