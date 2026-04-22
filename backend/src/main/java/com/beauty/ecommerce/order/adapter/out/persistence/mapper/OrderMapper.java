@@ -26,6 +26,7 @@ public class OrderMapper {
                 .receiverName(jpaEntity.getReceiverName())
                 .receiverPhone(jpaEntity.getReceiverPhone())
                 .shippingAddress(jpaEntity.getShippingAddress())
+                .cancelReason(jpaEntity.getCancelReason())
                 .items(jpaEntity.getItems().stream()
                         .map(this::mapToOrderItemDomainEntity)
                         .collect(Collectors.toList()))

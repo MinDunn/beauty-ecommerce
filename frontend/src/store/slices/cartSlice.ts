@@ -58,6 +58,28 @@ const cartSlice = createSlice({
       localStorage.setItem('totalQuantity', JSON.stringify(state.totalQuantity));
       localStorage.setItem('totalAmount', JSON.stringify(state.totalAmount));
     },
+
+    upsertItem(state, action: PayloadAction<CartItem>) {
+      const newItem = action.payload;
+      const existingItem = state.items.find(
+        (item) => item.id === newItem.id && item.variantName === newItem.variantName
+      );
+      
+      if (existingItem) {
+        state.totalQuantity += (newItem.quantity - existingItem.quantity);
+        state.totalAmount += newItem.price * (newItem.quantity - existingItem.quantity);
+        existingItem.quantity = newItem.quantity;
+        existingItem.selected = true;
+      } else {
+        state.totalQuantity += newItem.quantity;
+        state.totalAmount += newItem.price * newItem.quantity;
+        state.items.push({ ...newItem, selected: true });
+      }
+
+      localStorage.setItem('cartItems', JSON.stringify(state.items));
+      localStorage.setItem('totalQuantity', JSON.stringify(state.totalQuantity));
+      localStorage.setItem('totalAmount', JSON.stringify(state.totalAmount));
+    },
     
     removeItem(state, action: PayloadAction<{ id: string; variantName?: string | null }>) {
       const { id, variantName } = action.payload;
@@ -145,6 +167,7 @@ const cartSlice = createSlice({
 
 export const { 
   addItem, 
+  upsertItem,
   removeItem, 
   updateQuantity, 
   clearCart, 

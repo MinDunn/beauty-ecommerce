@@ -86,6 +86,7 @@ public class OrderController {
                 .receiverName(order.getReceiverName())
                 .receiverPhone(order.getReceiverPhone())
                 .shippingAddress(order.getShippingAddress())
+                .cancelReason(order.getCancelReason())
                 .items(order.getItems().stream()
                         .map(item -> OrderItemResponse.builder()
                                 .productId(item.getProductId())

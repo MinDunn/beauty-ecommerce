@@ -47,7 +47,7 @@ public class EmailService {
 
             helper.setFrom(fromEmail);
             helper.setTo(customerEmail);
-            helper.setSubject("Xác nhận đơn hàng #" + order.getId() + " - Beauty E-commerce");
+            helper.setSubject("Xác nhận đơn hàng #" + order.getId() + " - Glowzy Beauty");
             helper.setText(html, true);
 
             mailSender.send(message);
@@ -56,6 +56,52 @@ public class EmailService {
             log.error("Failed to send order confirmation email for order #{}", order.getId(), e);
         } catch (Exception e) {
             log.error("Unexpected error while sending email", e);
+        }
+    }
+
+    public void sendOrderCancelledEmail(Order order, String customerEmail) {
+        try {
+            log.info("Preparing to send order cancellation email for order #{}", order.getId());
+            MimeMessage message = mailSender.createMimeMessage();
+            MimeMessageHelper helper = new MimeMessageHelper(message, true, "UTF-8");
+
+            Context context = new Context();
+            context.setVariable("order", order);
+
+            String html = templateEngine.process("order-cancelled", context);
+
+            helper.setFrom(fromEmail);
+            helper.setTo(customerEmail);
+            helper.setSubject("[Glowzy] Thông báo hủy đơn hàng #" + order.getId());
+            helper.setText(html, true);
+
+            mailSender.send(message);
+            log.info("Order cancellation email sent successfully to {}", customerEmail);
+        } catch (Exception e) {
+            log.error("Failed to send order cancellation email for order #{}", order.getId(), e);
+        }
+    }
+
+    public void sendOrderDeliveredEmail(Order order, String customerEmail) {
+        try {
+            log.info("Preparing to send order delivered email for order #{}", order.getId());
+            MimeMessage message = mailSender.createMimeMessage();
+            MimeMessageHelper helper = new MimeMessageHelper(message, true, "UTF-8");
+
+            Context context = new Context();
+            context.setVariable("order", order);
+
+            String html = templateEngine.process("order-delivered", context);
+
+            helper.setFrom(fromEmail);
+            helper.setTo(customerEmail);
+            helper.setSubject("[Glowzy] Đơn hàng #" + order.getId() + " đã được giao thành công");
+            helper.setText(html, true);
+
+            mailSender.send(message);
+            log.info("Order delivered email sent successfully to {}", customerEmail);
+        } catch (Exception e) {
+            log.error("Failed to send order delivered email for order #{}", order.getId(), e);
         }
     }
 

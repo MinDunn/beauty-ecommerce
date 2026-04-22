@@ -20,5 +20,6 @@ public class OrderResponse {
     private String receiverName;
     private String receiverPhone;
     private String shippingAddress;
+    private String cancelReason;
     private List<OrderItemResponse> items;
 }

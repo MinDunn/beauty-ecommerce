@@ -13,8 +13,9 @@ import wishlistService from '../api/wishlistService';
 import orderService from '../api/orderService';
 import type { Order } from '../types';
 import { ProductCard } from '../components/ui/ProductCard';
-import { addItem, selectOnlyItems } from '../store/slices/cartSlice';
+import { upsertItem, selectOnlyItems } from '../store/slices/cartSlice';
 import { getFullTimeline } from '../utils/orderUtils';
+import socketService from '../api/socketService';
 
 const Profile = () => {
   const { user } = useSelector((state: RootState) => state.auth);
@@ -256,20 +257,52 @@ const Profile = () => {
       "Khác"
     ];
 
+    const loadOrders = async (quiet = false) => {
+      if (!quiet) setIsLoading(true);
+      try {
+        const data = await orderService.getOrderHistory();
+        setOrderHistory(data);
+      } catch (error) {
+        console.error('Error loading orders', error);
+        if (!quiet) toast.error('Không thể tải lịch sử đơn hàng');
+      } finally {
+        if (!quiet) setIsLoading(false);
+      }
+    };
+
     useEffect(() => {
-      const loadOrders = async () => {
-        try {
-          const data = await orderService.getOrderHistory();
-          setOrderHistory(data);
-        } catch (error) {
-          console.error('Error loading orders', error);
-          toast.error('Không thể tải lịch sử đơn hàng');
-        } finally {
-          setIsLoading(false);
-        }
-      };
       loadOrders();
     }, []);
+
+    // Real-time order updates
+    useEffect(() => {
+      if (!user?.id) return;
+
+      const handleNotification = (notification: any) => {
+        console.log('Received real-time notification:', notification);
+        loadOrders(true); // Quiet refresh
+        
+        if (notification.message) {
+          toast.success(notification.message, {
+            icon: '🔔',
+            duration: 5000
+          });
+        } else {
+          toast.success('Thông tin đơn hàng vừa được cập nhật!', {
+            icon: '📦'
+          });
+        }
+      };
+
+      const topic = `/topic/notifications.${user.id}`;
+      console.log(`[Profile] Subscribing to order updates on topic: ${topic}`);
+      socketService.subscribe(topic, handleNotification);
+      
+      return () => {
+        console.log(`[Profile] Unsubscribing from topic: ${topic}`);
+        socketService.unsubscribe(topic, handleNotification);
+      };
+    }, [user?.id]);
 
     const handleCancelOrder = (orderId: number) => {
       setOrderToCancel(orderId);
@@ -282,7 +315,7 @@ const Profile = () => {
       const itemsToSelect: { id: string; variantName: string | null }[] = [];
       
       for (const item of order.items) {
-        dispatch(addItem({
+        dispatch(upsertItem({
           id: String(item.productId),
           name: item.productName,
           price: item.price,
@@ -394,9 +427,27 @@ const Profile = () => {
                 </div>
                 
                 <div className="mt-8 pt-6 border-t border-gray-100/50 flex flex-wrap justify-between items-center gap-6">
-                   <div className="flex items-center gap-2">
-                      <div className={cn("w-2 h-2 rounded-full", order.status === 'DELIVERED' ? "bg-green-500" : "bg-primary-500")} />
-                      <span className="text-[10px] font-black text-gray-400 uppercase tracking-widest">
+                   <div className="flex items-center gap-3">
+                      {order.status === 'DELIVERED' ? (
+                        <div className="flex items-center gap-2 bg-green-50 text-green-600 px-3 py-1.5 rounded-full border border-green-100">
+                          <div className="w-1.5 h-1.5 rounded-full bg-green-500 animate-pulse" />
+                          <span className="text-[10px] font-black uppercase tracking-widest">Đơn mua thành công</span>
+                        </div>
+                      ) : (order.status === 'CANCELLED' || order.status === 'CANCELLING') ? (
+                        <div className="flex items-center gap-2 bg-red-50 text-red-600 px-3 py-1.5 rounded-full border border-red-100">
+                          <div className="w-1.5 h-1.5 rounded-full bg-red-500" />
+                          <span className="text-[10px] font-black uppercase tracking-widest">Đơn đã hủy</span>
+                        </div>
+                      ) : (
+                        <div className="flex items-center gap-2 bg-primary-50 text-primary-600 px-3 py-1.5 rounded-full border border-primary-100">
+                          <div className="w-1.5 h-1.5 rounded-full bg-primary-500" />
+                          <span className="text-[10px] font-black uppercase tracking-widest">
+                            {order.status === 'SHIPPING' ? 'Đang giao hàng' : 'Đang xử lý'}
+                          </span>
+                        </div>
+                      )}
+                      
+                      <span className="text-[9px] font-bold text-gray-400 uppercase tracking-widest border-l border-gray-200 pl-3">
                         Thanh toán: {order.paymentMethod === 'MOMO' ? 'Ví MoMo' : 'COD'}
                       </span>
                    </div>

@@ -23,5 +23,6 @@ public class Order {
     private String receiverPhone;
     private String shippingAddress;
     private String paymentTransactionId;
+    private String cancelReason;
     private List<OrderItem> items;
 }

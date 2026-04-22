@@ -63,6 +63,7 @@ export type Order = {
   receiverName: string;
   receiverPhone: string;
   shippingAddress: string;
+  cancelReason?: string;
   items: OrderItem[];
 };
 

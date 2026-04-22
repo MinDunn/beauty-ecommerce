@@ -38,10 +38,10 @@ const Login = () => {
         });
 
         const authData = response.data.data;
-        const { accessToken, email, fullName, role } = authData;
+        const { accessToken, email, fullName, role, id } = authData;
         
         dispatch(setCredentials({
-          user: { email, fullName, role },
+          user: { id, email, fullName, role },
           token: accessToken,
         }));
 
@@ -68,10 +68,10 @@ const Login = () => {
 
       // Backend trả về ApiResponse { status, message, data: AuthResponse }
       const authData = response.data.data;
-      const { accessToken, email, fullName, role } = authData;
+      const { accessToken, email, fullName, role, id } = authData;
 
       dispatch(setCredentials({
-        user: { email, fullName, role },
+        user: { id, email, fullName, role },
         token: accessToken,
       }));
 

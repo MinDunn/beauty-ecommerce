@@ -215,6 +215,12 @@ public class OrderService implements OrderUseCase {
         }
         
         activityLogService.logActivity(null, "ADMIN", ActivityLogService.GROUP_SYSTEM, "UPDATE_ORDER_STATUS", "Cập nhật trạng thái đơn hàng #" + orderId + " thành " + status);
+
+        if (status == OrderStatus.DELIVERED) {
+            userRepository.findById(order.getUserId()).ifPresent(user -> {
+                emailService.sendOrderDeliveredEmail(order, user.getEmail());
+            });
+        }
     }
 
     @Override
@@ -280,7 +286,9 @@ public class OrderService implements OrderUseCase {
         }
 
         // Just REQUEST cancellation, don't refund or restore stock yet
-        orderPort.updateStatus(orderId, OrderStatus.CANCELLATION_REQUESTED);
+        order.setStatus(OrderStatus.CANCELLATION_REQUESTED);
+        order.setCancelReason(reason);
+        orderPort.save(order);
         
         String logMessage = "Khách hàng gửi yêu cầu hủy đơn hàng #" + orderId + (reason != null ? ". Lý do: " + reason : "");
         activityLogService.logActivity(user.getId(), email, ActivityLogService.GROUP_SHOPPING, "CANCEL_ORDER_REQUEST", logMessage);
@@ -317,6 +325,10 @@ public class OrderService implements OrderUseCase {
         
         activityLogService.logActivity(order.getUserId(), "ADMIN", ActivityLogService.GROUP_SYSTEM, "APPROVE_CANCELLATION", 
                 "Admin đã phê duyệt yêu cầu hủy đơn hàng #" + orderId);
+
+        userRepository.findById(order.getUserId()).ifPresent(user -> {
+            emailService.sendOrderCancelledEmail(order, user.getEmail());
+        });
     }
 
     @Override

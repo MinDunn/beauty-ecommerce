@@ -53,6 +53,9 @@ public class OrderJpaEntity {
     @Column(name = "payment_transaction_id")
     private String paymentTransactionId;
 
+    @Column(name = "cancel_reason")
+    private String cancelReason;
+
     @OneToMany(mappedBy = "order", cascade = CascadeType.ALL)
     private List<OrderItemJpaEntity> items;
 }

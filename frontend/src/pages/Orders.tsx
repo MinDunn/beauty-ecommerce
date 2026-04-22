@@ -7,7 +7,7 @@ import { toast } from "react-hot-toast";
 import { 
   Eye, ShoppingCart, User, Phone, MapPin, CreditCard, CheckCircle2, 
   Search, Package, Truck, CheckCircle, XCircle, Clock, Trash2,
-  Filter, Zap, ArrowRight
+  Filter, Zap, ArrowRight, AlertCircle
 } from "lucide-react";
 import { getFullTimeline } from "../utils/orderUtils";
 import { cn } from "../utils/cn";
@@ -268,6 +268,13 @@ export const Orders = () => {
             order.status === 'DELIVERED' ? 'Hoàn thành' : 
             order.status === 'CANCELLATION_REQUESTED' ? 'Yêu cầu hủy' : 'Đã hủy'}
         </div>
+        
+        {order.status === 'CANCELLATION_REQUESTED' && order.cancelReason && (
+          <div className="bg-rose-500/5 border border-rose-500/10 p-2 rounded-lg">
+            <p className="text-[8px] font-black text-rose-500 uppercase tracking-widest mb-1 italic">Lý do khách hàng:</p>
+            <p className="text-[10px] text-slate-300 font-medium leading-tight line-clamp-2">"{order.cancelReason}"</p>
+          </div>
+        )}
 
         {/* Next Step Suggestion */}
         {order.status !== 'DELIVERED' && order.status !== 'CANCELLED' && order.status !== 'CANCELLATION_REQUESTED' && (
@@ -461,6 +468,23 @@ export const Orders = () => {
                 </p>
               </div>
             </div>
+
+            {/* Cancellation Reason in Modal */}
+            {selectedOrder.cancelReason && (
+              <div className="bg-rose-500/10 border border-rose-500/20 p-5 rounded-2xl relative overflow-hidden group">
+                <div className="absolute top-0 right-0 p-4 opacity-10 group-hover:opacity-20 transition-opacity">
+                   <AlertCircle size={48} className="text-rose-500" />
+                </div>
+                <p className="text-[10px] font-black text-rose-500 uppercase tracking-[0.2em] mb-2 flex items-center gap-2">
+                  <AlertCircle size={12} /> Lý do khách hàng yêu cầu hủy
+                </p>
+                <div className="bg-black/20 p-4 rounded-xl border border-rose-500/10">
+                   <p className="text-white font-bold italic text-sm leading-relaxed text-center">
+                     "{selectedOrder.cancelReason}"
+                   </p>
+                </div>
+              </div>
+            )}
 
             {/* Order Items */}
             <div className="space-y-3">

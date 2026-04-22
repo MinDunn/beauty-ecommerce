@@ -1,7 +1,6 @@
-import { Client } from '@stomp/stompjs';
-import SockJS from 'sockjs-client';
 import type { ApiResponse } from '../types/api';
 import axiosInstance from './axiosInstance';
+import socketService from './socketService';
 
 export interface ChatterDTO {
   userId: string;
@@ -25,68 +24,56 @@ export interface ChatMessage {
 }
 
 class ChatService {
-  private client: Client | null = null;
-  private listeners: Set<(msg: ChatMessage) => void> = new Set();
   private currentUserId: string | null = null;
+  private activeSubscriptions: Map<string, (msg: ChatMessage) => void> = new Map();
 
-  connect(token: string | null, userId: string, onMessage: (msg: ChatMessage) => void) {
-    this.listeners.add(onMessage);
-    
-    if (this.client?.connected && this.currentUserId === userId) {
-      console.log('Already connected as ' + userId + ', adding listener only.');
-      return;
-    }
-
-    if (this.client) {
-      this.client.deactivate();
+  async connect(token: string | null, userId: string, onMessage: (msg: ChatMessage) => void) {
+    if (this.currentUserId && this.currentUserId !== userId) {
+      this.disconnectAll();
     }
 
     this.currentUserId = userId;
-    const socket = new SockJS('http://localhost:8080/ws');
-    this.client = new Client({
-      webSocketFactory: () => socket,
-      connectHeaders: token ? { Authorization: `Bearer ${token}` } : {},
-      debug: (str: string) => console.log('[STOMP] ' + str),
-      reconnectDelay: 5000,
-      heartbeatIncoming: 4000,
-      heartbeatOutgoing: 4000,
-    });
- 
-    this.client.onConnect = (frame: any) => {
-      console.log('Connected: ' + frame + ' as user: ' + userId);
+    
+    try {
+      await socketService.connect(token);
       
-      this.client?.subscribe(`/topic/chat.messages.${userId}`, (message: any) => {
-        const msg = JSON.parse(message.body);
-        this.listeners.forEach(listener => listener(msg));
-      });
- 
-      if (userId === 'ADMIN') {
-        this.client?.subscribe('/topic/admin.messages', (message: any) => {
-          const msg = JSON.parse(message.body);
-          this.listeners.forEach(listener => listener(msg));
-        });
+      const chatTopic = `/topic/chat.messages.${userId}`;
+      if (!this.activeSubscriptions.has(chatTopic)) {
+        socketService.subscribe(chatTopic, onMessage);
+        this.activeSubscriptions.set(chatTopic, onMessage);
       }
-    };
- 
-    this.client.activate();
+
+      if (userId === 'ADMIN') {
+        const adminTopic = '/topic/admin.messages';
+        if (!this.activeSubscriptions.has(adminTopic)) {
+          socketService.subscribe(adminTopic, onMessage);
+          this.activeSubscriptions.set(adminTopic, onMessage);
+        }
+      }
+    } catch (error) {
+      console.error('Failed to connect to socket service', error);
+    }
   }
 
   disconnect(onMessage: (msg: ChatMessage) => void) {
-    this.listeners.delete(onMessage);
-    // Only deactivate if no one is listening anymore
-    if (this.listeners.size === 0 && this.client) {
-      this.client.deactivate();
-      this.client = null;
-    }
+    this.activeSubscriptions.forEach((cb, topic) => {
+      if (cb === onMessage) {
+        socketService.unsubscribe(topic, cb);
+        this.activeSubscriptions.delete(topic);
+      }
+    });
+  }
+
+  private disconnectAll() {
+    this.activeSubscriptions.forEach((cb, topic) => {
+      socketService.unsubscribe(topic, cb);
+    });
+    this.activeSubscriptions.clear();
+    this.currentUserId = null;
   }
 
   sendMessage(message: ChatMessage) {
-    if (this.client && this.client.connected) {
-      this.client.publish({
-        destination: '/app/chat.sendMessage',
-        body: JSON.stringify(message),
-      });
-    }
+    socketService.publish('/app/chat.sendMessage', message);
   }
 
   async uploadMedia(file: File): Promise<string> {
