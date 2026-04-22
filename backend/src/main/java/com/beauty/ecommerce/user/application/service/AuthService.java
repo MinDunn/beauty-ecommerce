@@ -317,4 +317,21 @@ public class AuthService {
 
         activityLogService.logActivity(user.getId(), email, com.beauty.ecommerce.common.application.service.ActivityLogService.GROUP_ACCOUNT, "CHANGE_PASSWORD", "Người dùng đã đổi mật khẩu thành công.");
     }
+    @Transactional
+    public void deleteAccount(String email) {
+        log.info("Yêu cầu xóa tài khoản cho: {}", email);
+        UserJpaEntity user = userRepository.findByEmail(email)
+                .orElseThrow(() -> new ResourceNotFoundException("Không tìm thấy người dùng"));
+
+        // Log trước khi xóa
+        activityLogService.logActivity(user.getId(), email, com.beauty.ecommerce.common.application.service.ActivityLogService.GROUP_ACCOUNT, "DELETE_ACCOUNT", "Người dùng yêu cầu xóa tài khoản (Quyền được quên).");
+        
+        // Xóa các dữ liệu liên quan đến phiên làm việc
+        refreshTokenRepository.deleteByUser(user);
+        passwordResetTokenRepository.deleteByUser(user);
+        
+        // Ta thực hiện xóa user
+        userRepository.delete(user);
+        log.info("Đã xóa tài khoản người dùng: {}", email);
+    }
 }

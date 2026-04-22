@@ -91,17 +91,48 @@ const Footer = () => {
             <li><Link to="/policy/return" className="hover:text-primary-500">Chính sách đổi trả</Link></li>
             <li><Link to="/policy/warranty" className="hover:text-primary-500">Chính sách bảo hành</Link></li>
             <li><Link to="/policy/privacy" className="hover:text-primary-500">Chính sách bảo mật</Link></li>
+            <li><Link to="/policy/terms" className="hover:text-primary-500">Điều khoản dịch vụ</Link></li>
           </ul>
         </div>
       </div>
 
-      {/* Copyright */}
-      <div className="bg-gray-50 py-8 border-t border-gray-100">
-        <div className="container mx-auto px-4 mt-16 pt-8 border-t border-gray-100 text-center text-sm text-gray-500 font-medium">
-          <p>© 2026 Glowzy Beauty. Tất cả quyền được bảo lưu.</p>
-          <div className="mt-4 md:mt-0 flex space-x-6 justify-center">
-            <span className="hover:text-gray-800 cursor-pointer">Điều khoản sử dụng</span>
-            <span className="hover:text-gray-800 cursor-pointer">Sơ đồ trang web</span>
+      {/* Copyright & Legal */}
+      <div className="bg-gray-50 py-12 border-t border-gray-100">
+        <div className="container mx-auto px-4 max-w-7xl">
+          <div className="flex flex-col lg:flex-row justify-between items-start gap-12">
+            <div className="space-y-4 max-w-md">
+              <h4 className="text-[10px] font-black text-gray-400 uppercase tracking-[0.3em] mb-4">Thông tin doanh nghiệp</h4>
+              <p className="text-sm font-black text-gray-900 uppercase tracking-tight">Công ty TNHH Glowzy Beauty Việt Nam</p>
+              <div className="space-y-2 text-xs text-gray-500 font-medium leading-relaxed">
+                <p>Mã số thuế: 0123456789 - Cấp ngày 01/01/2026 tại Sở KH&ĐT TP.HCM</p>
+                <p>Địa chỉ: 123 Đường ABC, Phường Bến Nghé, Quận 1, TP. Hồ Chí Minh</p>
+                <p>Hotline: <span className="text-primary-600 font-black">1900 1234</span> (8:00 - 22:00)</p>
+                <p>Email: <span className="text-primary-600 font-black">contact@glowzy.com</span></p>
+              </div>
+            </div>
+
+            <div className="flex flex-col sm:flex-row items-start sm:items-center gap-8">
+              <a 
+                href="http://online.gov.vn/Home/WebDetails/12345" 
+                target="_blank" 
+                rel="noopener noreferrer"
+                className="block hover:opacity-80 transition-opacity"
+              >
+                <img 
+                  src="/images/bo-cong-thuong.png.png" 
+                  alt="Đã thông báo Bộ Công Thương" 
+                  className="h-12 w-auto"
+                />
+              </a>
+              <div className="text-right">
+                <p className="text-[10px] font-black text-gray-400 uppercase tracking-widest mb-2">© 2026 Glowzy Beauty</p>
+                <div className="flex space-x-6 justify-end text-xs font-bold text-gray-500 uppercase tracking-tighter">
+                  <Link to="/policy/terms" className="hover:text-primary-600 transition-colors">Điều khoản</Link>
+                  <Link to="/policy/privacy" className="hover:text-primary-600 transition-colors">Bảo mật</Link>
+                  <span className="hover:text-primary-600 cursor-pointer">Sơ đồ trang web</span>
+                </div>
+              </div>
+            </div>
           </div>
         </div>
       </div>

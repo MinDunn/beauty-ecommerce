@@ -21,6 +21,22 @@ public class DashboardResponse {
     private List<Map<String, Object>> recentOrders;
     private List<ProductTrendData> topFavoritedProducts;
     private List<ProductTrendData> topRatedProducts;
+    private List<CategoryRevenueData> revenueByCategory;
+    private List<OrderStatusData> orderStatusDistribution;
+
+    @Getter
+    @Builder
+    public static class CategoryRevenueData {
+        private String name;
+        private BigDecimal revenue;
+    }
+
+    @Getter
+    @Builder
+    public static class OrderStatusData {
+        private String status;
+        private long count;
+    }
 
     @Getter
     @Builder

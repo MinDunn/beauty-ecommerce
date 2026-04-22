@@ -1,6 +1,6 @@
 import { useState, useEffect, useRef } from 'react';
 import { useSelector, useDispatch } from 'react-redux';
-import { User, Mail, Lock, Phone, MapPin, Package, Settings, ChevronRight, Camera, LogOut, Heart, Sparkles } from 'lucide-react';
+import { User, Mail, Lock, Phone, MapPin, Package, Settings, ChevronRight, Camera, LogOut, Heart, Sparkles, AlertTriangle } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import type { RootState } from '../store';
 import { logout as logoutAction, updateUser } from '../store/slices/authSlice';
@@ -36,6 +36,9 @@ const Profile = () => {
     address: '',
     marketingConsent: false
   });
+
+  const [isDeleteModalOpen, setIsDeleteModalOpen] = useState(false);
+  const [isDeleting, setIsDeleting] = useState(false);
 
   const [passwordData, setPasswordData] = useState({
     oldPassword: '',
@@ -150,6 +153,23 @@ const Profile = () => {
     dispatch(logoutAction());
     toast.success('Đã đăng xuất');
     navigate('/');
+  };
+
+  const handleDeleteAccount = async () => {
+    setIsDeleting(true);
+    const loadingToast = toast.loading('Đang xử lý yêu cầu xóa dữ liệu...');
+    try {
+      await authService.deleteAccount();
+      toast.success('Dữ liệu của bạn đã được xóa hoàn toàn. Tạm biệt!', { id: loadingToast });
+      dispatch(logoutAction());
+      navigate('/');
+    } catch (error: any) {
+      const errMsg = error.response?.data?.message || 'Không thể thực hiện yêu cầu xóa dữ liệu lúc này';
+      toast.error(errMsg, { id: loadingToast });
+    } finally {
+      setIsDeleting(false);
+      setIsDeleteModalOpen(false);
+    }
   };
 
   const WishlistTab = () => {
@@ -877,12 +897,78 @@ const Profile = () => {
                       Mọi dữ liệu cá nhân của bạn đều được bảo mật theo tiêu chuẩn quốc tế và Nghị định 13/2023/NĐ-CP về Bảo vệ dữ liệu cá nhân của Chính phủ Việt Nam. Bạn có thể thay đổi tùy chọn bất cứ lúc nào tại đây.
                     </p>
                   </div>
+
+                  {/* Right to be forgotten (PDPD - ND 13) */}
+                  <div className="bg-red-50/30 p-8 rounded-[2.5rem] border border-red-100/50 mt-12">
+                    <div className="flex flex-col md:flex-row items-start md:items-center justify-between gap-6">
+                      <div className="flex-1">
+                        <h4 className="text-lg font-black text-red-600 uppercase tracking-tight mb-2 flex items-center gap-2">
+                           <AlertTriangle size={20} /> Quyền được quên (NĐ 13/CP)
+                        </h4>
+                        <p className="text-sm text-gray-500 font-medium leading-relaxed italic">
+                          Bạn có quyền yêu cầu Glowzy xóa toàn bộ dữ liệu cá nhân của mình khỏi hệ thống vĩnh viễn. Hành động này không thể hoàn tác.
+                        </p>
+                      </div>
+                      <button 
+                        onClick={() => setIsDeleteModalOpen(true)}
+                        className="px-8 py-4 bg-white text-red-600 font-black rounded-2xl border-2 border-red-100 hover:bg-red-600 hover:text-white hover:border-red-600 transition-all uppercase tracking-widest text-xs"
+                      >
+                        Xóa toàn bộ dữ liệu
+                      </button>
+                    </div>
+                  </div>
                 </div>
               )}
             </div>
           </div>
         </div>
       </div>
+
+      {/* Delete Account Confirmation Modal */}
+      <AnimatePresence>
+        {isDeleteModalOpen && (
+          <div className="fixed inset-0 z-[100] flex items-center justify-center p-4">
+            <motion.div 
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              exit={{ opacity: 0 }}
+              className="absolute inset-0 bg-black/60 backdrop-blur-sm" 
+              onClick={() => setIsDeleteModalOpen(false)}
+            />
+            <motion.div 
+              initial={{ scale: 0.9, opacity: 0 }}
+              animate={{ scale: 1, opacity: 1 }}
+              exit={{ scale: 0.9, opacity: 0 }}
+              className="bg-white rounded-[3rem] w-full max-w-lg relative z-10 shadow-2xl overflow-hidden border border-red-100"
+            >
+              <div className="p-10 md:p-12 text-center">
+                <div className="w-20 h-20 bg-red-100 text-red-600 rounded-full flex items-center justify-center mx-auto mb-8">
+                  <AlertTriangle size={40} strokeWidth={3} />
+                </div>
+                <h3 className="text-2xl font-black text-gray-900 uppercase tracking-tight mb-4">Bạn có chắc chắn?</h3>
+                <p className="text-gray-500 font-medium leading-relaxed italic mb-10 px-4">
+                  Việc xóa dữ liệu sẽ khiến bạn không thể truy cập tài khoản, lịch sử đơn hàng và các ưu đãi thành viên nữa. Hành động này tuân thủ <span className="text-red-600 font-bold">Nghị định 13/2023/NĐ-CP</span>.
+                </p>
+                <div className="flex flex-col gap-4">
+                  <button 
+                    onClick={handleDeleteAccount}
+                    disabled={isDeleting}
+                    className="w-full py-5 bg-red-600 text-white font-black rounded-2xl hover:bg-red-700 shadow-xl shadow-red-200 transition-all uppercase tracking-widest text-sm"
+                  >
+                    {isDeleting ? 'Đang thực hiện xóa...' : 'Xác nhận xóa vĩnh viễn'}
+                  </button>
+                  <button 
+                    onClick={() => setIsDeleteModalOpen(false)}
+                    className="w-full py-5 bg-gray-50 text-gray-500 font-black rounded-2xl hover:bg-gray-100 transition-all uppercase tracking-widest text-sm"
+                  >
+                    Hủy bỏ
+                  </button>
+                </div>
+              </div>
+            </motion.div>
+          </div>
+        )}
+      </AnimatePresence>
     </div>
   );
 };

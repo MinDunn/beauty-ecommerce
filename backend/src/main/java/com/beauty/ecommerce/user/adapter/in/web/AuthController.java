@@ -119,4 +119,10 @@ public class AuthController {
         String avatarUrl = authService.updateAvatar(authentication.getName(), file, cloudinaryService);
         return ResponseEntity.ok(ApiResponse.success("Tải ảnh đại diện thành công", avatarUrl));
     }
+    @DeleteMapping("/users/profile")
+    public ResponseEntity<ApiResponse<Void>> deleteProfile(Authentication authentication) {
+        log.info("Yêu cầu xóa tài khoản cho: {}", authentication.getName());
+        authService.deleteAccount(authentication.getName());
+        return ResponseEntity.ok(ApiResponse.success("Đã xóa tài khoản và toàn bộ dữ liệu cá nhân theo yêu cầu", null));
+    }
 }

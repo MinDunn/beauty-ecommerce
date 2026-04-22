@@ -1,4 +1,4 @@
-import { ShieldCheck, Lock, Eye, Bell } from 'lucide-react';
+import { ShieldCheck, Lock, Eye, Bell, Users } from 'lucide-react';
 
 const Privacy = () => {
   const lastUpdated = '10 tháng 04, 2026';
@@ -66,6 +66,24 @@ const Privacy = () => {
                  <p className="text-gray-600 font-medium leading-relaxed">
                    Dữ liệu của bạn được lưu trữ trên hệ thống máy chủ an toàn với các lớp bảo mật đa tầng. Chúng tôi sử dụng công nghệ mã hóa <strong>SSL (Secure Sockets Layer) 256-bit</strong> để bảo vệ thông tin trong quá trình truyền tải. Đội ngũ kỹ thuật của chúng tôi thường xuyên giám sát hệ thống để ngăn chặn các truy cập trái phép.
                  </p>
+              </section>
+
+              <section className="space-y-4">
+                 <div className="flex items-center gap-3 text-slate-900 mb-4">
+                   <div className="p-2 bg-primary-50 text-primary-500 rounded-lg">
+                     <Users size={20} />
+                   </div>
+                   <h2 className="text-xl font-black uppercase tracking-tight">4. Quyền của bạn (NĐ 13/2023/NĐ-CP)</h2>
+                 </div>
+                 <div className="text-gray-600 font-medium leading-relaxed space-y-4">
+                   <p>Tuân thủ Nghị định 13/2023/NĐ-CP về bảo vệ dữ liệu cá nhân, bạn có các quyền sau:</p>
+                   <ul className="list-disc pl-6 space-y-2">
+                     <li><strong>Quyền được biết & Truy cập:</strong> Bạn có quyền biết chúng tôi thu thập gì và yêu cầu xem thông tin đó.</li>
+                     <li><strong>Quyền chỉnh sửa:</strong> Bạn có thể cập nhật thông tin cá nhân bất kỳ lúc nào trong phần Cài đặt tài khoản.</li>
+                     <li><strong>Quyền xóa dữ liệu (Quyền được quên):</strong> Bạn có thể yêu cầu xóa vĩnh viễn tài khoản và mọi dữ liệu liên quan. Hệ thống sẽ xử lý và purging dữ liệu trong vòng 72 giờ làm việc.</li>
+                     <li><strong>Quyền phản đối & Rút lại sự đồng ý:</strong> Bạn có thể thay đổi tùy chọn nhận quảng cáo hoặc từ chối xử lý dữ liệu cho mục đích marketing.</li>
+                   </ul>
+                 </div>
               </section>
 
               <div className="bg-slate-900 rounded-3xl p-8 text-white relative overflow-hidden">

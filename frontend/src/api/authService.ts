@@ -47,7 +47,10 @@ export const authService = {
     axiosInstance.post<ApiResponse<void>>('/users/change-password', data),
 
   logout: () => 
-    axiosInstance.post<ApiResponse<void>>('/auth/logout')
+    axiosInstance.post<ApiResponse<void>>('/auth/logout'),
+
+  deleteAccount: () =>
+    axiosInstance.delete<ApiResponse<void>>('/users/profile')
 };
 
 export default authService;

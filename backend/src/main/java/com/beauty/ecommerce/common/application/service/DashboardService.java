@@ -226,6 +226,27 @@ public class DashboardService {
                 })
                 .collect(Collectors.toList());
 
+        // Category Revenue
+        List<DashboardResponse.CategoryRevenueData> categoryRevenue = orderItemRepository.findRevenueByCategory(startDateTime)
+                .stream()
+                .map(obj -> DashboardResponse.CategoryRevenueData.builder()
+                        .name(obj[0] != null ? (String) obj[0] : "Khác")
+                        .revenue((BigDecimal) obj[1])
+                        .build())
+                .collect(Collectors.toList());
+
+        // Order Status Distribution
+        Map<String, Long> statusCount = allOrders.stream()
+                .filter(o -> o.getStatus() != null)
+                .collect(Collectors.groupingBy(OrderJpaEntity::getStatus, Collectors.counting()));
+        
+        List<DashboardResponse.OrderStatusData> statusDistribution = statusCount.entrySet().stream()
+                .map(e -> DashboardResponse.OrderStatusData.builder()
+                        .status(e.getKey())
+                        .count(e.getValue())
+                        .build())
+                .collect(Collectors.toList());
+
         return DashboardResponse.builder()
                 .totalRevenue(totalRevenue)
                 .totalOrders(totalOrders)
@@ -239,6 +260,8 @@ public class DashboardService {
                 .recentOrders(recentOrders)
                 .topFavoritedProducts(topFavorited)
                 .topRatedProducts(topRated)
+                .revenueByCategory(categoryRevenue)
+                .orderStatusDistribution(statusDistribution)
                 .build();
     }
 

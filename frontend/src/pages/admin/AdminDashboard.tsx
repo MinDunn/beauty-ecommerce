@@ -628,6 +628,91 @@ export const AdminDashboard = () => {
         </div>
 
       </div>
+
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mt-6">
+        {/* Category Revenue Distribution */}
+        <div className="bg-slate-900 border border-slate-800 p-8 rounded-[2.5rem] shadow-xl">
+           <div className="flex items-center justify-between mb-8">
+              <h3 className="text-xl font-bold text-white uppercase tracking-tight">Doanh thu theo danh mục</h3>
+              <div className="p-2 rounded-lg bg-emerald-500/10 text-emerald-500">
+                <DollarSign size={16} />
+              </div>
+           </div>
+           
+           <div className="h-64 relative flex items-center justify-center">
+              {(!stats?.revenueByCategory || stats.revenueByCategory.length === 0) ? (
+                <div className="opacity-50 italic text-xs">Chưa có dữ liệu doanh thu</div>
+              ) : (
+                <ResponsiveContainer width="100%" height="100%">
+                  <PieChart>
+                    <Pie
+                      data={stats.revenueByCategory}
+                      cx="50%"
+                      cy="50%"
+                      innerRadius={60}
+                      outerRadius={80}
+                      paddingAngle={5}
+                      dataKey="revenue"
+                      nameKey="name"
+                    >
+                      {stats.revenueByCategory.map((_, index) => (
+                        <Cell key={`cell-${index}`} fill={['#F97316', '#3B82F6', '#10B981', '#8B5CF6', '#EC4899'][index % 5]} />
+                      ))}
+                    </Pie>
+                    <Tooltip 
+                      contentStyle={{ background: '#0f172a', border: '1px solid #1e293b', borderRadius: '12px' }}
+                      formatter={(value: any) => [`${(Number(value) / 1000).toFixed(0)}K VNĐ`, 'Doanh thu']}
+                    />
+                    <Legend />
+                  </PieChart>
+                </ResponsiveContainer>
+              )}
+           </div>
+        </div>
+
+        {/* Order Status Distribution */}
+        <div className="bg-slate-900 border border-slate-800 p-8 rounded-[2.5rem] shadow-xl">
+           <div className="flex items-center justify-between mb-8">
+              <h3 className="text-xl font-bold text-white uppercase tracking-tight">Trạng thái đơn hàng</h3>
+              <div className="p-2 rounded-lg bg-blue-500/10 text-blue-500">
+                <ShoppingBag size={16} />
+              </div>
+           </div>
+           
+           <div className="h-64">
+              {(!stats?.orderStatusDistribution || stats.orderStatusDistribution.length === 0) ? (
+                <div className="flex items-center justify-center h-full opacity-50 italic text-xs">Chưa có dữ liệu đơn hàng</div>
+              ) : (
+                <ResponsiveContainer width="100%" height="100%">
+                  <BarChart data={stats.orderStatusDistribution} layout="vertical" margin={{ left: 40 }}>
+                    <XAxis type="number" hide />
+                    <YAxis 
+                      dataKey="status" 
+                      type="category" 
+                      tick={{ fill: '#94a3b8', fontSize: 10, fontWeight: 700 }}
+                      tickFormatter={(value) => {
+                        const labels: Record<string, string> = {
+                          'PENDING': 'Chờ duyệt',
+                          'CONFIRMED': 'Chuẩn bị',
+                          'SHIPPING': 'Đang giao',
+                          'DELIVERED': 'Hoàn thành',
+                          'CANCELLED': 'Đã hủy',
+                          'CANCELLATION_REQUESTED': 'Yêu cầu hủy'
+                        };
+                        return labels[value] || value;
+                      }}
+                    />
+                    <Tooltip 
+                      contentStyle={{ background: '#0f172a', border: '1px solid #1e293b', borderRadius: '12px' }}
+                      cursor={{ fill: 'rgba(255,255,255,0.05)' }}
+                    />
+                    <Bar dataKey="count" fill="#3B82F6" radius={[0, 4, 4, 0]} />
+                  </BarChart>
+                </ResponsiveContainer>
+              )}
+           </div>
+        </div>
+      </div>
     </div>
   );
 };

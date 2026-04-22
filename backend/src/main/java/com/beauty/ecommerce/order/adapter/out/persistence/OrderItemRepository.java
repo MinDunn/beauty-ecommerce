@@ -13,4 +13,8 @@ public interface OrderItemRepository extends JpaRepository<OrderItemJpaEntity, L
            "WHERE oi.order.orderDate >= :startDate " +
            "GROUP BY oi.product.id")
     List<Object[]> findSalesCountByProduct(java.time.LocalDateTime startDate);
+    @org.springframework.data.jpa.repository.Query("SELECT oi.product.category.name, SUM(oi.price * oi.quantity) FROM OrderItemJpaEntity oi " +
+           "WHERE oi.order.orderDate >= :startDate " +
+           "GROUP BY oi.product.category.name")
+    List<Object[]> findRevenueByCategory(java.time.LocalDateTime startDate);
 }

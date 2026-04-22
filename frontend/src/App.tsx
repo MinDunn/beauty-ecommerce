@@ -20,6 +20,7 @@ import Stores from './pages/Stores';
 import Careers from './pages/Careers';
 import BeautyGuide from './pages/BeautyGuide';
 import Privacy from './pages/policies/Privacy';
+import TermsOfService from './pages/policies/TermsOfService';
 import CookieBanner from './components/common/CookieBanner';
 
 import { Sidebar } from './components/admin/Sidebar';
@@ -104,6 +105,7 @@ function App() {
                 <Route path="/policy/shipping" element={<ShippingPolicy />} />
                 <Route path="/policy/warranty" element={<WarrantyPolicy />} />
                 <Route path="/policy/privacy" element={<Privacy />} />
+                <Route path="/policy/terms" element={<TermsOfService />} />
 
                 {/* Contact Route */}
                 <Route path="/contact" element={<Contact />} />

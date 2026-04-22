@@ -7,7 +7,7 @@ import { toast } from "react-hot-toast";
 import { 
   Eye, ShoppingCart, User, Phone, MapPin, CreditCard, CheckCircle2, 
   Search, Package, Truck, CheckCircle, XCircle, Clock, Trash2,
-  Filter, Zap, ArrowRight, AlertCircle
+  Filter, Zap, ArrowRight, AlertCircle, Printer, FileText
 } from "lucide-react";
 import { getFullTimeline } from "../utils/orderUtils";
 import { cn } from "../utils/cn";
@@ -213,6 +213,158 @@ export const Orders = () => {
     });
   };
 
+  const handlePrintInvoice = (order: Order) => {
+    const printWindow = window.open('', '_blank');
+    if (!printWindow) return;
+
+    const itemsHtml = order.items.map(item => `
+      <tr>
+        <td style="padding: 10px; border-bottom: 1px solid #eee;">${item.productName}</td>
+        <td style="padding: 10px; border-bottom: 1px solid #eee; text-align: center;">${item.quantity}</td>
+        <td style="padding: 10px; border-bottom: 1px solid #eee; text-align: right;">${item.price.toLocaleString()}đ</td>
+        <td style="padding: 10px; border-bottom: 1px solid #eee; text-align: right;">${(item.price * item.quantity).toLocaleString()}đ</td>
+      </tr>
+    `).join('');
+
+    printWindow.document.write(`
+      <html>
+        <head>
+          <title>Hóa đơn #GLW${order.id}</title>
+          <style>
+            body { font-family: 'Inter', sans-serif; padding: 40px; color: #333; }
+            .header { display: flex; justify-content: space-between; margin-bottom: 40px; border-bottom: 2px solid #000; padding-bottom: 20px; }
+            .company-info h1 { margin: 0; color: #f97316; }
+            .order-info { text-align: right; }
+            .details { display: grid; grid-template-columns: 1fr 1fr; gap: 40px; margin-bottom: 40px; }
+            .section-title { font-weight: bold; text-transform: uppercase; font-size: 12px; color: #666; margin-bottom: 10px; border-bottom: 1px solid #eee; padding-bottom: 5px; }
+            table { width: 100%; border-collapse: collapse; margin-bottom: 40px; }
+            th { text-align: left; background: #f9fafb; padding: 10px; font-size: 12px; text-transform: uppercase; }
+            .total { text-align: right; font-size: 20px; font-weight: 900; }
+            .footer { margin-top: 60px; text-align: center; font-size: 12px; color: #999; border-top: 1px solid #eee; padding-top: 20px; }
+            @media print { .no-print { display: none; } }
+          </style>
+        </head>
+        <body>
+          <div class="header">
+            <div class="company-info">
+              <h1>GLOWZY BEAUTY</h1>
+              <p>TNHH Glowzy Beauty Việt Nam</p>
+              <p>MST: 0102030405 | Hotline: 1900 6060</p>
+            </div>
+            <div class="order-info">
+              <h2>HÓA ĐƠN BÁN HÀNG</h2>
+              <p>Mã đơn: <strong>#GLW${order.id}</strong></p>
+              <p>Ngày: ${new Date(order.orderDate).toLocaleDateString('vi-VN')}</p>
+            </div>
+          </div>
+
+          <div class="details">
+            <div>
+              <div class="section-title">Khách hàng</div>
+              <p><strong>${order.receiverName}</strong></p>
+              <p>${order.receiverPhone}</p>
+              <p>${order.shippingAddress}</p>
+            </div>
+            <div>
+              <div class="section-title">Thanh toán</div>
+              <p>Phương thức: ${order.paymentMethod === 'MOMO' ? 'Ví MoMo' : 'COD'}</p>
+              <p>Trạng thái: ${order.paymentStatus === 'PAID' ? 'Đã thanh toán' : 'Chưa thanh toán'}</p>
+            </div>
+          </div>
+
+          <table>
+            <thead>
+              <tr>
+                <th>Sản phẩm</th>
+                <th style="text-align: center;">SL</th>
+                <th style="text-align: right;">Đơn giá</th>
+                <th style="text-align: right;">Thành tiền</th>
+              </tr>
+            </thead>
+            <tbody>
+              ${itemsHtml}
+            </tbody>
+          </table>
+
+          <div class="total">
+            <p style="font-size: 14px; font-weight: normal; margin-bottom: 5px;">Tổng cộng thanh toán:</p>
+            ${order.totalPrice.toLocaleString()}đ
+          </div>
+
+          <div class="footer">
+            <p>Cảm ơn quý khách đã mua sắm tại Glowzy Beauty!</p>
+            <p>Đây là hóa đơn điện tử được tạo tự động tuân thủ NĐ 123/2020/NĐ-CP.</p>
+          </div>
+          <script>window.print();</script>
+        </body>
+      </html>
+    `);
+    printWindow.document.close();
+  };
+
+  const handlePrintPackingSlip = (order: Order) => {
+    const printWindow = window.open('', '_blank');
+    if (!printWindow) return;
+
+    const itemsHtml = order.items.map(item => `
+      <tr>
+        <td style="padding: 15px; border: 1px solid #000;">[ ]</td>
+        <td style="padding: 15px; border: 1px solid #000;">${item.productName}</td>
+        <td style="padding: 15px; border: 1px solid #000; text-align: center; font-weight: bold;">x ${item.quantity}</td>
+      </tr>
+    `).join('');
+
+    printWindow.document.write(`
+      <html>
+        <head>
+          <title>Phiếu xuất kho #GLW${order.id}</title>
+          <style>
+            body { font-family: sans-serif; padding: 20px; }
+            .box { border: 2px solid #000; padding: 20px; }
+            h1 { text-align: center; text-transform: uppercase; border-bottom: 2px solid #000; padding-bottom: 10px; }
+            .info { margin-bottom: 20px; display: grid; grid-template-columns: 1fr 1fr; }
+            table { width: 100%; border-collapse: collapse; }
+            th { background: #eee; border: 1px solid #000; padding: 10px; }
+            .sig { margin-top: 50px; display: grid; grid-template-columns: 1fr 1fr; text-align: center; }
+          </style>
+        </head>
+        <body>
+          <div class="box">
+            <h1>Phiếu Xuất Kho</h1>
+            <div class="info">
+              <div>
+                <p>Mã đơn: <strong>#GLW${order.id}</strong></p>
+                <p>Khách hàng: ${order.receiverName}</p>
+              </div>
+              <div style="text-align: right;">
+                <p>Ngày in: ${new Date().toLocaleDateString('vi-VN')}</p>
+                <p>Người đóng gói: ....................</p>
+              </div>
+            </div>
+            <table>
+              <thead>
+                <tr>
+                  <th style="width: 50px;">Check</th>
+                  <th>Sản phẩm</th>
+                  <th style="width: 100px;">Số lượng</th>
+                </tr>
+              </thead>
+              <tbody>
+                ${itemsHtml}
+              </tbody>
+            </table>
+            <div class="sig">
+              <div>Người lập phiếu<br/><br/><br/>(Ký tên)</div>
+              <div>Người nhận hàng<br/><br/><br/>(Ký tên)</div>
+            </div>
+          </div>
+          <script>window.print();</script>
+        </body>
+      </html>
+    `);
+    printWindow.document.close();
+  };
+
   const tableData = orders.map(order => ({
     id: order.id,
     customer: (
@@ -330,6 +482,17 @@ export const Orders = () => {
              Xác nhận tiền
            </button>
         )}
+        <button 
+          type="button"
+          onClick={(e) => {
+            e.stopPropagation();
+            handlePrintInvoice(order);
+          }}
+          className="p-2 hover:bg-slate-800 rounded-xl text-emerald-500 transition-colors"
+          title="In hóa đơn"
+        >
+          <Printer size={18} />
+        </button>
         <button 
           type="button"
           onClick={(e) => {
@@ -584,6 +747,18 @@ export const Orders = () => {
                         <XCircle size={14} /> Hủy đơn hàng
                       </button>
                     )}
+                    <button 
+                      onClick={() => handlePrintInvoice(selectedOrder)}
+                      className="px-6 py-3 bg-slate-800 text-emerald-500 rounded-xl text-[10px] font-black uppercase tracking-widest hover:bg-emerald-500 hover:text-white transition-all flex items-center gap-2 border border-emerald-500/20"
+                    >
+                      <Printer size={14} /> In hóa đơn
+                    </button>
+                    <button 
+                      onClick={() => handlePrintPackingSlip(selectedOrder)}
+                      className="px-6 py-3 bg-slate-800 text-blue-500 rounded-xl text-[10px] font-black uppercase tracking-widest hover:bg-blue-500 hover:text-white transition-all flex items-center gap-2 border border-blue-500/20"
+                    >
+                      <FileText size={14} /> Phiếu xuất kho
+                    </button>
                  </div>
                  <p className="text-[9px] text-slate-500 mt-4 italic">* Thao tác này sẽ cập nhật hành trình thực tế cho khách hàng ngay lập tức.</p>
               </div>

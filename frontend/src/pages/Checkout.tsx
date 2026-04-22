@@ -1,4 +1,5 @@
 import { useState, useMemo, useEffect } from 'react';
+import { motion, AnimatePresence } from 'framer-motion';
 import { Link, useNavigate } from 'react-router-dom';
 import type { AxiosError } from 'axios';
 import { 
@@ -15,7 +16,8 @@ import {
   Ticket,
   Minus,
   Plus,
-  Trash2
+  Trash2,
+  ReceiptText
 } from 'lucide-react';
 import { useSelector, useDispatch } from 'react-redux';
 import type { RootState } from '../store';
@@ -55,6 +57,13 @@ const Checkout = () => {
     receiverPhone: user?.phone || '',
     shippingAddress: user?.address || '',
     note: ''
+  });
+
+  const [vatInfo, setVatInfo] = useState({
+    wantsVat: false,
+    companyName: '',
+    taxCode: '',
+    companyAddress: ''
   });
 
   useEffect(() => {
@@ -226,7 +235,11 @@ const Checkout = () => {
         checkoutItems: selectedItems.map(item => ({
           productId: Number(item.id),
           variantName: item.variantName || null
-        }))
+        })),
+        wantsVat: vatInfo.wantsVat,
+        vatCompanyName: vatInfo.companyName,
+        vatTaxCode: vatInfo.taxCode,
+        vatCompanyAddress: vatInfo.companyAddress
       };
 
       const response = await orderService.placeOrder(orderData);
@@ -355,6 +368,80 @@ const Checkout = () => {
                          />
                        </div>
                     </div>
+                    {/* VAT Invoice Section */}
+                    <div className={cn(
+                      "mt-8 p-8 rounded-[2rem] border-2 transition-all duration-500",
+                      vatInfo.wantsVat ? "bg-primary-50/10 border-primary-500 shadow-lg shadow-primary-500/5" : "bg-gray-50 border-transparent"
+                    )}>
+                      <div className="flex items-center justify-between">
+                         <div className="flex items-center gap-4">
+                            <div className={cn("p-3 rounded-2xl transition-colors", vatInfo.wantsVat ? "bg-primary-500 text-white" : "bg-white text-slate-400 shadow-sm")}>
+                               <ReceiptText size={24} />
+                            </div>
+                            <div>
+                               <h4 className="font-black text-slate-900 uppercase tracking-tight">Xuất hóa đơn VAT</h4>
+                               <p className="text-[10px] text-gray-500 font-bold uppercase tracking-widest mt-1">Tuân thủ NĐ 123/2020/NĐ-CP</p>
+                            </div>
+                         </div>
+                         <button 
+                           onClick={() => setVatInfo({...vatInfo, wantsVat: !vatInfo.wantsVat})}
+                           className={cn(
+                             "relative inline-flex h-8 w-14 flex-shrink-0 cursor-pointer rounded-full border-2 border-transparent transition-colors duration-300 ease-in-out focus:outline-none",
+                             vatInfo.wantsVat ? "bg-primary-500" : "bg-gray-300"
+                           )}
+                         >
+                           <span className={cn(
+                             "pointer-events-none inline-block h-7 w-7 transform rounded-full bg-white shadow-xl ring-0 transition duration-300 ease-in-out",
+                             vatInfo.wantsVat ? "translate-x-6" : "translate-x-0"
+                           )} />
+                         </button>
+                      </div>
+
+                      <AnimatePresence>
+                        {vatInfo.wantsVat && (
+                          <motion.div 
+                            initial={{ height: 0, opacity: 0 }}
+                            animate={{ height: 'auto', opacity: 1 }}
+                            exit={{ height: 0, opacity: 0 }}
+                            className="overflow-hidden"
+                          >
+                             <div className="grid grid-cols-1 md:grid-cols-2 gap-6 pt-8 mt-8 border-t border-primary-200/30">
+                                <div className="space-y-2 md:col-span-2">
+                                   <label className="text-[10px] font-black text-primary-600 uppercase tracking-widest ml-1">Tên công ty / Tổ chức</label>
+                                   <input 
+                                     type="text" 
+                                     value={vatInfo.companyName}
+                                     onChange={(e) => setVatInfo({...vatInfo, companyName: e.target.value})}
+                                     className="w-full px-6 py-4 bg-white border-2 border-primary-100 focus:border-primary-500 rounded-2xl outline-none transition-all font-bold placeholder:text-gray-300" 
+                                     placeholder="CÔNG TY TNHH..." 
+                                   />
+                                </div>
+                                <div className="space-y-2">
+                                   <label className="text-[10px] font-black text-primary-600 uppercase tracking-widest ml-1">Mã số thuế</label>
+                                   <input 
+                                     type="text" 
+                                     value={vatInfo.taxCode}
+                                     onChange={(e) => setVatInfo({...vatInfo, taxCode: e.target.value})}
+                                     className="w-full px-6 py-4 bg-white border-2 border-primary-100 focus:border-primary-500 rounded-2xl outline-none transition-all font-bold placeholder:text-gray-300" 
+                                     placeholder="0123456789" 
+                                   />
+                                </div>
+                                <div className="space-y-2">
+                                   <label className="text-[10px] font-black text-primary-600 uppercase tracking-widest ml-1">Địa chỉ công ty</label>
+                                   <input 
+                                     type="text" 
+                                     value={vatInfo.companyAddress}
+                                     onChange={(e) => setVatInfo({...vatInfo, companyAddress: e.target.value})}
+                                     className="w-full px-6 py-4 bg-white border-2 border-primary-100 focus:border-primary-500 rounded-2xl outline-none transition-all font-bold placeholder:text-gray-300" 
+                                     placeholder="Số nhà, đường, quận/huyện..." 
+                                   />
+                                </div>
+                             </div>
+                          </motion.div>
+                        )}
+                      </AnimatePresence>
+                    </div>
+
                     <button onClick={handleNext} className="glowzy-btn-primary mt-10 w-full py-6 flex items-center justify-center gap-4">
                        <span>Tiếp tục thanh toán</span>
                        <ArrowRight size={20} />

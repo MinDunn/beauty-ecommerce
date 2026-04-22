@@ -19,6 +19,8 @@ export interface DashboardStats {
   }>;
   topRatedProducts: Array<{ name: string; count: number }>;
   topFavoritedProducts: Array<{ name: string; count: number; salesCount: number }>;
+  revenueByCategory: Array<{ name: string; revenue: number }>;
+  orderStatusDistribution: Array<{ status: string; count: number }>;
 }
 
 export interface ActivityLog {

@@ -40,6 +40,10 @@ public class ProductJpaEntity {
     
     private String imageUrl;
 
+    @jakarta.persistence.ManyToOne(fetch = jakarta.persistence.FetchType.LAZY)
+    @jakarta.persistence.JoinColumn(name = "category_id", insertable = false, updatable = false)
+    private com.beauty.ecommerce.category.adapter.out.persistence.CategoryJpaEntity category;
+
     @jakarta.persistence.Column(name = "category_id")
     private Long categoryId;
 
