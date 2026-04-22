@@ -1,15 +1,19 @@
+import { useState } from 'react';
 import { useForm } from 'react-hook-form';
 import { Mail, Phone, MapPin, Send } from 'lucide-react';
 import { contactService } from '../api/contactService';
 import { toast } from 'react-hot-toast';
 
+const HEAD_OFFICE_MAP = "https://www.google.com/maps?q=Empress+Tower+138+Hai+Ba+Trung+Ho+Chi+Minh&output=embed";
+
 const Contact = () => {
+  const [mapUrl, setMapUrl] = useState(HEAD_OFFICE_MAP);
   const { register, handleSubmit, reset, formState: { errors, isSubmitting } } = useForm();
 
   const onSubmit = async (data: any) => {
     try {
       await contactService.createContact(data);
-      toast.success('Cảm ơn bạn đã liên hệ! Chúng tôi sẽ phản hồi sớm nhất.');
+      toast.success('Cảm ơn bạn đã góp ý! Chúng tôi sẽ phản hồi sớm nhất.');
       reset();
     } catch (error) {
       console.error('Lỗi khi gửi feedback:', error);
@@ -22,7 +26,7 @@ const Contact = () => {
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-16 items-start">
         {/* Contact Info & Form */}
         <div>
-          <h1 className="text-4xl font-black text-gray-900 mb-6 tracking-tight">Liên hệ với <span className="text-primary-500">Glowzy</span></h1>
+          <h1 className="text-4xl font-black text-gray-900 mb-6 tracking-tight">Góp ý cho <span className="text-primary-500">Glowzy</span></h1>
           <p className="text-lg text-gray-600 font-medium">Chúng tôi luôn lắng nghe và hỗ trợ bạn 24/7.</p>
 
           <div className="space-y-6 mb-12">
@@ -101,22 +105,30 @@ const Contact = () => {
               disabled={isSubmitting}
               className="w-full flex items-center justify-center space-x-2 bg-primary-500 text-white font-black py-4 rounded-xl hover:bg-primary-600 transition-all uppercase tracking-widest disabled:opacity-70"
             >
-              <span>{isSubmitting ? 'Đang gửi...' : 'Gửi yêu cầu'}</span>
+              <span>{isSubmitting ? 'Đang gửi...' : 'Gửi ý kiến'}</span>
               {!isSubmitting && <Send size={18} />}
             </button>
           </form>
         </div>
 
         {/* Google Maps */}
-        <div className="h-full min-h-[500px] rounded-3xl overflow-hidden shadow-2xl border-4 border-white">
+        <div className="h-full min-h-[500px] rounded-3xl overflow-hidden shadow-2xl border-4 border-white relative group">
+          <button 
+            onClick={() => setMapUrl(`${HEAD_OFFICE_MAP}&t=${Date.now()}`)}
+            className="absolute top-6 right-6 z-10 flex items-center gap-2 bg-white/90 backdrop-blur-md px-5 py-3 rounded-2xl shadow-xl border border-gray-100 hover:bg-primary-500 hover:text-white transition-all transform hover:scale-105 active:scale-95 group/btn"
+          >
+            <MapPin size={18} className="text-primary-500 group-hover/btn:text-white transition-colors" />
+            <span className="text-xs font-bold uppercase tracking-widest text-inherit">Về địa chỉ trụ sở</span>
+          </button>
           <iframe 
-            src="https://www.google.com/maps/embed?pb=!1m18!1m12!1m3!1d3919.424361555627!2d106.697495!3d10.7818!2m3!1f0!2f0!3f0!3m2!1i1024!2i768!4f13.1!3m3!1m2!1s0x31752f357908b981%3A0x6a0c0e7b95f190e4!2zMTM4IEhhaSBCw6AgVHLGsG5nLCDEkGEgS2FvLCBRdeG6rW4gMSwgVGjDoG5oIHBo4buRIEjhu5MgQ2jDrSBNaW5oLCBWaeG7h3QgTmFt!5e0!3m2!1svi!2s!4v1711700000000!5m2!1svi!2s" 
+            src={mapUrl} 
             width="100%" 
             height="100%" 
             style={{ border: 0 }} 
             allowFullScreen={true} 
             loading="lazy" 
             referrerPolicy="no-referrer-when-downgrade"
+            className="group-hover:opacity-90 transition-opacity"
           ></iframe>
         </div>
       </div>

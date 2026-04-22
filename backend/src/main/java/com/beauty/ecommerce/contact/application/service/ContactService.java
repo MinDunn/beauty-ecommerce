@@ -4,6 +4,7 @@ import com.beauty.ecommerce.contact.adapter.in.web.request.CreateContactRequest;
 import com.beauty.ecommerce.contact.adapter.in.web.response.ContactResponse;
 import com.beauty.ecommerce.contact.adapter.out.persistence.ContactJpaEntity;
 import com.beauty.ecommerce.contact.adapter.out.persistence.ContactRepository;
+import com.beauty.ecommerce.common.application.service.EmailService;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
@@ -18,6 +19,7 @@ import java.util.stream.Collectors;
 public class ContactService {
 
     private final ContactRepository contactRepository;
+    private final EmailService emailService;
 
     public ContactResponse createContact(CreateContactRequest request) {
         log.info("Nhận phản hồi mới từ: {}", request.getEmail());
@@ -31,6 +33,13 @@ public class ContactService {
                 .build();
 
         contactRepository.save(contact);
+
+        // Gửi email tự động phản hồi cho khách hàng
+        try {
+            emailService.sendContactConfirmationEmail(request.getEmail(), request.getName(), request.getMessage());
+        } catch (Exception e) {
+            log.error("Lỗi khi gửi email phản hồi liên hệ", e);
+        }
 
         return mapToResponse(contact);
     }

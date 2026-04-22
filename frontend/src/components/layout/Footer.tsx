@@ -79,7 +79,7 @@ const Footer = () => {
             <li><Link to="/about" className="hover:text-primary-500">Giới thiệu về Glowzy</Link></li>
             <li><Link to="/stores" className="hover:text-primary-500">Hệ thống cửa hàng</Link></li>
             <li><Link to="/careers" className="hover:text-primary-500">Tuyển dụng</Link></li>
-            <li><Link to="/contact" className="hover:text-primary-500">Liên hệ</Link></li>
+            <li><Link to="/contact" className="hover:text-primary-500">Góp ý</Link></li>
           </ul>
         </div>
 

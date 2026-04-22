@@ -14,6 +14,10 @@ import {
 } from "lucide-react";
 import { clsx } from "clsx";
 import { motion, AnimatePresence } from "framer-motion";
+import { useEffect, useState } from "react";
+import { orderService } from "../../api/orderService";
+import { feedbackService } from "../../api/feedbackService";
+import { chatService } from "../../api/chatService";
 
 interface SidebarProps {
   isOpen?: boolean;
@@ -23,15 +27,70 @@ interface SidebarProps {
 export const Sidebar = ({ isOpen, onClose }: SidebarProps) => {
   const location = useLocation();
 
+  const [newOrdersCount, setNewOrdersCount] = useState(0);
+  const [newFeedbackCount, setNewFeedbackCount] = useState(0);
+
+  const fetchNotificationCounts = async () => {
+    try {
+      const [orders, feedbacks, chatters] = await Promise.all([
+        orderService.adminGetAllOrders(),
+        feedbackService.getAllFeedbacks(),
+        chatService.getChatUsers()
+      ]);
+
+      const lastSeenOrderId = Number(localStorage.getItem('admin_last_seen_order_id') || 0);
+      const lastSeenFeedbackId = Number(localStorage.getItem('admin_last_seen_feedback_id') || 0);
+
+      const unreadOrders = orders.filter((o: any) => o.id > lastSeenOrderId).length;
+      const unreadSuggestions = feedbacks.filter((f: any) => !f.isRead && f.id > lastSeenFeedbackId).length;
+      const unreadChats = chatters.reduce((sum: number, c: any) => sum + (c.unreadCount || 0), 0);
+
+      setNewOrdersCount(unreadOrders);
+      setNewFeedbackCount(unreadSuggestions + unreadChats);
+    } catch (error) {
+      console.error("Failed to fetch sidebar notifications", error);
+    }
+  };
+
+  useEffect(() => {
+    fetchNotificationCounts();
+    // Poll every 5 seconds for near real-time updates (orders/suggestions)
+    const interval = setInterval(fetchNotificationCounts, 5000);
+
+    const { token } = JSON.parse(localStorage.getItem('auth') || '{}');
+    
+    const handleNewChat = () => {
+      fetchNotificationCounts();
+    };
+
+    // Establish persistent WS listener as ADMIN to catch all incoming chats
+    chatService.connect(token, 'ADMIN', handleNewChat);
+
+    const handleOrdersSeen = () => setNewOrdersCount(0);
+    const handleFeedbackSeen = () => setNewFeedbackCount(0);
+
+    window.addEventListener('admin-orders-seen', handleOrdersSeen);
+    window.addEventListener('admin-feedback-seen', handleFeedbackSeen);
+    window.addEventListener('chat-new-reply' as any, fetchNotificationCounts);
+
+    return () => {
+      clearInterval(interval);
+      chatService.disconnect(handleNewChat);
+      window.removeEventListener('admin-orders-seen', handleOrdersSeen);
+      window.removeEventListener('admin-feedback-seen', handleFeedbackSeen);
+      window.removeEventListener('chat-new-reply' as any, fetchNotificationCounts);
+    };
+  }, []);
+
   const menuItems = [
     { path: "/admin", name: "Bảng điều khiển", icon: LayoutDashboard },
     { path: "/admin/products", name: "Sản phẩm", icon: ShoppingBag },
     { path: "/admin/categories", name: "Danh mục", icon: Layers },
     { path: "/admin/coupons", name: "Mã giảm giá", icon: Ticket },
-    { path: "/admin/orders", name: "Đơn hàng", icon: ClipboardList },
+    { path: "/admin/orders", name: "Đơn hàng", icon: ClipboardList, badge: newOrdersCount },
     { path: "/admin/inventory-receipts", name: "HĐ nhập hàng", icon: FileText },
     { path: "/admin/users", name: "Người dùng", icon: User },
-    { path: "/admin/feedback", name: "Phản hồi", icon: MessageSquare },
+    { path: "/admin/feedback", name: "Phản hồi", icon: MessageSquare, badge: newFeedbackCount },
     { path: "/admin/activities", name: "Hoạt động", icon: Bell },
   ];
 
@@ -90,8 +149,13 @@ export const Sidebar = ({ isOpen, onClose }: SidebarProps) => {
                   "w-5 h-5 transition-transform duration-200 group-hover:scale-110",
                   isActive ? "text-primary-500" : "text-slate-400 group-hover:text-white"
                 )} />
-                <span className="font-medium">{item.name}</span>
-                {isActive && (
+                <span className="font-medium text-sm">{item.name}</span>
+                {item.badge !== undefined && item.badge > 0 && (
+                  <div className="ml-auto px-1.5 py-0.5 rounded-md bg-rose-500 text-white text-[10px] font-black min-w-[18px] text-center shadow-lg shadow-rose-500/20 animate-in zoom-in duration-300">
+                    {item.badge > 99 ? '99+' : item.badge}
+                  </div>
+                )}
+                {isActive && item.badge === undefined && (
                   <div className="ml-auto w-1.5 h-1.5 rounded-full bg-primary-500 shadow-[0_0_8px_rgba(243,112,33,0.6)]" />
                 )}
               </Link>

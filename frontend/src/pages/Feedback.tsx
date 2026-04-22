@@ -8,6 +8,7 @@ import { toast } from "react-hot-toast";
 import { MessageSquare, User, Mail, Calendar, Star, Package, Trash2, Check, Send } from "lucide-react";
 import { clsx } from "clsx";
 import AdminChat from "../components/admin/AdminChat";
+import { chatService } from "../api/chatService";
 
 type FeedbackTab = 'chat' | 'reviews' | 'suggestions';
 
@@ -17,16 +18,55 @@ export const FeedbackPage = () => {
   const [reviews, setReviews] = useState<Review[]>([]);
   const [loading, setLoading] = useState(true);
   const [activeTab, setActiveTab] = useState<FeedbackTab>('chat');
+  const [previousMaxId] = useState(() => Number(localStorage.getItem('admin_last_seen_feedback_id') || 0));
+  const [previousMaxReviewId] = useState(() => Number(localStorage.getItem('admin_last_seen_review_id') || 0));
+  
+  const [showChatBadge, setShowChatBadge] = useState(false);
+  const [showRevBadge, setShowRevBadge] = useState(false);
+  const [showSugBadge, setShowSugBadge] = useState(false);
 
   const fetchData = async () => {
-    setLoading(true);
     try {
-      const [contactRes, reviewRes] = await Promise.all([
+      const [contactRes, reviewRes, chatUsers] = await Promise.all([
         feedbackService.getAllFeedbacks(),
-        reviewService.getAllReviews()
+        reviewService.getAllReviews(),
+        chatService.getChatUsers()
       ]);
-      setFeedbacks(contactRes);
-      setReviews(reviewRes.data.data);
+
+      const sortedFeedbacks = contactRes.sort((a: any, b: any) => b.id - a.id);
+      const sortedReviews = reviewRes.data.data.sort((a: any, b: any) => b.id - a.id);
+
+      setFeedbacks(sortedFeedbacks);
+      setReviews(sortedReviews);
+
+      // Handle Suggestions badge state
+      if (contactRes && contactRes.length > 0) {
+        const currentMaxId = Math.max(...contactRes.map((f: any) => f.id));
+        const storedMaxId = Number(localStorage.getItem('admin_last_seen_feedback_id') || 0);
+        if (currentMaxId > storedMaxId) {
+          setShowSugBadge(true);
+          localStorage.setItem('admin_last_seen_feedback_id', currentMaxId.toString());
+        }
+      }
+
+      // Handle Reviews badge state
+      if (reviewRes.data.data && reviewRes.data.data.length > 0) {
+        const currentMaxRevId = Math.max(...reviewRes.data.data.map((r: any) => r.id));
+        const storedMaxRevId = Number(localStorage.getItem('admin_last_seen_review_id') || 0);
+        if (currentMaxRevId > storedMaxRevId) {
+          setShowRevBadge(true);
+          localStorage.setItem('admin_last_seen_review_id', currentMaxRevId.toString());
+        }
+      }
+
+      // Handle Chat badge state
+      if (chatUsers.some((c: any) => c.unreadCount > 0)) {
+        setShowChatBadge(true);
+      } else {
+        setShowChatBadge(false);
+      }
+
+      window.dispatchEvent(new CustomEvent('admin-feedback-seen'));
     } catch (error) {
       toast.error("Không thể tải dữ liệu phản hồi");
       console.error(error);
@@ -34,6 +74,14 @@ export const FeedbackPage = () => {
       setLoading(false);
     }
   };
+
+  useEffect(() => {
+    const handleChatSeen = () => {
+      fetchData();
+    };
+    window.addEventListener('admin-chat-seen', handleChatSeen);
+    return () => window.removeEventListener('admin-chat-seen', handleChatSeen);
+  }, []);
 
   useEffect(() => {
     const params = new URLSearchParams(location.search);
@@ -71,6 +119,11 @@ export const FeedbackPage = () => {
       <div className="flex flex-col">
         <span className="text-white font-bold flex items-center gap-2 text-sm">
           <User size={12} className="text-slate-500" /> {fb.name}
+          {fb.id > previousMaxId && (
+            <span className="px-1.5 py-0.5 bg-primary-500 text-white text-[8px] font-black uppercase rounded-md animate-pulse">
+              Mới
+            </span>
+          )}
         </span>
         <span className="text-slate-500 text-[10px] flex items-center gap-2">
           <Mail size={10} /> {fb.email}
@@ -110,7 +163,10 @@ export const FeedbackPage = () => {
         </button>
       </div>
     ),
-    rowClassName: !fb.isRead ? "bg-primary-500/[0.03]" : ""
+    rowClassName: clsx(
+      !fb.isRead && "bg-primary-500/[0.03]",
+      fb.id > previousMaxId && "border-l-2 border-l-primary-500"
+    )
   }));
 
   const reviewTableData = reviews.map(rev => ({
@@ -118,6 +174,11 @@ export const FeedbackPage = () => {
       <div className="flex flex-col">
         <span className="text-white font-bold flex items-center gap-2 text-sm">
           <User size={12} className="text-slate-500" /> {rev.userFullName}
+          {rev.id > previousMaxReviewId && (
+            <span className="px-1.5 py-0.5 bg-primary-500 text-white text-[8px] font-black uppercase rounded-md animate-pulse">
+              Mới
+            </span>
+          )}
         </span>
       </div>
     ),
@@ -144,7 +205,8 @@ export const FeedbackPage = () => {
       <div className="text-slate-500 text-[10px] font-black uppercase tracking-widest">
         {new Date(rev.createdAt).toLocaleString('vi-VN')}
       </div>
-    )
+    ),
+    rowClassName: rev.id > previousMaxReviewId ? "bg-primary-500/[0.03] border-l-2 border-l-primary-500" : ""
   }));
 
   if (loading) return (
@@ -163,34 +225,51 @@ export const FeedbackPage = () => {
 
         <div className="flex p-1.5 bg-slate-900 border border-slate-800 rounded-2xl w-fit shadow-2xl overflow-x-auto whitespace-nowrap">
             <button 
-                onClick={() => setActiveTab('chat')}
+                onClick={() => {
+                  setActiveTab('chat');
+                }}
                 className={clsx(
-                    "px-6 py-3 rounded-xl text-[10px] font-black uppercase tracking-widest transition-all flex items-center gap-2",
+                    "px-6 py-3 rounded-xl text-[10px] font-black uppercase tracking-widest transition-all flex items-center gap-2 relative",
                     activeTab === 'chat' ? "bg-primary-500 text-white shadow-xl shadow-primary-500/20" : "text-slate-500 hover:text-white"
                 )}
             >
                 <Send size={14} />
                 <span>Tin nhắn</span>
+                {showChatBadge && (
+                   <span className="absolute top-2 right-2 w-2 h-2 bg-rose-500 rounded-full border border-[#0f172a] shadow-[0_0_8px_rgba(244,63,94,0.6)]" />
+                )}
             </button>
             <button 
-                onClick={() => setActiveTab('reviews')}
+                onClick={() => {
+                  setActiveTab('reviews');
+                  setShowRevBadge(false);
+                }}
                 className={clsx(
-                    "px-6 py-3 rounded-xl text-[10px] font-black uppercase tracking-widest transition-all flex items-center gap-2",
+                    "px-6 py-3 rounded-xl text-[10px] font-black uppercase tracking-widest transition-all flex items-center gap-2 relative",
                     activeTab === 'reviews' ? "bg-primary-500 text-white shadow-xl shadow-primary-500/20" : "text-slate-500 hover:text-white"
                 )}
             >
                 <Star size={14} />
                 <span>Đánh giá ({reviews.length})</span>
+                {showRevBadge && (
+                   <span className="absolute top-2 right-2 w-2 h-2 bg-rose-500 rounded-full border border-[#0f172a] shadow-[0_0_8px_rgba(244,63,94,0.6)]" />
+                )}
             </button>
             <button 
-                onClick={() => setActiveTab('suggestions')}
+                onClick={() => {
+                  setActiveTab('suggestions');
+                  setShowSugBadge(false);
+                }}
                 className={clsx(
-                    "px-6 py-3 rounded-xl text-[10px] font-black uppercase tracking-widest transition-all flex items-center gap-2",
+                    "px-6 py-3 rounded-xl text-[10px] font-black uppercase tracking-widest transition-all flex items-center gap-2 relative",
                     activeTab === 'suggestions' ? "bg-primary-500 text-white shadow-xl shadow-primary-500/20" : "text-slate-500 hover:text-white"
                 )}
             >
                 <MessageSquare size={14} />
                 <span>Góp ý ({feedbacks.length})</span>
+                {showSugBadge && (
+                   <span className="absolute top-2 right-2 w-2 h-2 bg-rose-500 rounded-full border border-[#0f172a] shadow-[0_0_8px_rgba(244,63,94,0.6)]" />
+                )}
             </button>
         </div>
       </div>
@@ -211,6 +290,7 @@ export const FeedbackPage = () => {
                         { header: "Thời gian", key: "date" }
                     ]} 
                     data={reviewTableData} 
+                    rowClassName={(item: any) => item.rowClassName}
                   />
               )
           )}

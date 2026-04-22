@@ -88,6 +88,35 @@ public class EmailService {
         }
     }
 
+    public void sendContactConfirmationEmail(String to, String name, String content) {
+        try {
+            log.info("Preparing to send contact confirmation email to: {}", to);
+            
+            MimeMessage message = mailSender.createMimeMessage();
+            MimeMessageHelper helper = new MimeMessageHelper(
+                    message,
+                    MimeMessageHelper.MULTIPART_MODE_MIXED_RELATED,
+                    StandardCharsets.UTF_8.name()
+            );
+
+            Context context = new Context();
+            context.setVariable("name", name);
+            context.setVariable("message", content);
+
+            String html = templateEngine.process("contact-confirmation", context);
+
+            helper.setFrom(fromEmail);
+            helper.setTo(to);
+            helper.setSubject("[Glowzy] Cảm ơn bạn đã gửi đóng góp ý kiến!");
+            helper.setText(html, true);
+
+            mailSender.send(message);
+            log.info("Contact confirmation email sent successfully to {}", to);
+        } catch (Exception e) {
+            log.error("Failed to send contact confirmation email to: {}", to, e);
+        }
+    }
+
     public void sendSimpleMessage(String to, String subject, String text) {
         try {
             MimeMessage message = mailSender.createMimeMessage();

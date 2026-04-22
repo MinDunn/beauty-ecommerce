@@ -242,7 +242,11 @@ const Profile = () => {
     const [orderToCancel, setOrderToCancel] = useState<number | null>(null);
     const [selectedReason, setSelectedReason] = useState<string>("");
     const [customReason, setCustomReason] = useState<string>("");
-    const [expandedOrderId, setExpandedOrderId] = useState<number | null>(null);
+    const [expandedOrderId, setExpandedOrderId] = useState<number | null>(() => {
+      const params = new URLSearchParams(location.search);
+      const id = params.get('orderId');
+      return id ? Number(id) : null;
+    });
 
     const cancelReasons = [
       "Sai địa chỉ nhận hàng",
@@ -418,7 +422,7 @@ const Profile = () => {
                         onClick={() => handleBuyAgain(order)}
                         className="px-4 py-2.5 bg-slate-900 text-white rounded-xl text-[10px] font-black uppercase tracking-widest hover:bg-primary-500 transition-all shadow-xl shadow-slate-900/10"
                       >
-                        Mua lại
+                        {order.status === 'DELIVERED' ? 'Mua lại' : 'Mua thêm đơn nữa'}
                       </button>
 
                       <div className="pl-4 border-l border-gray-100">

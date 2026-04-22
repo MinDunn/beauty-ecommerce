@@ -12,8 +12,7 @@ export const useChat = (recipientId: string = 'ADMIN') => {
   const { user, token } = useSelector((state: RootState) => state.auth);
   
   // Identify user or create guest ID
-  const [currentUserId] = useState(() => {
-    // If admin, always use 'ADMIN' as the ID for chat routing
+  const currentUserId = (() => {
     if (user?.role === 'ADMIN') return 'ADMIN';
     if (user?.email) return user.email;
     const existingGuestId = localStorage.getItem('glowzy_guest_id');
@@ -21,13 +20,13 @@ export const useChat = (recipientId: string = 'ADMIN') => {
     const newGuestId = `GUEST-${uuidv4().substring(0, 8)}`;
     localStorage.setItem('glowzy_guest_id', newGuestId);
     return newGuestId;
-  });
+  })();
 
-  const [currentUserName] = useState(() => {
+  const currentUserName = (() => {
     if (user?.role === 'ADMIN') return 'Admin';
     if (user?.fullName) return user.fullName;
     return 'Khách hàng';
-  });
+  })();
 
   const loadHistory = useCallback(async () => {
     try {

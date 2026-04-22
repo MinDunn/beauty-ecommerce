@@ -1,27 +1,44 @@
 import { MapPin, Phone, Clock, Search } from 'lucide-react';
 import { motion } from 'framer-motion';
+import { useState } from 'react';
+import MapModal from '../components/modals/MapModal';
 
 const stores = [
   {
     city: 'Hồ Chí Minh',
     locations: [
+      {
+        name: 'Trụ sở chính Glowzy',
+        address: 'Lầu 15, Tòa nhà Empress, 138-142 Hai Bà Trưng, P. Đa Kao, Quận 1, TP. HCM',
+        phone: '1900 633 023',
+        hours: '09:00 - 18:00',
+        isHeadOffice: true,
+        lat: 10.7825,
+        lng: 106.6975
+      },
       { 
         name: 'Glowzy Premium Flagship', 
         address: '88 Đồng Khởi, Quận 1, TP. Hồ Chí Minh', 
         phone: '028 4567 8888', 
-        hours: '08:00 - 22:00' 
+        hours: '08:00 - 22:00',
+        lat: 10.7749,
+        lng: 106.7027
       },
       { 
         name: 'Glowzy Thảo Điền', 
         address: '24 Xuân Thủy, P. Thảo Điền, Quận 2', 
         phone: '028 4567 9999', 
-        hours: '09:00 - 21:00' 
+        hours: '09:00 - 21:00',
+        lat: 10.8038,
+        lng: 106.7364
       },
       { 
         name: 'Glowzy Crescent Mall', 
         address: 'Tầng 2, 101 Tôn Dật Tiên, Quận 7', 
         phone: '028 4567 1111', 
-        hours: '10:00 - 22:00' 
+        hours: '10:00 - 22:00',
+        lat: 10.7289,
+        lng: 106.7196
       }
     ]
   },
@@ -32,13 +49,17 @@ const stores = [
         name: 'Glowzy Hoàn Kiếm', 
         address: '15 Tràng Tiền, Quận Hoàn Kiếm, Hà Nội', 
         phone: '024 4567 8888', 
-        hours: '09:00 - 22:00' 
+        hours: '09:00 - 22:00',
+        lat: 21.0252,
+        lng: 105.8524
       },
       { 
         name: 'Glowzy Vincom Bà Triệu', 
         address: 'Tầng 1, 191 Bà Triệu, Quận Hai Bà Trưng', 
         phone: '024 4567 2222', 
-        hours: '09:30 - 22:00' 
+        hours: '09:30 - 22:00',
+        lat: 21.0118,
+        lng: 105.8496
       }
     ]
   },
@@ -49,13 +70,17 @@ const stores = [
         name: 'Glowzy Đà Nẵng Center', 
         address: '256 Hùng Vương, Quận Thanh Khê, Đà Nẵng', 
         phone: '0236 4567 8888', 
-        hours: '08:00 - 21:30' 
+        hours: '08:00 - 21:30',
+        lat: 16.0683,
+        lng: 108.2144
       }
     ]
   }
 ];
 
 const Stores = () => {
+  const [selectedStore, setSelectedStore] = useState<{ name: string; address: string; lat: number; lng: number } | null>(null);
+
   return (
     <div className="bg-gray-50 min-h-screen pb-24">
       {/* Header */}
@@ -138,7 +163,15 @@ const Stores = () => {
                                 <p>{store.hours}</p>
                               </div>
                            </div>
-                           <button className="w-full mt-8 py-4 bg-gray-900 text-white rounded-2xl font-bold uppercase text-xs tracking-widest hover:bg-primary-500 transition-colors">
+                           <button 
+                            onClick={() => setSelectedStore({ 
+                              name: store.name, 
+                              address: store.address,
+                              lat: store.lat,
+                              lng: store.lng
+                            })}
+                            className="w-full mt-8 py-4 bg-gray-900 text-white rounded-2xl font-bold uppercase text-xs tracking-widest hover:bg-primary-500 transition-colors"
+                           >
                               Xem bản đồ
                            </button>
                         </motion.div>
@@ -149,6 +182,15 @@ const Stores = () => {
            </div>
         </div>
       </div>
+
+      <MapModal 
+        isOpen={!!selectedStore}
+        onClose={() => setSelectedStore(null)}
+        storeName={selectedStore?.name || ''}
+        address={selectedStore?.address || ''}
+        lat={selectedStore?.lat}
+        lng={selectedStore?.lng}
+      />
     </div>
   );
 };

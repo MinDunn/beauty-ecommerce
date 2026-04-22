@@ -161,7 +161,7 @@ const OrderSuccess = () => {
               <span>Quay lại trang chủ</span>
            </Link>
            <Link 
-            to="/profile" 
+            to={`/profile?tab=orders&orderId=${orderId}`} 
             className="glowzy-btn-primary py-5 px-12 flex items-center justify-center gap-3"
            >
               <span>Xem đơn hàng</span>

@@ -30,6 +30,7 @@ export const Orders = () => {
   const [searchQuery, setSearchQuery] = useState('');
   const [selectedIds, setSelectedIds] = useState<number[]>([]);
   const [isBulkProcessing, setIsBulkProcessing] = useState(false);
+  const [previousMaxId] = useState(() => Number(localStorage.getItem('admin_last_seen_order_id') || 0));
 
   const [confirmConfig, setConfirmConfig] = useState<{
     isOpen: boolean;
@@ -49,6 +50,15 @@ export const Orders = () => {
       };
       const data = await orderService.adminGetAllOrders(params);
       setOrders(data);
+
+      if (data && data.length > 0) {
+        const currentMaxId = Math.max(...data.map((o: Order) => o.id));
+        const storedMaxId = Number(localStorage.getItem('admin_last_seen_order_id') || 0);
+        if (currentMaxId > storedMaxId) {
+          localStorage.setItem('admin_last_seen_order_id', currentMaxId.toString());
+        }
+        window.dispatchEvent(new CustomEvent('admin-orders-seen'));
+      }
     } catch (error) {
       toast.error("Không thể tải danh sách đơn hàng");
     }
@@ -198,8 +208,15 @@ export const Orders = () => {
   const tableData = orders.map(order => ({
     id: order.id,
     customer: (
-      <div>
-        <p className="font-bold text-white">{order.receiverName}</p>
+      <div className="flex flex-col">
+        <div className="flex items-center gap-2">
+          <p className="font-bold text-white">{order.receiverName}</p>
+          {order.id > previousMaxId && (
+            <span className="px-1.5 py-0.5 bg-primary-500 text-white text-[8px] font-black uppercase rounded-md animate-pulse">
+              Mới
+            </span>
+          )}
+        </div>
         <p className="text-[10px] text-slate-500 uppercase font-black">ID: #{order.id}</p>
       </div>
     ),
@@ -310,7 +327,8 @@ export const Orders = () => {
           <Eye size={18} />
         </button>
       </div>
-    )
+    ),
+    rowClassName: order.id > previousMaxId ? "bg-primary-500/[0.03] border-l-2 border-l-primary-500" : ""
   }));
 
   return (
@@ -369,6 +387,7 @@ export const Orders = () => {
           { header: "Chi tiết", key: "actions" }
         ]} 
         data={tableData} 
+        rowClassName={(item: any) => item.rowClassName}
       />
 
       {/* Bulk Action Bar */}
