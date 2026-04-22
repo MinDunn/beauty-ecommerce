@@ -9,12 +9,23 @@ export interface Review {
   productName: string;
   ratingStar: number;
   comment: string;
+  adminReply?: string;
+  repliedAt?: string;
   createdAt: string;
 }
 
 export interface CreateReviewRequest {
   ratingStar: number;
   comment: string;
+}
+
+export interface UpdateReviewRequest {
+  ratingStar: number;
+  comment: string;
+}
+
+export interface ReplyReviewRequest {
+  reply: string;
 }
 
 export const reviewService = {
@@ -25,7 +36,13 @@ export const reviewService = {
     axiosInstance.post<ApiResponse<Review>>(`/reviews/${productId}`, data),
 
   getAllReviews: () =>
-    axiosInstance.get<ApiResponse<Review[]>>('/reviews/admin/all')
+    axiosInstance.get<ApiResponse<Review[]>>('/reviews/admin/all'),
+
+  replyToReview: (id: number, data: ReplyReviewRequest) =>
+    axiosInstance.put<ApiResponse<Review>>(`/reviews/${id}/reply`, data),
+
+  updateReview: (id: number, data: UpdateReviewRequest) =>
+    axiosInstance.put<ApiResponse<Review>>(`/reviews/${id}`, data)
 };
 
 export default reviewService;

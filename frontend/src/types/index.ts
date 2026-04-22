@@ -10,6 +10,8 @@ export type Product = {
   categoryName?: string;
   instructions?: string;
   ingredients?: string;
+  origin?: string;
+  warnings?: string;
   images?: string[];
   variants?: {
     id: number;

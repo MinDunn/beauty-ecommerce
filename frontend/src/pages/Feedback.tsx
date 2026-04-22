@@ -24,6 +24,10 @@ export const FeedbackPage = () => {
   const [showChatBadge, setShowChatBadge] = useState(false);
   const [showRevBadge, setShowRevBadge] = useState(false);
   const [showSugBadge, setShowSugBadge] = useState(false);
+  
+  const [replyingTo, setReplyingTo] = useState<number | null>(null);
+  const [replyContent, setReplyContent] = useState("");
+  const [submittingReply, setSubmittingReply] = useState(false);
 
   const fetchData = async () => {
     try {
@@ -51,11 +55,11 @@ export const FeedbackPage = () => {
 
       // Handle Reviews badge state
       if (reviewRes.data.data && reviewRes.data.data.length > 0) {
-        const currentMaxRevId = Math.max(...reviewRes.data.data.map((r: any) => r.id));
-        const storedMaxRevId = Number(localStorage.getItem('admin_last_seen_review_id') || 0);
-        if (currentMaxRevId > storedMaxRevId) {
+        const unrepliedReviews = reviewRes.data.data.filter((r: any) => !r.adminReply);
+        if (unrepliedReviews.length > 0) {
           setShowRevBadge(true);
-          localStorage.setItem('admin_last_seen_review_id', currentMaxRevId.toString());
+        } else {
+          setShowRevBadge(false);
         }
       }
 
@@ -114,6 +118,26 @@ export const FeedbackPage = () => {
     }
   };
 
+  const handleReply = async (reviewId: number) => {
+    if (!replyContent.trim()) {
+      toast.error("Vui lòng nhập nội dung phản hồi");
+      return;
+    }
+
+    setSubmittingReply(true);
+    try {
+      await reviewService.replyToReview(reviewId, { reply: replyContent });
+      toast.success("Đã gửi phản hồi");
+      setReplyingTo(null);
+      setReplyContent("");
+      fetchData();
+    } catch (error) {
+      toast.error("Không thể gửi phản hồi");
+    } finally {
+      setSubmittingReply(false);
+    }
+  };
+
   const handleMarkAsRead = async (id: number) => {
     try {
       await feedbackService.markAsRead(id);
@@ -129,7 +153,7 @@ export const FeedbackPage = () => {
       <div className="flex flex-col">
         <span className="text-white font-bold flex items-center gap-2 text-sm">
           <User size={12} className="text-slate-500" /> {fb.name}
-          {fb.id > previousMaxId && (
+          {fb.id > previousMaxId && !fb.isRead && (
             <span className="px-1.5 py-0.5 bg-primary-500 text-white text-[8px] font-black uppercase rounded-md animate-pulse">
               Mới
             </span>
@@ -184,7 +208,7 @@ export const FeedbackPage = () => {
       <div className="flex flex-col">
         <span className="text-white font-bold flex items-center gap-2 text-sm">
           <User size={12} className="text-slate-500" /> {rev.userFullName}
-          {rev.id > previousMaxReviewId && (
+          {rev.id > previousMaxReviewId && !rev.adminReply && (
             <span className="px-1.5 py-0.5 bg-primary-500 text-white text-[8px] font-black uppercase rounded-md animate-pulse">
               Mới
             </span>
@@ -207,8 +231,74 @@ export const FeedbackPage = () => {
         </div>
     ),
     comment: (
-        <div className="max-w-xs">
-          <p className="text-slate-400 text-sm italic line-clamp-2">"{rev.comment}"</p>
+        <div className="w-full space-y-4">
+          <p className="text-slate-400 text-sm italic font-medium leading-relaxed bg-slate-800/20 p-4 rounded-xl border border-slate-800/50 w-full">
+            "{rev.comment}"
+          </p>
+          
+          {rev.adminReply ? (
+            <div className="ml-6 p-4 bg-primary-500/5 border border-primary-500/10 rounded-2xl relative group/reply">
+                 <div className="absolute -left-3 top-4 w-3 h-px bg-primary-500/20"></div>
+                 <div className="flex items-center gap-2 mb-2">
+                    <div className="w-5 h-5 bg-primary-500 rounded flex items-center justify-center">
+                        <Check size={10} className="text-white" />
+                    </div>
+                    <span className="text-[10px] font-black text-primary-500 uppercase tracking-widest">
+                        Admin đã phản hồi
+                    </span>
+                 </div>
+                 <p className="text-slate-300 text-xs italic">"{rev.adminReply}"</p>
+                 <button 
+                  onClick={() => {
+                    setReplyingTo(rev.id);
+                    setReplyContent(rev.adminReply || "");
+                  }}
+                  className="absolute top-2 right-2 p-1.5 text-slate-600 hover:text-primary-500 transition-colors opacity-0 group-hover/reply:opacity-100"
+                  title="Chỉnh sửa phản hồi"
+                 >
+                    <Star size={10} fill="currentColor" />
+                 </button>
+            </div>
+          ) : replyingTo === rev.id ? (
+            <div className="ml-6 space-y-3 p-4 bg-slate-800/50 rounded-2xl border border-primary-500/30 animate-in slide-in-from-top-1 duration-300">
+                <textarea 
+                  value={replyContent}
+                  onChange={(e) => setReplyContent(e.target.value)}
+                  placeholder="Nhập nội dung phản hồi khách hàng..."
+                  className="w-full bg-slate-900 border border-slate-700 rounded-xl p-3 text-xs text-white placeholder:text-slate-600 focus:ring-1 focus:ring-primary-500/50 focus:border-primary-500 transition-all outline-none min-h-[80px] resize-none"
+                  autoFocus
+                />
+                <div className="flex justify-end gap-2">
+                    <button 
+                      onClick={() => setReplyingTo(null)}
+                      className="px-3 py-1.5 text-[10px] font-black text-slate-500 hover:text-white uppercase tracking-widest transition-colors"
+                    >
+                        Hủy
+                    </button>
+                    <button 
+                      onClick={() => handleReply(rev.id)}
+                      disabled={submittingReply}
+                      className="bg-primary-500 hover:bg-primary-400 text-white px-4 py-1.5 rounded-lg text-[10px] font-black uppercase tracking-widest transition-all shadow-lg shadow-primary-500/20 disabled:opacity-50 flex items-center gap-2"
+                    >
+                        {submittingReply ? <span className="w-3 h-3 border-2 border-white/20 border-t-white rounded-full animate-spin" /> : <Send size={12} />}
+                        Gửi phản hồi
+                    </button>
+                </div>
+            </div>
+          ) : (
+            <button 
+              onClick={() => {
+                setReplyingTo(rev.id);
+                setReplyContent("");
+              }}
+              className="ml-6 flex items-center gap-2 text-primary-500 hover:text-primary-400 transition-all text-[10px] font-black uppercase tracking-widest group"
+            >
+                <div className="w-6 h-6 rounded-full bg-primary-500/10 flex items-center justify-center group-hover:scale-110 transition-transform">
+                   <MessageSquare size={12} />
+                </div>
+                Trả lời khách hàng ngay
+            </button>
+          )}
         </div>
     ),
     date: (
@@ -216,7 +306,7 @@ export const FeedbackPage = () => {
         {new Date(rev.createdAt).toLocaleString('vi-VN')}
       </div>
     ),
-    rowClassName: rev.id > previousMaxReviewId ? "bg-primary-500/[0.03] border-l-2 border-l-primary-500" : ""
+    rowClassName: !rev.adminReply ? "bg-primary-500/[0.03] border-l-2 border-l-primary-500" : ""
   }));
 
   if (loading) return (

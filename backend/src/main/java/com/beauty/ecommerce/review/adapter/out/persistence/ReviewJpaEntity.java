@@ -31,5 +31,8 @@ public class ReviewJpaEntity {
     private Integer ratingStar; // 1-5
     private String comment;
     
+    private String adminReply;
+    private LocalDateTime repliedAt;
+    
     private LocalDateTime createdAt;
 }

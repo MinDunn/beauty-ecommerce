@@ -103,6 +103,54 @@ public class ReviewService {
                 .collect(Collectors.toList());
     }
 
+    @Transactional
+    public ReviewResponse replyToReview(Long reviewId, String reply) {
+        log.info("Admin phản hồi đánh giá ID: {}", reviewId);
+        ReviewJpaEntity review = reviewRepository.findById(reviewId)
+                .orElseThrow(() -> new ResourceNotFoundException("Không tìm thấy đánh giá"));
+
+        review.setAdminReply(reply);
+        review.setRepliedAt(LocalDateTime.now());
+        
+        review = reviewRepository.save(review);
+        
+        String fullName = userRepository.findById(review.getUserId())
+                .map(UserJpaEntity::getFullName)
+                .orElse("Ẩn danh");
+        String productName = productRepository.findById(review.getProductId())
+                .map(p -> p.getName())
+                .orElse("Sản phẩm không xác định");
+                
+        return mapToResponse(review, fullName, productName);
+    }
+
+    @Transactional
+    public ReviewResponse updateReview(Long reviewId, String userEmail, com.beauty.ecommerce.review.adapter.in.web.request.UpdateReviewRequest request) {
+        log.info("User {} cập nhật đánh giá ID: {}", userEmail, reviewId);
+        ReviewJpaEntity review = reviewRepository.findById(reviewId)
+                .orElseThrow(() -> new ResourceNotFoundException("Không tìm thấy đánh giá"));
+
+        UserJpaEntity user = userRepository.findByEmail(userEmail)
+                .orElseThrow(() -> new ResourceNotFoundException("Không tìm thấy người dùng"));
+
+        if (!review.getUserId().equals(user.getId())) {
+            throw new BadRequestException("Bạn không có quyền chỉnh sửa đánh giá này");
+        }
+
+        review.setRatingStar(request.getRatingStar());
+        review.setComment(request.getComment());
+        // Khi user sửa đánh giá, có thể xóa phản hồi cũ của admin để admin phản hồi lại thông tin mới
+        // Hoặc giữ nguyên tùy requirement. Ở đây tôi giữ nguyên.
+        
+        review = reviewRepository.save(review);
+        
+        String productName = productRepository.findById(review.getProductId())
+                .map(p -> p.getName())
+                .orElse("Sản phẩm không xác định");
+                
+        return mapToResponse(review, user.getFullName(), productName);
+    }
+
     private ReviewResponse mapToResponse(ReviewJpaEntity review, String userFullName, String productName) {
         return ReviewResponse.builder()
                 .id(review.getId())
@@ -112,6 +160,8 @@ public class ReviewService {
                 .productName(productName)
                 .ratingStar(review.getRatingStar())
                 .comment(review.getComment())
+                .adminReply(review.getAdminReply())
+                .repliedAt(review.getRepliedAt() != null ? review.getRepliedAt().toString() + "Z" : null)
                 .createdAt(review.getCreatedAt().toString() + "Z")
                 .build();
     }

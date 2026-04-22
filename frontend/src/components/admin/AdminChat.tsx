@@ -110,7 +110,7 @@ const AdminChat = () => {
   };
 
   return (
-    <div className="flex h-[600px] md:h-[700px] bg-slate-900/50 rounded-3xl overflow-hidden shadow-2xl border border-slate-800 animate-in zoom-in-95 duration-500">
+    <div className="flex h-[750px] bg-slate-900/50 rounded-[2.5rem] overflow-hidden shadow-2xl border border-slate-800 animate-in zoom-in-95 duration-500 w-full">
       {/* Sidebar */}
       <div className="w-80 border-r border-slate-800 flex flex-col bg-slate-900/80">
         <div className="p-6 border-b border-slate-800">

@@ -18,6 +18,7 @@ import { useEffect, useState } from "react";
 import { orderService } from "../../api/orderService";
 import { feedbackService } from "../../api/feedbackService";
 import { chatService } from "../../api/chatService";
+import { reviewService } from "../../api/reviewService";
 
 interface SidebarProps {
   isOpen?: boolean;
@@ -32,10 +33,11 @@ export const Sidebar = ({ isOpen, onClose }: SidebarProps) => {
 
   const fetchNotificationCounts = async () => {
     try {
-      const [orders, feedbacks, chatters] = await Promise.all([
+      const [orders, feedbacks, chatters, reviewRes] = await Promise.all([
         orderService.adminGetAllOrders(),
         feedbackService.getAllFeedbacks(),
-        chatService.getChatUsers()
+        chatService.getChatUsers(),
+        reviewService.getAllReviews()
       ]);
 
       const lastSeenOrderId = Number(localStorage.getItem('admin_last_seen_order_id') || 0);
@@ -43,10 +45,11 @@ export const Sidebar = ({ isOpen, onClose }: SidebarProps) => {
 
       const unreadOrders = orders.filter((o: any) => o.id > lastSeenOrderId).length;
       const unreadSuggestions = feedbacks.filter((f: any) => !f.isRead && f.id > lastSeenFeedbackId).length;
+      const unrepliedReviews = reviewRes.data.data.filter((r: any) => !r.adminReply).length;
       const unreadChats = chatters.reduce((sum: number, c: any) => sum + (c.unreadCount || 0), 0);
 
       setNewOrdersCount(unreadOrders);
-      setNewFeedbackCount(unreadSuggestions + unreadChats);
+      setNewFeedbackCount(unreadSuggestions + unreadChats + unrepliedReviews);
     } catch (error) {
       console.error("Failed to fetch sidebar notifications", error);
     }

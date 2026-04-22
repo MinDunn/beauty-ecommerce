@@ -607,6 +607,8 @@ export const Products = () => {
       categoryId: categories.length > 0 ? categories[0].id.toString() : "",
       instructions: "",
       ingredients: "",
+      origin: "",
+      warnings: "",
       expiryDate: "",
       skinTypes: [],
       variants: []

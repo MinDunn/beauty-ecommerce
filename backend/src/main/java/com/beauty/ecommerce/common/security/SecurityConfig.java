@@ -43,6 +43,8 @@ public class SecurityConfig {
                 .csrf(AbstractHttpConfigurer::disable)
                 .authorizeHttpRequests(auth -> auth
                         // Public endpoints
+                        .requestMatchers(AntPathRequestMatcher.antMatcher(HttpMethod.GET, "/api/products/**")).permitAll()
+                        .requestMatchers(AntPathRequestMatcher.antMatcher("/api/public/**")).permitAll()
                         .requestMatchers(AntPathRequestMatcher.antMatcher("/api/auth/**")).permitAll()
                         .requestMatchers(AntPathRequestMatcher.antMatcher("/api/chat/**")).permitAll()
                         .requestMatchers(AntPathRequestMatcher.antMatcher("/ws/**")).permitAll()

@@ -98,6 +98,18 @@ export const Header = ({ logout, onToggleMenu }: { logout: () => void, onToggleM
         });
       }
 
+      const unrepliedTotal = (reviews || []).filter((r: any) => !r.adminReply).length;
+      if (unrepliedTotal > 0) {
+        generated.push({
+          id: "unreplied-reviews-alert",
+          title: `Bạn có ${unrepliedTotal} đánh giá chưa phản hồi`,
+          type: "FEEDBACK",
+          time: "Cần phản hồi",
+          read: false,
+          route: "/admin/feedback?tab=reviews"
+        });
+      }
+
       if (lowStockProducts.length > 0) {
         generated.push({
           id: "low-stock-alert",

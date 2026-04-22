@@ -2,6 +2,7 @@ package com.beauty.ecommerce.order.application.service;
 
 import com.beauty.ecommerce.cart.application.port.out.CartPort;
 import com.beauty.ecommerce.cart.domain.entity.CartItem;
+
 import com.beauty.ecommerce.order.application.port.in.OrderUseCase;
 import com.beauty.ecommerce.order.application.port.out.OrderPort;
 import com.beauty.ecommerce.order.domain.entity.Order;
@@ -43,132 +44,139 @@ public class OrderService implements OrderUseCase {
     @Override
     @Transactional
     public Order placeOrder(PlaceOrderCommand command) {
-        String email = command.getEmail();
-        UserJpaEntity user = userRepository.findByEmail(email)
-                .orElseThrow(() -> new RuntimeException("User not found"));
+        try {
+            String email = command.getEmail();
+            UserJpaEntity user = userRepository.findByEmail(email)
+                    .orElseThrow(() -> new RuntimeException("Không tìm thấy người dùng với email: " + email));
 
-        List<CartItem> allCartItems = cartPort.findByUserEmail(email);
-        List<CartItem> cartItems;
+            List<CartItem> allCartItems = cartPort.findByUserEmail(email);
+            List<CartItem> cartItems;
 
-        if (command.getCheckoutItems() != null && !command.getCheckoutItems().isEmpty()) {
-            cartItems = allCartItems.stream()
-                .filter(item -> command.getCheckoutItems().stream().anyMatch(ci -> 
-                    ci.getProductId().equals(item.getProductId()) && 
-                    ((ci.getVariantName() == null && item.getVariantName() == null) || 
-                     (ci.getVariantName() != null && ci.getVariantName().equals(item.getVariantName())))
-                ))
-                .collect(Collectors.toList());
-        } else {
-            cartItems = allCartItems;
-        }
-
-        if (cartItems.isEmpty()) {
-            throw new RuntimeException("No items selected for order");
-        }
-
-        // Pre-check stock availability for all items
-        for (CartItem item : cartItems) {
-            com.beauty.ecommerce.product.domain.entity.Product product = loadProductPort.loadProductById(item.getProductId())
-                .orElseThrow(() -> new RuntimeException("Sản phẩm không tồn tại: " + item.getProductName()));
-            
-            if (product.getStockQuantity() < item.getQuantity()) {
-                throw new RuntimeException("Sản phẩm '" + item.getProductName() + "' đã hết hàng hoặc không đủ số lượng.");
-            }
-        }
-
-        BigDecimal totalPrice = cartItems.stream()
-                .map(item -> item.getPrice().multiply(new BigDecimal(item.getQuantity())))
-                .reduce(BigDecimal.ZERO, BigDecimal::add);
-
-        // Apply Coupon
-        String couponCode = command.getCouponCode();
-        if (couponCode != null && !couponCode.trim().isEmpty()) {
-            java.util.List<Long> categoryIds = cartItems.stream()
-                .map(item -> {
-                    com.beauty.ecommerce.product.domain.entity.Product product = loadProductPort.loadProductById(item.getProductId()).orElse(null);
-                    return product != null ? product.getCategoryId() : null;
-                })
-                .filter(java.util.Objects::nonNull)
-                .collect(java.util.stream.Collectors.toList());
-
-            int totalItemCount = cartItems.stream().mapToInt(CartItem::getQuantity).sum();
-            CouponJpaEntity coupon = couponService.validateCoupon(couponCode, totalPrice.doubleValue(), categoryIds, totalItemCount, user.getId());
-            BigDecimal discount = BigDecimal.ZERO;
-            if ("PERCENTAGE".equalsIgnoreCase(coupon.getDiscountType())) {
-                discount = totalPrice.multiply(coupon.getDiscountValue()).divide(new BigDecimal(100));
+            if (command.getCheckoutItems() != null && !command.getCheckoutItems().isEmpty()) {
+                cartItems = allCartItems.stream()
+                    .filter(item -> command.getCheckoutItems().stream().anyMatch(ci -> 
+                        ci.getProductId().equals(item.getProductId()) && 
+                        ((ci.getVariantName() == null && item.getVariantName() == null) || 
+                         (ci.getVariantName() != null && ci.getVariantName().equals(item.getVariantName())))
+                    ))
+                    .collect(Collectors.toList());
             } else {
-                discount = coupon.getDiscountValue();
+                cartItems = allCartItems;
             }
-            totalPrice = totalPrice.subtract(discount);
-            if (totalPrice.compareTo(BigDecimal.ZERO) < 0) {
-                totalPrice = BigDecimal.ZERO;
+
+            if (cartItems.isEmpty()) {
+                throw new RuntimeException("Giỏ hàng của bạn không có sản phẩm nào được chọn hoặc đã thay đổi. Vui lòng kiểm tra lại.");
             }
-        }
 
-        Order order = Order.builder()
-                .userId(user.getId())
-                .orderDate(LocalDateTime.now())
-                .totalPrice(totalPrice)
-                .status(OrderStatus.PENDING)
-                .paymentMethod(command.getPaymentMethod())
-                .paymentStatus(PaymentStatus.UNPAID)
-                .receiverName(command.getReceiverName())
-                .receiverPhone(command.getReceiverPhone())
-                .shippingAddress(command.getShippingAddress())
-                .items(cartItems.stream()
-                        .map(cartItem -> OrderItem.builder()
-                                .productId(cartItem.getProductId())
-                                .productName(cartItem.getProductName())
-                                .productImageUrl(cartItem.getProductImageUrl())
-                                .quantity(cartItem.getQuantity())
-                                .price(cartItem.getPrice())
-                                .variantName(cartItem.getVariantName())
-                                .build())
-                        .collect(Collectors.toList()))
-                .build();
-
-        // Update user profile
-        boolean userUpdated = false;
-        if (user.getPhone() == null || user.getPhone().trim().isEmpty()) {
-            user.setPhone(command.getReceiverPhone());
-            userUpdated = true;
-        }
-        if (user.getAddress() == null || user.getAddress().trim().isEmpty()) {
-            user.setAddress(command.getShippingAddress());
-            userUpdated = true;
-        }
-        if (userUpdated) {
-            userRepository.save(user);
-        }
-
-        // 1. Save Order
-        Order savedOrder = orderPort.save(order);
-
-        // 1.1 Use Coupon
-        if (couponCode != null && !couponCode.trim().isEmpty()) {
-            couponService.useCoupon(couponCode);
-        }
-
-        // 2. Update Product Stock (Only for COD)
-        if (command.getPaymentMethod() == PaymentMethod.COD) {
-            for (CartItem cartItem : cartItems) {
-                updateProductStockPort.updateStock(cartItem.getProductId(), cartItem.getQuantity());
+            // Pre-check stock availability for all items
+            for (CartItem item : cartItems) {
+                com.beauty.ecommerce.product.domain.entity.Product product = loadProductPort.loadProductById(item.getProductId())
+                    .orElseThrow(() -> new RuntimeException("Sản phẩm không tồn tại: " + item.getProductName()));
+                
+                if (product.getStockQuantity() < item.getQuantity()) {
+                    throw new RuntimeException("Sản phẩm '" + item.getProductName() + "' đã hết hàng hoặc không đủ số lượng.");
+                }
             }
+
+            BigDecimal totalPrice = cartItems.stream()
+                    .map(item -> item.getPrice().multiply(new BigDecimal(item.getQuantity())))
+                    .reduce(BigDecimal.ZERO, BigDecimal::add);
+
+            // Apply Coupon
+            String couponCode = command.getCouponCode();
+            if (couponCode != null && !couponCode.trim().isEmpty()) {
+                java.util.List<Long> categoryIds = cartItems.stream()
+                    .map(item -> {
+                        com.beauty.ecommerce.product.domain.entity.Product product = loadProductPort.loadProductById(item.getProductId()).orElse(null);
+                        return product != null ? product.getCategoryId() : null;
+                    })
+                    .filter(java.util.Objects::nonNull)
+                    .collect(java.util.stream.Collectors.toList());
+
+                int totalItemCount = cartItems.stream().mapToInt(CartItem::getQuantity).sum();
+                CouponJpaEntity coupon = couponService.validateCoupon(couponCode, totalPrice.doubleValue(), categoryIds, totalItemCount, user.getId());
+                BigDecimal discount = BigDecimal.ZERO;
+                if ("PERCENTAGE".equalsIgnoreCase(coupon.getDiscountType())) {
+                    discount = totalPrice.multiply(coupon.getDiscountValue()).divide(new BigDecimal(100), 2, java.math.RoundingMode.HALF_UP);
+                } else {
+                    discount = coupon.getDiscountValue();
+                }
+                totalPrice = totalPrice.subtract(discount);
+                if (totalPrice.compareTo(BigDecimal.ZERO) < 0) {
+                    totalPrice = BigDecimal.ZERO;
+                }
+            }
+
+            Order order = Order.builder()
+                    .userId(user.getId())
+                    .orderDate(LocalDateTime.now())
+                    .totalPrice(totalPrice)
+                    .status(OrderStatus.PENDING)
+                    .paymentMethod(command.getPaymentMethod())
+                    .paymentStatus(PaymentStatus.UNPAID)
+                    .receiverName(command.getReceiverName())
+                    .receiverPhone(command.getReceiverPhone())
+                    .shippingAddress(command.getShippingAddress())
+                    .items(cartItems.stream()
+                            .map(cartItem -> OrderItem.builder()
+                                    .productId(cartItem.getProductId())
+                                    .productName(cartItem.getProductName())
+                                    .productImageUrl(cartItem.getProductImageUrl())
+                                    .quantity(cartItem.getQuantity())
+                                    .price(cartItem.getPrice())
+                                    .variantName(cartItem.getVariantName())
+                                    .build())
+                            .collect(Collectors.toList()))
+                    .build();
+
+            // Update user profile
+            boolean userUpdated = false;
+            if (user.getPhone() == null || user.getPhone().trim().isEmpty()) {
+                user.setPhone(command.getReceiverPhone());
+                userUpdated = true;
+            }
+            if (user.getAddress() == null || user.getAddress().trim().isEmpty()) {
+                user.setAddress(command.getShippingAddress());
+                userUpdated = true;
+            }
+            if (userUpdated) {
+                userRepository.save(user);
+            }
+
+            // 1. Save Order
+            Order savedOrder = orderPort.save(order);
+
+            // 1.1 Use Coupon
+            if (couponCode != null && !couponCode.trim().isEmpty()) {
+                couponService.useCoupon(couponCode);
+            }
+
+            // 2. Update Product Stock (Only for COD)
+            if (command.getPaymentMethod() == PaymentMethod.COD) {
+                for (CartItem cartItem : cartItems) {
+                    updateProductStockPort.updateStock(cartItem.getProductId(), cartItem.getQuantity());
+                }
+            }
+
+            // 3. Clear Ordered Items from Cart
+            for (CartItem item : cartItems) {
+                cartPort.delete(email, item.getProductId(), item.getVariantName());
+            }
+
+            activityLogService.logActivity(user.getId(), email, ActivityLogService.GROUP_SHOPPING, "PLACE_ORDER", "Đặt đơn hàng mới #" + savedOrder.getId() + " (Tổng tiền: " + totalPrice + "đ)");
+
+            // Send Email if COD
+            if (command.getPaymentMethod() == PaymentMethod.COD) {
+                emailService.sendOrderConfirmationEmail(savedOrder, email);
+            }
+
+            return savedOrder;
+        } catch (RuntimeException e) {
+            throw e;
+        } catch (Exception e) {
+            e.printStackTrace();
+            throw new RuntimeException("Lỗi hệ thống khi xử lý đơn hàng: " + e.getMessage());
         }
-
-        // 3. Clear Ordered Items from Cart
-        for (CartItem item : cartItems) {
-            cartPort.delete(email, item.getProductId(), item.getVariantName());
-        }
-
-        activityLogService.logActivity(user.getId(), email, ActivityLogService.GROUP_SHOPPING, "PLACE_ORDER", "Đặt đơn hàng mới #" + savedOrder.getId() + " (Tổng tiền: " + totalPrice + "đ)");
-
-        // Send Email if COD
-        if (command.getPaymentMethod() == PaymentMethod.COD) {
-            emailService.sendOrderConfirmationEmail(savedOrder, email);
-        }
-
-        return savedOrder;
     }
 
     @Override

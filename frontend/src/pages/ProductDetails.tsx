@@ -1,4 +1,5 @@
 import { useState, useEffect, useCallback } from 'react';
+import { motion, AnimatePresence } from 'framer-motion';
 import { useParams, Link, useNavigate } from 'react-router-dom';
 import { Star, ShoppingCart, Heart, ShieldCheck, Truck, Share2, Facebook, MessageCircle, ChevronRight, Minus, Plus, Loader2, Eye, AlertCircle } from 'lucide-react';
 import { useDispatch, useSelector } from 'react-redux';
@@ -35,6 +36,8 @@ const ProductDetails = () => {
   const [isLoadingReviews, setIsLoadingReviews] = useState(false);
   const [isSubmittingReview, setIsSubmittingReview] = useState(false);
   const [newReview, setNewReview] = useState({ rating: 5, comment: '' });
+  const [editingReview, setEditingReview] = useState<Review | null>(null);
+  const [isUpdatingReview, setIsUpdatingReview] = useState(false);
   const [mainImage, setMainImage] = useState('');
   const [selectedVariant, setSelectedVariant] = useState<any>(null);
   const [relatedProducts, setRelatedProducts] = useState<any[]>([]);
@@ -354,6 +357,30 @@ const ProductDetails = () => {
       toast.error(errMsg);
     } finally {
       setIsSubmittingReview(false);
+    }
+  };
+
+  const handleUpdateReview = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!editingReview) return;
+    if (!editingReview.comment.trim()) {
+      toast.error('Vui lòng nhập nội dung đánh giá');
+      return;
+    }
+    setIsUpdatingReview(true);
+    try {
+      await reviewService.updateReview(editingReview.id, {
+        ratingStar: editingReview.ratingStar,
+        comment: editingReview.comment
+      });
+      toast.success('Cập nhật đánh giá thành công!');
+      setEditingReview(null);
+      fetchReviews();
+    } catch (error: any) {
+      const errMsg = error.response?.data?.message || error.message || 'Có lỗi xảy ra';
+      toast.error(errMsg);
+    } finally {
+      setIsUpdatingReview(false);
     }
   };
 
@@ -712,7 +739,7 @@ const ProductDetails = () => {
             )}
 
             {activeTab === 'reviews' && (
-              <div className="max-w-5xl mx-auto space-y-16">
+              <div className="max-w-[1536px] mx-auto space-y-16">
                 <div className="grid grid-cols-1 lg:grid-cols-3 gap-16 items-start pb-16 border-b border-gray-100">
                   <div className="p-8 bg-gray-50/50 rounded-[3rem] border border-gray-100">
                     <div className="text-center mb-8">
@@ -790,9 +817,9 @@ const ProductDetails = () => {
                       <p className="text-[10px] font-black text-gray-400 uppercase tracking-[0.4em] animate-pulse">Đang cập nhật đánh giá...</p>
                     </div>
                   ) : reviews.length > 0 ? (
-                    <div className="grid grid-cols-1 md:grid-cols-2 gap-10">
+                    <div className="grid grid-cols-1 gap-10">
                       {reviews.map((rev) => (
-                        <div key={rev.id} className="bg-white p-10 rounded-[2.5rem] border border-gray-100 hover:shadow-2xl transition-all group relative overflow-hidden">
+                        <div key={rev.id} className="bg-white p-10 rounded-[2.5rem] border border-gray-100 hover:shadow-2xl transition-all group relative overflow-hidden flex flex-col">
                           <div className="flex justify-between items-start mb-8 relative z-10">
                             <div className="flex items-center gap-6">
                               <div className="w-16 h-16 rounded-2xl bg-gray-50 flex items-center justify-center text-primary-600 font-black shadow-inner border border-gray-100 group-hover:scale-110 group-hover:bg-primary-500 group-hover:text-white transition-all duration-500">
@@ -803,11 +830,36 @@ const ProductDetails = () => {
                                 <p className="text-[10px] text-gray-400 font-bold uppercase tracking-widest opacity-60 italic">{new Date(rev.createdAt).toLocaleDateString('vi-VN')}</p>
                               </div>
                             </div>
-                            <div className="flex items-center text-amber-500 gap-1 bg-amber-50 px-3 py-1.5 rounded-xl border border-amber-100 shadow-sm">
-                              {[1, 2, 3, 4, 5].map(s => <Star key={s} fill={s <= rev.ratingStar ? "currentColor" : "none"} size={14} />)}
+                            <div className="flex flex-col items-end gap-2">
+                                <div className="flex items-center text-amber-500 gap-1 bg-amber-50 px-3 py-1.5 rounded-xl border border-amber-100 shadow-sm">
+                                  {[1, 2, 3, 4, 5].map(s => <Star key={s} fill={s <= rev.ratingStar ? "currentColor" : "none"} size={14} />)}
+                                </div>
+                                {user && Number(user.id) === Number(rev.userId) && (
+                                   <button 
+                                    onClick={() => setEditingReview({ ...rev })}
+                                    className="text-[10px] font-black text-primary-500 uppercase tracking-widest hover:underline italic"
+                                   >
+                                      Chỉnh sửa
+                                   </button>
+                                )}
                             </div>
                           </div>
-                          <p className="text-gray-600 leading-relaxed font-medium italic relative z-10">"{rev.comment}"</p>
+
+                          <div className="relative z-10 flex-1">
+                            <p className="text-gray-600 leading-relaxed font-medium italic">"{rev.comment}"</p>
+                            
+                            {rev.adminReply && (
+                              <div className="mt-6 ml-6 p-5 bg-primary-50 rounded-[1.5rem] border border-primary-100 relative">
+                                <div className="absolute -left-3 top-6 w-3 h-px bg-primary-200"></div>
+                                <div className="flex items-center gap-2 mb-2">
+                                    <ShieldCheck size={14} className="text-primary-500" />
+                                    <span className="text-[9px] font-black text-primary-500 uppercase tracking-widest">Phản hồi từ Glowzy</span>
+                                </div>
+                                <p className="text-gray-600 text-sm font-semibold italic leading-relaxed">"{rev.adminReply}"</p>
+                              </div>
+                            )}
+                          </div>
+
                           <div className="absolute -bottom-4 -right-4 text-gray-50 opacity-10 group-hover:opacity-20 transition-opacity">
                             <MessageCircle size={120} />
                           </div>
@@ -826,6 +878,83 @@ const ProductDetails = () => {
             )}
           </div>
         </div>
+
+        {/* Edit Review Modal */}
+        <AnimatePresence>
+            {editingReview && (
+                <div className="fixed inset-0 z-[100] flex items-center justify-center p-4">
+                    <motion.div 
+                        initial={{ opacity: 0 }}
+                        animate={{ opacity: 1 }}
+                        exit={{ opacity: 0 }}
+                        onClick={() => setEditingReview(null)}
+                        className="absolute inset-0 bg-black/60 backdrop-blur-md"
+                    />
+                    <motion.div 
+                        initial={{ opacity: 0, scale: 0.9, y: 20 }}
+                        animate={{ opacity: 1, scale: 1, y: 0 }}
+                        exit={{ opacity: 0, scale: 0.9, y: 20 }}
+                        className="relative w-full max-w-2xl bg-white rounded-[3rem] shadow-2xl overflow-hidden"
+                    >
+                        <div className="p-10 md:p-12">
+                            <div className="flex justify-between items-center mb-10">
+                                <div>
+                                    <h3 className="text-2xl font-black text-gray-900 uppercase tracking-tight italic">Cập nhật đánh giá</h3>
+                                    <p className="text-xs text-gray-400 font-bold uppercase tracking-widest mt-1">Sản phẩm: {product.name}</p>
+                                </div>
+                                <button onClick={() => setEditingReview(null)} className="w-10 h-10 flex items-center justify-center bg-gray-50 hover:bg-gray-100 rounded-xl transition-colors">
+                                    <Plus className="rotate-45 text-gray-400" size={24} />
+                                </button>
+                            </div>
+
+                            <form onSubmit={handleUpdateReview} className="space-y-8">
+                                <div className="flex flex-col gap-4">
+                                    <span className="text-[10px] font-black text-gray-400 uppercase tracking-widest italic">Chọn số sao đánh giá:</span>
+                                    <div className="flex items-center gap-4">
+                                        {[1, 2, 3, 4, 5].map(s => (
+                                            <button 
+                                              key={s} 
+                                              type="button" 
+                                              onClick={() => setEditingReview({ ...editingReview, ratingStar: s })} 
+                                              className="hover:scale-125 transition-transform active:scale-95"
+                                            >
+                                                <Star fill={s <= editingReview.ratingStar ? "#f59e0b" : "none"} stroke={s <= editingReview.ratingStar ? "#f59e0b" : "#cbd5e1"} size={40} />
+                                            </button>
+                                        ))}
+                                    </div>
+                                </div>
+
+                                <div className="space-y-3">
+                                    <span className="text-[10px] font-black text-gray-400 uppercase tracking-widest italic">Nội dung đánh giá của bạn:</span>
+                                    <textarea
+                                        value={editingReview.comment}
+                                        onChange={(e) => setEditingReview({ ...editingReview, comment: e.target.value })}
+                                        className="glowzy-input min-h-[160px] resize-none p-6 text-base"
+                                        placeholder="Nhập nội dung mới..."
+                                    />
+                                </div>
+
+                                <div className="flex flex-col sm:flex-row gap-4 pt-4">
+                                    <button 
+                                        type="button"
+                                        onClick={() => setEditingReview(null)}
+                                        className="glowzy-btn-secondary flex-1 py-4 uppercase tracking-widest text-xs"
+                                    >
+                                        Hủy bỏ
+                                    </button>
+                                    <button 
+                                        disabled={isUpdatingReview}
+                                        className="glowzy-btn-primary flex-[2] py-4 shadow-xl shadow-primary-500/20"
+                                    >
+                                        {isUpdatingReview ? 'Đang cập nhật...' : 'Lưu thay đổi ngay'}
+                                    </button>
+                                </div>
+                            </form>
+                        </div>
+                    </motion.div>
+                </div>
+            )}
+        </AnimatePresence>
       </div>
 
       <div className="container mx-auto px-4 max-w-[1536px] mt-32">

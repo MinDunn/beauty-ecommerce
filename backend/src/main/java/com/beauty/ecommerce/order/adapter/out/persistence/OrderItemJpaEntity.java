@@ -3,6 +3,9 @@ package com.beauty.ecommerce.order.adapter.out.persistence;
 import com.beauty.ecommerce.product.adapter.out.persistence.ProductJpaEntity;
 import jakarta.persistence.*;
 import lombok.*;
+import lombok.ToString;
+import lombok.EqualsAndHashCode;
+import com.fasterxml.jackson.annotation.JsonIgnore;
 
 import java.math.BigDecimal;
 
@@ -19,6 +22,9 @@ public class OrderItemJpaEntity {
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
 
+    @ToString.Exclude
+    @EqualsAndHashCode.Exclude
+    @JsonIgnore
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "order_id")
     private OrderJpaEntity order;

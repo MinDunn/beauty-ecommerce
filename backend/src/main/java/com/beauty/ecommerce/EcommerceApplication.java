@@ -38,6 +38,19 @@ public class EcommerceApplication {
             System.err.println(">>> WARNING: DB_URL NOT FOUND IN ENVIRONMENT OR .ENV FILE!");
         }
         System.out.println(">>> [DEBUG] END CONNECTION INFO\n");
+        
+        // REPAIR FLYWAY: Remove failed V40 if exists
+        try (java.sql.Connection conn = java.sql.DriverManager.getConnection(
+                System.getProperty("DB_URL"),
+                System.getProperty("DB_USERNAME"),
+                System.getProperty("DB_PASSWORD"))) {
+            try (java.sql.Statement stmt = conn.createStatement()) {
+                stmt.execute("DELETE FROM flyway_schema_history WHERE version = '40' AND success = 0");
+                System.out.println(">>> [FLYWAY REPAIR] Cleaned up failed migration V40 if any existed.");
+            }
+        } catch (Exception e) {
+            System.err.println(">>> [FLYWAY REPAIR] Note: Skipping auto-repair (DB may be unreachable yet or table missing): " + e.getMessage());
+        }
 
         SpringApplication.run(EcommerceApplication.class, args);
     }

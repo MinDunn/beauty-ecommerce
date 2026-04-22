@@ -41,11 +41,13 @@ export const InventoryReceiptsPage = () => {
 
   const filteredReceipts = useMemo(() => {
     return receipts.filter((receipt) => {
-      const receiptDate = receipt.receivedAt ? new Date(receipt.receivedAt) : new Date();
-      const receiptDateText = receipt.receivedAt?.slice(0, 10) || '';
-      const receiptHour = receiptDate.getHours().toString().padStart(2, '0');
+      const receiptDate = (receipt && receipt.receivedAt) ? new Date(receipt.receivedAt) : new Date();
+      const receiptDateText = receipt?.receivedAt?.slice(0, 10) || '';
+      const receiptHour = receiptDate instanceof Date && !isNaN(receiptDate.getTime()) 
+        ? receiptDate.getHours().toString().padStart(2, '0') 
+        : '00';
       const searchable = normalizeText(
-        `${receipt.id} ${receipt.productId} ${receipt.productName ?? ''}`
+        `${receipt?.id || ''} ${receipt?.productId || ''} ${receipt?.productName ?? ''}`
       );
       const keywordMatched = normalizeText(keyword).trim() === '' || searchable.includes(normalizeText(keyword).trim());
       const dateMatched = !selectedDate || receiptDateText === selectedDate;
@@ -57,7 +59,9 @@ export const InventoryReceiptsPage = () => {
   const overallStats = useMemo(() => {
     const now = new Date();
     const today = receipts.filter((receipt) => {
+      if (!receipt || !receipt.receivedAt) return false;
       const d = new Date(receipt.receivedAt);
+      if (isNaN(d.getTime())) return false;
       return (
         d.getDate() === now.getDate() &&
         d.getMonth() === now.getMonth() &&
@@ -65,7 +69,9 @@ export const InventoryReceiptsPage = () => {
       );
     });
     const month = receipts.filter((receipt) => {
+      if (!receipt || !receipt.receivedAt) return false;
       const d = new Date(receipt.receivedAt);
+      if (isNaN(d.getTime())) return false;
       return d.getMonth() === now.getMonth() && d.getFullYear() === now.getFullYear();
     });
 

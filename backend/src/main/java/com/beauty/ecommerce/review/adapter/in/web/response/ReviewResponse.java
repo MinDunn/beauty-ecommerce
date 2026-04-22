@@ -17,5 +17,7 @@ public class ReviewResponse {
     private String productName;
     private Integer ratingStar;
     private String comment;
+    private String adminReply;
+    private String repliedAt;
     private String createdAt;
 }

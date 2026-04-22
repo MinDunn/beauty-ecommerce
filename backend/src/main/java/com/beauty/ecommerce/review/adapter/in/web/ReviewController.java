@@ -2,6 +2,8 @@ package com.beauty.ecommerce.review.adapter.in.web;
 
 import com.beauty.ecommerce.common.dto.ApiResponse;
 import com.beauty.ecommerce.review.adapter.in.web.request.CreateReviewRequest;
+import com.beauty.ecommerce.review.adapter.in.web.request.ReplyReviewRequest;
+import com.beauty.ecommerce.review.adapter.in.web.request.UpdateReviewRequest;
 import com.beauty.ecommerce.review.adapter.in.web.response.ReviewResponse;
 import com.beauty.ecommerce.review.application.service.ReviewService;
 import jakarta.validation.Valid;
@@ -45,5 +47,24 @@ public class ReviewController {
         log.info("Yêu cầu lấy tất cả đánh giá từ Admin");
         List<ReviewResponse> reviews = reviewService.getAllReviews();
         return ResponseEntity.ok(ApiResponse.success(reviews));
+    }
+
+    @PutMapping("/{id}/reply")
+    public ResponseEntity<ApiResponse<ReviewResponse>> replyToReview(
+            @PathVariable Long id,
+            @Valid @RequestBody ReplyReviewRequest request) {
+        log.info("Admin phản hồi đánh giá ID: {}", id);
+        ReviewResponse response = reviewService.replyToReview(id, request.getReply());
+        return ResponseEntity.ok(ApiResponse.success("Đã gửi phản hồi", response));
+    }
+
+    @PutMapping("/{id}")
+    public ResponseEntity<ApiResponse<ReviewResponse>> updateReview(
+            @PathVariable Long id,
+            @Valid @RequestBody UpdateReviewRequest request,
+            Authentication authentication) {
+        log.info("User {} đang cập nhật đánh giá ID: {}", authentication.getName(), id);
+        ReviewResponse response = reviewService.updateReview(id, authentication.getName(), request);
+        return ResponseEntity.ok(ApiResponse.success("Cập nhật đánh giá thành công", response));
     }
 }
