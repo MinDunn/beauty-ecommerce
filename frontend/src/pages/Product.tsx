@@ -158,6 +158,8 @@ export const Products = () => {
     categoryId: "",
     instructions: "",
     ingredients: "",
+    origin: "",
+    warnings: "",
     expiryDate: "",
     skinTypes: [] as string[],
     variants: [] as { variantName: string, price: string, imageUrl: string, stockQuantity: number, skinTypes: string[], file?: File }[]
@@ -328,6 +330,8 @@ export const Products = () => {
         categoryId: product.categoryId?.toString() || "",
         instructions: product.instructions || "",
         ingredients: product.ingredients || "",
+        origin: product.origin || "",
+        warnings: product.warnings || "",
         expiryDate: product.expiryDate || "",
         skinTypes: product.skinTypes || [],
         variants: product.variants?.map((v: any) => ({
@@ -377,6 +381,8 @@ export const Products = () => {
         categoryId: parseInt(formData.categoryId),
         instructions: formData.instructions,
         ingredients: formData.ingredients,
+        origin: formData.origin,
+        warnings: formData.warnings,
         expiryDate: formData.expiryDate,
         skinTypes: formData.skinTypes,
         existingImages: [formData.imageUrl, ...formData.additionalImages].filter(Boolean) as string[],
@@ -1149,6 +1155,34 @@ export const Products = () => {
                   onChange={e => setFormData({ ...formData, ingredients: e.target.value })}
                   className="bg-slate-800/50 border border-slate-700 w-full px-4 py-3 rounded-2xl text-white outline-none focus:border-primary-500/50 transition-all font-medium resize-none"
                   placeholder="Danh sách thành phần..."
+                />
+              </div>
+            </div>
+
+            {/* Origin & Warnings (Legislation Compliance) */}
+            <div className="grid grid-cols-2 gap-4">
+              <div className="space-y-2">
+                <label className="text-[10px] font-black text-emerald-500 uppercase tracking-widest ml-1 flex items-center gap-1.5">
+                  <Package size={12} /> Xuất xứ (NĐ 85)
+                </label>
+                <input
+                  type="text"
+                  placeholder="Ví dụ: Hàn Quốc, Pháp..."
+                  className="bg-slate-800/50 border border-slate-700 w-full px-4 py-3.5 rounded-2xl text-white outline-none focus:border-emerald-500/50 transition-all font-medium"
+                  value={formData.origin}
+                  onChange={e => setFormData({ ...formData, origin: e.target.value })}
+                />
+              </div>
+              <div className="space-y-2">
+                <label className="text-[10px] font-black text-amber-500 uppercase tracking-widest ml-1 flex items-center gap-1.5">
+                  <AlertCircle size={12} /> Cảnh báo (NĐ 85)
+                </label>
+                <textarea
+                  rows={1}
+                  placeholder="Các lưu ý an toàn..."
+                  className="bg-slate-800/50 border border-slate-700 w-full px-4 py-3.5 rounded-2xl text-white outline-none focus:border-amber-500/50 transition-all font-medium resize-none"
+                  value={formData.warnings}
+                  onChange={e => setFormData({ ...formData, warnings: e.target.value })}
                 />
               </div>
             </div>

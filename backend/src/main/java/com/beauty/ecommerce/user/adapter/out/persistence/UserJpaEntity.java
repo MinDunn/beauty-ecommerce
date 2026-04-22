@@ -40,6 +40,10 @@ public class UserJpaEntity {
     @jakarta.persistence.Column(name = "is_active", nullable = false)
     @Builder.Default
     private Boolean isActive = true;
+
+    @jakarta.persistence.Column(name = "marketing_consent")
+    @Builder.Default
+    private Boolean marketingConsent = false;
     
     private LocalDateTime createdAt;
 }

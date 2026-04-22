@@ -27,6 +27,8 @@ public class AdminProductRequest {
     
     private String instructions;
     private String ingredients;
+    private String origin;
+    private String warnings;
     private java.util.List<String> skinTypes;
     @NotNull(message = "Expiry date is required")
     private java.time.LocalDate expiryDate;

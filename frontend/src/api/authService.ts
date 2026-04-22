@@ -9,6 +9,7 @@ export interface UserProfile {
   address?: string;
   avatarUrl?: string;
   role: string;
+  marketingConsent?: boolean;
   createdAt: string;
 }
 

@@ -26,6 +26,8 @@ public class Product {
     private Long categoryId;
     private String instructions;
     private String ingredients;
+    private String origin;
+    private String warnings;
     private LocalDateTime createdAt;
     private Long viewCount;
     private Integer sold;

@@ -27,6 +27,8 @@ public class ProductResponse {
     private Long categoryId;
     private String instructions;
     private String ingredients;
+    private String origin;
+    private String warnings;
     private java.util.List<String> skinTypes;
     private LocalDateTime createdAt;
     private Double averageRating;

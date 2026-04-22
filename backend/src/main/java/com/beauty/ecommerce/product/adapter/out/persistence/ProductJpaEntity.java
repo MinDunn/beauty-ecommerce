@@ -74,6 +74,12 @@ public class ProductJpaEntity {
     @jakarta.persistence.Column(name = "expiry_date")
     private java.time.LocalDate expiryDate;
 
+    @jakarta.persistence.Column(name = "origin")
+    private String origin;
+
+    @jakarta.persistence.Column(name = "warnings", columnDefinition = "TEXT")
+    private String warnings;
+
     @jakarta.persistence.OneToMany(mappedBy = "product", cascade = jakarta.persistence.CascadeType.ALL, orphanRemoval = true, fetch = jakarta.persistence.FetchType.LAZY)
     private java.util.List<ProductImageJpaEntity> images;
 

@@ -33,7 +33,8 @@ const Profile = () => {
   const [formData, setFormData] = useState({
     fullName: '',
     phone: '',
-    address: ''
+    address: '',
+    marketingConsent: false
   });
 
   const [passwordData, setPasswordData] = useState({
@@ -62,7 +63,8 @@ const Profile = () => {
       setFormData({
         fullName: resp.data.data.fullName || '',
         phone: resp.data.data.phone || '',
-        address: resp.data.data.address || ''
+        address: resp.data.data.address || '',
+        marketingConsent: resp.data.data.marketingConsent || false
       });
     } catch (error) {
       console.error('Error fetching profile', error);
@@ -831,12 +833,50 @@ const Profile = () => {
               )}
 
               {activeTab === 'settings' && (
-                <div className="flex flex-col items-center justify-center h-full text-center py-20">
-                   <div className="w-20 h-20 bg-gray-50 rounded-full flex items-center justify-center text-gray-300 mb-6 border border-dashed border-gray-300">
-                      <Settings size={40} />
-                   </div>
-                   <h3 className="text-xl font-black text-gray-800 mb-2">Đang xây dựng</h3>
-                   <p className="text-gray-500 text-sm italic">Tính năng thiết lập tào khoản sẽ sớm ra mắt khách yêu nhé!</p>
+                <div className="space-y-8 animate-in fade-in slide-in-from-bottom-4 duration-500">
+                  <div>
+                    <h2 className="text-2xl font-black text-gray-900 uppercase mb-2">Thiết lập tài khoản</h2>
+                    <p className="text-gray-500 font-medium">Quản lý quyền riêng tư và thông báo của bạn.</p>
+                  </div>
+
+                  <div className="bg-gray-50/50 p-8 rounded-[2rem] border border-gray-100">
+                    <div className="flex items-center justify-between gap-6">
+                      <div className="flex-1">
+                        <h4 className="text-lg font-black text-gray-900 uppercase tracking-tight mb-1">Đồng ý tiếp thị (NĐ 13/2023/NĐ-CP)</h4>
+                        <p className="text-sm text-gray-500 font-medium leading-relaxed italic">
+                          Cho phép Glowzy Beauty gửi thông tin khuyến mãi, ưu đãi đặc biệt và tin tức về sản phẩm mới qua Email/SMS của bạn.
+                        </p>
+                      </div>
+                      <button 
+                        onClick={() => {
+                          const newValue = !formData.marketingConsent;
+                          setFormData({...formData, marketingConsent: newValue});
+                          // Tự động lưu khi thay đổi toggle (UX tốt hơn)
+                          authService.updateProfile({...formData, marketingConsent: newValue})
+                            .then(() => toast.success('Đã cập nhật tùy chọn tiếp thị!'))
+                            .catch(() => toast.error('Không thể cập nhật tùy chọn'));
+                        }}
+                        className={cn(
+                          "relative inline-flex h-10 w-20 flex-shrink-0 cursor-pointer rounded-full border-2 border-transparent transition-colors duration-300 ease-in-out focus:outline-none ring-offset-2",
+                          formData.marketingConsent ? "bg-primary-500" : "bg-gray-200"
+                        )}
+                      >
+                        <span className={cn(
+                          "pointer-events-none inline-block h-9 w-9 transform rounded-full bg-white shadow-xl ring-0 transition duration-300 ease-in-out",
+                          formData.marketingConsent ? "translate-x-10" : "translate-x-0"
+                        )} />
+                      </button>
+                    </div>
+                  </div>
+
+                  <div className="bg-primary-50/30 p-8 rounded-[2rem] border border-primary-100/50">
+                    <h4 className="text-sm font-black text-primary-600 uppercase tracking-widest mb-4 flex items-center gap-2">
+                       <Sparkles size={16} /> Thông báo quyền riêng tư
+                    </h4>
+                    <p className="text-[11px] text-gray-500 font-medium leading-relaxed uppercase tracking-wider">
+                      Mọi dữ liệu cá nhân của bạn đều được bảo mật theo tiêu chuẩn quốc tế và Nghị định 13/2023/NĐ-CP về Bảo vệ dữ liệu cá nhân của Chính phủ Việt Nam. Bạn có thể thay đổi tùy chọn bất cứ lúc nào tại đây.
+                    </p>
+                  </div>
                 </div>
               )}
             </div>

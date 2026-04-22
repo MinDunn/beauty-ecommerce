@@ -1,6 +1,6 @@
 import { useState, useEffect, useCallback } from 'react';
 import { useParams, Link, useNavigate } from 'react-router-dom';
-import { Star, ShoppingCart, Heart, ShieldCheck, Truck, Share2, Facebook, MessageCircle, ChevronRight, Minus, Plus, Loader2, Eye } from 'lucide-react';
+import { Star, ShoppingCart, Heart, ShieldCheck, Truck, Share2, Facebook, MessageCircle, ChevronRight, Minus, Plus, Loader2, Eye, AlertCircle } from 'lucide-react';
 import { useDispatch, useSelector } from 'react-redux';
 import { addItem, selectOnlyItems } from '../store/slices/cartSlice';
 import { cn } from '../utils/cn';
@@ -77,6 +77,8 @@ const ProductDetails = () => {
         description: data.description,
         instructions: data.instructions,
         ingredients: data.ingredients,
+        origin: data.origin,
+        warnings: data.warnings,
         images: images,
         variants: data.variants || [],
         categoryId: data.categoryId,
@@ -498,6 +500,31 @@ const ProductDetails = () => {
               {selectedVariant && selectedVariant.price > 0 && (
                 <p className="text-[10px] font-black text-primary-400 uppercase tracking-widest italic">+ {selectedVariant.price.toLocaleString()}đ (Phụ phí biến thể)</p>
               )}
+
+              {/* Legal Compliance Info (ND 85) */}
+              <div className="mt-6 pt-6 border-t border-primary-100/50 space-y-4">
+                <div className="flex items-start gap-3">
+                  <div className="w-8 h-8 rounded-lg bg-emerald-50 flex items-center justify-center text-emerald-500 flex-shrink-0">
+                    <ShieldCheck size={18} />
+                  </div>
+                  <div>
+                    <p className="text-[10px] font-black text-gray-400 uppercase tracking-widest mb-0.5">Xuất xứ sản phẩm</p>
+                    <p className="text-sm font-bold text-gray-900">{product.origin || 'Chính hãng (Xem trên bao bì)'}</p>
+                  </div>
+                </div>
+                
+                {product.warnings && (
+                  <div className="flex items-start gap-3 p-4 bg-amber-50/50 rounded-2xl border border-amber-100/50">
+                    <div className="w-8 h-8 rounded-lg bg-amber-100 flex items-center justify-center text-amber-600 flex-shrink-0">
+                      <AlertCircle size={18} />
+                    </div>
+                    <div>
+                      <p className="text-[10px] font-black text-amber-600 uppercase tracking-widest mb-1">Thông tin cảnh báo (NĐ 85)</p>
+                      <p className="text-xs font-semibold text-amber-900 leading-relaxed italic">{product.warnings}</p>
+                    </div>
+                  </div>
+                )}
+              </div>
             </div>
 
             {product.variants && product.variants.length > 0 && (

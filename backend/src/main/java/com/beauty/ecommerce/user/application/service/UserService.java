@@ -69,6 +69,7 @@ public class UserService {
         if (request.getFullName() != null) user.setFullName(request.getFullName());
         if (request.getPhone() != null) user.setPhone(request.getPhone());
         if (request.getAddress() != null) user.setAddress(request.getAddress());
+        if (request.getMarketingConsent() != null) user.setMarketingConsent(request.getMarketingConsent());
 
         user = userRepository.save(user);
         activityLogService.logActivity(null, "ADMIN", com.beauty.ecommerce.common.application.service.ActivityLogService.GROUP_ACCOUNT, "UPDATE_USER", "Admin cập nhật thông tin người dùng: " + user.getEmail());
@@ -101,6 +102,7 @@ public class UserService {
                 .avatarUrl(user.getAvatarUrl())
                 .role(user.getRole())
                 .isActive(user.getIsActive())
+                .marketingConsent(user.getMarketingConsent())
                 .createdAt(user.getCreatedAt() != null ? user.getCreatedAt().toString() + "Z" : null)
                 .build();
     }

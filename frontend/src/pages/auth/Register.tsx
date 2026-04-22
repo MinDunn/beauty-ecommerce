@@ -143,6 +143,24 @@ const Register = () => {
               </div>
               {errors.confirmPassword && <p className="mt-1 text-xs text-red-500">{errors.confirmPassword.message}</p>}
             </div>
+
+            <div className="flex flex-col gap-2 pt-2">
+              <label className="flex items-start gap-3 cursor-pointer group">
+                <input
+                  {...register('acceptTerms')}
+                  type="checkbox"
+                  className="mt-1 w-4 h-4 rounded border-gray-300 text-primary-600 focus:ring-primary-500 transition-colors"
+                />
+                <span className="text-xs text-gray-600 leading-relaxed font-medium">
+                  Tôi đồng ý với{' '}
+                  <Link to="/terms" className="text-primary-600 font-black hover:underline">Điều khoản dịch vụ</Link>
+                  {' '}và{' '}
+                  <Link to="/privacy" className="text-primary-600 font-black hover:underline">Chính sách bảo mật</Link>
+                  {' '}của Glowzy Beauty (Theo NĐ 13/2023/NĐ-CP).
+                </span>
+              </label>
+              {errors.acceptTerms && <p className="text-[10px] text-red-500 font-bold uppercase tracking-wider ml-7">{errors.acceptTerms.message}</p>}
+            </div>
           </div>
 
           <button

@@ -26,6 +26,8 @@ public interface ManageProductUseCase {
         private Long categoryId;
         private String instructions;
         private String ingredients;
+        private String origin;
+        private String warnings;
         private java.util.List<String> skinTypes;
         private String imageUrl;
         private java.util.List<String> existingImages;
@@ -44,6 +46,8 @@ public interface ManageProductUseCase {
         private Long categoryId;
         private String instructions;
         private String ingredients;
+        private String origin;
+        private String warnings;
         private java.util.List<String> skinTypes;
         private String imageUrl;
         private java.util.List<String> existingImages;

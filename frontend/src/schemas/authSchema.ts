@@ -10,6 +10,7 @@ export const registerSchema = z.object({
   email: z.string().email('Email không đúng định dạng'),
   password: z.string().min(6, 'Mật khẩu phải có ít nhất 6 ký tự'),
   confirmPassword: z.string().min(6, 'Mật khẩu phải có ít nhất 6 ký tự'),
+  acceptTerms: z.boolean().refine(val => val === true, 'Bạn phải đồng ý với điều khoản và chính sách bảo mật'),
 }).refine((data) => data.password === data.confirmPassword, {
   message: "Mật khẩu xác nhận không khớp",
   path: ["confirmPassword"],

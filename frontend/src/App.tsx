@@ -20,6 +20,7 @@ import Stores from './pages/Stores';
 import Careers from './pages/Careers';
 import BeautyGuide from './pages/BeautyGuide';
 import Privacy from './pages/policies/Privacy';
+import CookieBanner from './components/common/CookieBanner';
 
 import { Sidebar } from './components/admin/Sidebar';
 import { Header as AdminHeader } from './components/admin/Header';
@@ -126,6 +127,7 @@ function App() {
       </Routes>
       {!isAdmin && <VoucherWidget />}
       {!isAdmin && <ChatWidget />}
+      {!isAdmin && <CookieBanner />}
     </Router>
   );
 }

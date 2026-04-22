@@ -20,6 +20,8 @@ public class AdminUserResponse {
     
     @com.fasterxml.jackson.annotation.JsonProperty("isActive")
     private Boolean isActive;
+
+    private Boolean marketingConsent;
     
     private String createdAt;
 }

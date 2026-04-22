@@ -29,6 +29,7 @@ import authService from '../api/authService';
 import { updateUser } from '../store/slices/authSlice';
 import { cartService } from '../api/cartService';
 import { VoucherDrawer } from '../components/checkout/VoucherDrawer';
+import PaymentSecurity from '../components/checkout/PaymentSecurity';
 
 const STAGES = [
   { id: 1, name: 'Vận chuyển', icon: Truck },
@@ -457,6 +458,11 @@ const Checkout = () => {
                      </div>
                  </div>
              )}
+
+             {/* Payment Security Commitment Section */}
+             <div className="mt-8">
+               <PaymentSecurity />
+             </div>
           </div>
 
           {/* Right Column: Mini Summary */}
