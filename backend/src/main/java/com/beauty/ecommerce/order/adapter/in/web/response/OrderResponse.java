@@ -21,5 +21,9 @@ public class OrderResponse {
     private String receiverPhone;
     private String shippingAddress;
     private String cancelReason;
+    private boolean vatRequested;
+    private String taxCode;
+    private String companyName;
+    private String companyAddress;
     private List<OrderItemResponse> items;
 }

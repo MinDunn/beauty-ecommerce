@@ -37,7 +37,12 @@ export const getFullTimeline = (order: Order): TimelineStep[] => {
   // Happy Path Steps (6 Steps)
   const steps = [
     { label: 'Đơn hàng đã được đặt', status: 'PENDING', icon: Clock, offsetHours: 0 },
-    { label: 'Đã xác nhận thanh toán', status: 'PENDING', icon: Check, offsetMinutes: 15 },
+    { 
+      label: order.paymentMethod === 'MOMO' ? 'Đã xác nhận thanh toán' : 'Đơn hàng đã được xác nhận', 
+      status: 'PENDING', 
+      icon: Check, 
+      offsetMinutes: 15 
+    },
     { label: 'Shop đang chuẩn bị hàng', status: 'CONFIRMED', icon: Package, offsetHours: 2 },
     { label: 'Đã bàn giao vận chuyển', status: 'SHIPPING', icon: Truck, offsetHours: 12 },
     { label: 'Đang giao hàng đến bạn', status: 'SHIPPING', icon: Truck, offsetHours: 18 },

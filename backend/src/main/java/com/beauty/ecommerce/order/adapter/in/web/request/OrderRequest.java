@@ -20,7 +20,10 @@ public class OrderRequest {
     private String paymentMethod;
 
     private String couponCode;
-
+    private boolean vatRequested;
+    private String taxCode;
+    private String companyName;
+    private String companyAddress;
     private List<CheckoutItem> checkoutItems;
 
     @Data

@@ -66,6 +66,10 @@ export type Order = {
   receiverPhone: string;
   shippingAddress: string;
   cancelReason?: string;
+  vatRequested?: boolean;
+  taxCode?: string;
+  companyName?: string;
+  companyAddress?: string;
   items: OrderItem[];
 };
 

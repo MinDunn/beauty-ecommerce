@@ -43,6 +43,10 @@ public class OrderPersistenceAdapter implements OrderPort {
                 .receiverPhone(order.getReceiverPhone())
                 .shippingAddress(order.getShippingAddress())
                 .cancelReason(order.getCancelReason())
+                .vatRequested(order.isVatRequested())
+                .taxCode(order.getTaxCode())
+                .companyName(order.getCompanyName())
+                .companyAddress(order.getCompanyAddress())
                 .build();
 
         List<OrderItemJpaEntity> itemEntities = order.getItems().stream()

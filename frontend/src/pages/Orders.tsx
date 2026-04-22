@@ -265,12 +265,17 @@ export const Orders = () => {
               <p>${order.receiverPhone}</p>
               <p>${order.shippingAddress}</p>
             </div>
-            <div>
-              <div class="section-title">Thanh toán</div>
-              <p>Phương thức: ${order.paymentMethod === 'MOMO' ? 'Ví MoMo' : 'COD'}</p>
-              <p>Trạng thái: ${order.paymentStatus === 'PAID' ? 'Đã thanh toán' : 'Chưa thanh toán'}</p>
             </div>
           </div>
+
+          ${order.vatRequested ? `
+          <div style="background: #f9fafb; padding: 15px; border-radius: 8px; margin-bottom: 30px; border: 1px solid #e5e7eb;">
+            <div style="font-weight: bold; text-transform: uppercase; font-size: 11px; color: #666; margin-bottom: 10px; border-bottom: 1px solid #d1d5db; padding-bottom: 5px;">Thông tin hóa đơn VAT</div>
+            <p style="margin: 5px 0;"><strong>Công ty:</strong> ${order.companyName}</p>
+            <p style="margin: 5px 0;"><strong>Mã số thuế:</strong> ${order.taxCode}</p>
+            <p style="margin: 5px 0;"><strong>Địa chỉ:</strong> ${order.companyAddress}</p>
+          </div>
+          ` : ''}
 
           <table>
             <thead>
@@ -392,6 +397,12 @@ export const Orders = () => {
               <CreditCard size={10} />
            </div>
            <span className="text-[10px] font-black text-slate-200 uppercase tracking-tighter italic">{order.paymentMethod === 'MOMO' ? 'Ví MOMO' : 'COD'}</span>
+           {order.vatRequested && (
+             <span className="ml-2 px-2 py-0.5 bg-emerald-500 text-white text-[9px] font-black uppercase rounded-md shadow-lg shadow-emerald-500/30 flex items-center gap-1 animate-pulse">
+               <FileText size={10} />
+               VAT
+             </span>
+           )}
         </div>
         <div className={`text-[8px] font-black uppercase tracking-widest px-2 py-0.5 rounded-full w-fit ${order.paymentStatus === 'PAID' ? 'bg-emerald-500/20 text-emerald-400 border border-emerald-500/30' : 'bg-slate-800 text-slate-500'}`}>
            {order.paymentStatus === 'PAID' ? 'Đã thanh toán' : 'Chưa thanh toán'}
@@ -630,6 +641,19 @@ export const Orders = () => {
                   <MapPin size={12} className="mt-1 flex-shrink-0" /> {selectedOrder.shippingAddress}
                 </p>
               </div>
+
+              {selectedOrder.vatRequested && (
+                <div className="bg-emerald-500/10 border border-emerald-500/20 p-4 rounded-2xl">
+                  <p className="text-[10px] font-black text-emerald-500 uppercase tracking-widest mb-3 flex items-center gap-2">
+                     <FileText size={12} /> Thông tin xuất hóa đơn VAT
+                  </p>
+                  <div className="space-y-1">
+                    <p className="text-white font-bold text-sm">{selectedOrder.companyName}</p>
+                    <p className="text-emerald-400 text-xs font-medium">MST: {selectedOrder.taxCode}</p>
+                    <p className="text-slate-400 text-xs leading-relaxed">{selectedOrder.companyAddress}</p>
+                  </div>
+                </div>
+              )}
             </div>
 
             {/* Cancellation Reason in Modal */}

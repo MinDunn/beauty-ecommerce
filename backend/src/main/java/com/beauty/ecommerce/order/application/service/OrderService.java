@@ -19,6 +19,7 @@ import com.beauty.ecommerce.user.adapter.out.persistence.UserJpaEntity;
 import com.beauty.ecommerce.user.adapter.out.persistence.UserRepository;
 import com.beauty.ecommerce.order.application.port.in.PlaceOrderCommand;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -29,6 +30,7 @@ import java.util.stream.Collectors;
 
 @Service
 @RequiredArgsConstructor
+@Slf4j
 public class OrderService implements OrderUseCase {
 
     private final OrderPort orderPort;
@@ -53,22 +55,68 @@ public class OrderService implements OrderUseCase {
             List<CartItem> cartItems;
 
             if (command.getCheckoutItems() != null && !command.getCheckoutItems().isEmpty()) {
+                log.info("Processing checkout items. Request size: {}", command.getCheckoutItems().size());
+                
+                // Try to match with existing database cart items first
                 cartItems = allCartItems.stream()
-                    .filter(item -> command.getCheckoutItems().stream().anyMatch(ci -> 
-                        ci.getProductId().equals(item.getProductId()) && 
-                        ((ci.getVariantName() == null && item.getVariantName() == null) || 
-                         (ci.getVariantName() != null && ci.getVariantName().equals(item.getVariantName())))
-                    ))
+                    .filter(item -> command.getCheckoutItems().stream().anyMatch(ci -> {
+                        boolean productMatch = ci.getProductId() != null && ci.getProductId().equals(item.getProductId());
+                        String v1 = ci.getVariantName() != null ? ci.getVariantName().trim() : "";
+                        String v2 = item.getVariantName() != null ? item.getVariantName().trim() : "";
+                        return productMatch && v1.equals(v2);
+                    }))
                     .collect(Collectors.toList());
+
+                // If some items in request are NOT in database cart, fetch them directly from Product repository
+                if (cartItems.size() < command.getCheckoutItems().size()) {
+                    log.info("Some items not found in DB cart. Fetching directly from Product DB.");
+                    for (PlaceOrderCommand.CheckoutItem ci : command.getCheckoutItems()) {
+                        boolean alreadyPresent = cartItems.stream().anyMatch(item -> {
+                            String v1 = ci.getVariantName() != null ? ci.getVariantName().trim() : "";
+                            String v2 = item.getVariantName() != null ? item.getVariantName().trim() : "";
+                            return ci.getProductId().equals(item.getProductId()) && v1.equals(v2);
+                        });
+
+                        if (!alreadyPresent) {
+                            com.beauty.ecommerce.product.domain.entity.Product product = loadProductPort.loadProductById(ci.getProductId())
+                                    .orElseThrow(() -> new RuntimeException("Sản phẩm không tồn tại: ID " + ci.getProductId()));
+                            
+                            BigDecimal price = product.getCurrentPrice();
+                            int stock = product.getStockQuantity();
+                            String variantName = ci.getVariantName();
+
+                            if (variantName != null && !variantName.trim().isEmpty()) {
+                                com.beauty.ecommerce.product.domain.entity.Product.ProductVariant variant = product.getVariants().stream()
+                                        .filter(v -> v.getVariantName().equalsIgnoreCase(variantName.trim()))
+                                        .findFirst()
+                                        .orElseThrow(() -> new RuntimeException("Biến thể '" + variantName + "' không tồn tại cho sản phẩm " + product.getName()));
+                                price = product.getCurrentPrice().add(variant.getPrice());
+                                stock = variant.getStockQuantity();
+                            }
+
+                            cartItems.add(CartItem.builder()
+                                    .productId(product.getId())
+                                    .productName(product.getName())
+                                    .productImageUrl(product.getImageUrl())
+                                    .price(price)
+                                    .quantity(1) 
+                                    .variantName(variantName)
+                                    .stockQuantity(stock)
+                                    .build());
+                        }
+                    }
+                }
+                
+                log.info("Final cartItems for order: {}", cartItems.size());
             } else {
                 cartItems = allCartItems;
             }
 
             if (cartItems.isEmpty()) {
-                throw new RuntimeException("Giỏ hàng của bạn không có sản phẩm nào được chọn hoặc đã thay đổi. Vui lòng kiểm tra lại.");
+                throw new RuntimeException("Giỏ hàng của bạn đang trống hoặc các sản phẩm không hợp lệ.");
             }
 
-            // Pre-check stock availability for all items
+            // Pre-check stock availability
             for (CartItem item : cartItems) {
                 com.beauty.ecommerce.product.domain.entity.Product product = loadProductPort.loadProductById(item.getProductId())
                     .orElseThrow(() -> new RuntimeException("Sản phẩm không tồn tại: " + item.getProductName()));
@@ -91,7 +139,7 @@ public class OrderService implements OrderUseCase {
                         return product != null ? product.getCategoryId() : null;
                     })
                     .filter(java.util.Objects::nonNull)
-                    .collect(java.util.stream.Collectors.toList());
+                    .collect(Collectors.toList());
 
                 int totalItemCount = cartItems.stream().mapToInt(CartItem::getQuantity).sum();
                 CouponJpaEntity coupon = couponService.validateCoupon(couponCode, totalPrice.doubleValue(), categoryIds, totalItemCount, user.getId());
@@ -117,6 +165,10 @@ public class OrderService implements OrderUseCase {
                     .receiverName(command.getReceiverName())
                     .receiverPhone(command.getReceiverPhone())
                     .shippingAddress(command.getShippingAddress())
+                    .vatRequested(command.isVatRequested())
+                    .taxCode(command.getTaxCode())
+                    .companyName(command.getCompanyName())
+                    .companyAddress(command.getCompanyAddress())
                     .items(cartItems.stream()
                             .map(cartItem -> OrderItem.builder()
                                     .productId(cartItem.getProductId())
@@ -160,7 +212,11 @@ public class OrderService implements OrderUseCase {
 
             // 3. Clear Ordered Items from Cart
             for (CartItem item : cartItems) {
-                cartPort.delete(email, item.getProductId(), item.getVariantName());
+                try {
+                    cartPort.delete(email, item.getProductId(), item.getVariantName());
+                } catch (Exception e) {
+                    log.warn("Could not delete item from cart: {} (Variant: {}).", item.getProductId(), item.getVariantName());
+                }
             }
 
             activityLogService.logActivity(user.getId(), email, ActivityLogService.GROUP_SHOPPING, "PLACE_ORDER", "Đặt đơn hàng mới #" + savedOrder.getId() + " (Tổng tiền: " + totalPrice + "đ)");
@@ -174,7 +230,7 @@ public class OrderService implements OrderUseCase {
         } catch (RuntimeException e) {
             throw e;
         } catch (Exception e) {
-            e.printStackTrace();
+            log.error("Error processing order", e);
             throw new RuntimeException("Lỗi hệ thống khi xử lý đơn hàng: " + e.getMessage());
         }
     }

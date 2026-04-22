@@ -56,6 +56,19 @@ public class OrderJpaEntity {
     @Column(name = "cancel_reason")
     private String cancelReason;
 
+    @Column(name = "vat_requested")
+    @Builder.Default
+    private boolean vatRequested = false;
+
+    @Column(name = "tax_code")
+    private String taxCode;
+
+    @Column(name = "company_name")
+    private String companyName;
+
+    @Column(name = "company_address")
+    private String companyAddress;
+
     @OneToMany(mappedBy = "order", cascade = CascadeType.ALL)
     private List<OrderItemJpaEntity> items;
 }

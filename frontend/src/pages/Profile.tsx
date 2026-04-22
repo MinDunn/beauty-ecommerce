@@ -1,6 +1,6 @@
 import { useState, useEffect, useRef } from 'react';
 import { useSelector, useDispatch } from 'react-redux';
-import { User, Mail, Lock, Phone, MapPin, Package, Settings, ChevronRight, Camera, LogOut, Heart, Sparkles, AlertTriangle } from 'lucide-react';
+import { User, Mail, Lock, Phone, MapPin, Package, Settings, ChevronRight, Camera, LogOut, Heart, Sparkles, AlertTriangle, ReceiptText, FileText } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import type { RootState } from '../store';
 import { logout as logoutAction, updateUser } from '../store/slices/authSlice';
@@ -472,6 +472,12 @@ const Profile = () => {
                       <span className="text-[9px] font-bold text-gray-400 uppercase tracking-widest border-l border-gray-200 pl-3">
                         Thanh toán: {order.paymentMethod === 'MOMO' ? 'Ví MoMo' : 'COD'}
                       </span>
+                      {order.vatRequested && (
+                        <span className="flex items-center gap-1.5 bg-emerald-50 text-emerald-600 px-2.5 py-1 rounded-lg border border-emerald-100 text-[9px] font-black uppercase tracking-tight shadow-sm">
+                          <ReceiptText size={10} />
+                          VAT
+                        </span>
+                      )}
                    </div>
                    
                    <div className="flex flex-wrap items-center justify-end gap-3 flex-1">
@@ -519,6 +525,26 @@ const Profile = () => {
                           <h5 className="text-[10px] font-black uppercase text-primary-600 tracking-[0.2em] mb-8 flex items-center gap-2">
                              <Sparkles size={14} /> Chi tiết hành trình đơn hàng
                           </h5>
+
+                          {order.vatRequested && (
+                            <div className="mb-10 bg-emerald-50/50 rounded-3xl p-6 border border-emerald-100 flex flex-col md:flex-row md:items-center gap-6 animate-in fade-in slide-in-from-top-4 duration-700">
+                               <div className="w-14 h-14 rounded-2xl bg-emerald-500 text-white flex items-center justify-center flex-shrink-0 shadow-lg shadow-emerald-500/20">
+                                  <FileText size={24} />
+                               </div>
+                               <div className="space-y-1 flex-1">
+                                  <p className="text-[10px] font-black text-emerald-600 uppercase tracking-widest mb-1">Thông tin hóa đơn VAT đã yêu cầu</p>
+                                  <h6 className="text-sm font-black text-slate-900 uppercase tracking-tight">{order.companyName}</h6>
+                                  <div className="flex flex-wrap gap-x-4 gap-y-1">
+                                     <p className="text-xs text-slate-500 font-bold tracking-tight">MST: <span className="text-emerald-600">{order.taxCode}</span></p>
+                                     <p className="text-xs text-slate-400 font-medium italic">{order.companyAddress}</p>
+                                  </div>
+                               </div>
+                               <div className="px-4 py-2 bg-white rounded-xl border border-emerald-100 self-start md:self-center">
+                                  <span className="text-[10px] font-black text-emerald-500 uppercase tracking-widest">Đang xử lý xuất hóa đơn</span>
+                               </div>
+                            </div>
+                          )}
+
                           <div className="space-y-8 relative">
                             <div className="absolute left-[13px] top-2 bottom-2 w-[2px] bg-slate-100" />
                             {getFullTimeline(order).reverse().map((step, idx) => {

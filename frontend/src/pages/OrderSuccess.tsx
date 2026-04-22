@@ -8,7 +8,8 @@ import {
   Copy, 
   Smartphone, 
   AlertCircle,
-  QrCode
+  QrCode,
+  ReceiptText
 } from 'lucide-react';
 import { useDispatch } from 'react-redux';
 import { clearCart } from '../store/slices/cartSlice';
@@ -21,6 +22,7 @@ const OrderSuccess = () => {
   const [orderId, setOrderId] = useState('');
   const [paymentMethod, setPaymentMethod] = useState('');
   const [totalAmount, setTotalAmount] = useState(0);
+  const [vatRequested, setVatRequested] = useState(false);
 
   useEffect(() => {
     dispatch(clearCart());
@@ -39,6 +41,7 @@ const OrderSuccess = () => {
         const orderData = resp.data || resp; 
         setPaymentMethod(orderData.paymentMethod?.toLowerCase() || 'cod');
         setTotalAmount(orderData.totalPrice || 0);
+        setVatRequested(orderData.vatRequested || false);
       } catch (error) {
         console.error("Failed to fetch order details for success page", error);
       }
@@ -149,6 +152,20 @@ const OrderSuccess = () => {
                   </div>
                </div>
              )}
+
+             {vatRequested && (
+                <div className="mt-8 p-6 bg-emerald-50 rounded-[2rem] border border-emerald-100 flex items-center gap-4 text-left animate-in fade-in slide-in-from-bottom-4 duration-500">
+                   <div className="w-12 h-12 bg-emerald-500 text-white rounded-2xl flex items-center justify-center shrink-0 shadow-lg shadow-emerald-500/20">
+                      <ReceiptText size={20} />
+                   </div>
+                   <div>
+                      <p className="text-[10px] font-black text-emerald-600 uppercase tracking-widest mb-1">Yêu cầu hóa đơn VAT</p>
+                      <p className="text-xs text-emerald-800 font-medium leading-tight">
+                        Glowzy đã nhận được thông tin công ty của bạn. Hóa đơn điện tử sẽ được gửi kèm cùng hàng hóa (Theo NĐ 123/2020/NĐ-CP).
+                      </p>
+                   </div>
+                </div>
+              )}
           </div>
         </div>
 

@@ -27,9 +27,13 @@ public class OrderMapper {
                 .receiverPhone(jpaEntity.getReceiverPhone())
                 .shippingAddress(jpaEntity.getShippingAddress())
                 .cancelReason(jpaEntity.getCancelReason())
-                .items(jpaEntity.getItems().stream()
+                .vatRequested(jpaEntity.isVatRequested())
+                .taxCode(jpaEntity.getTaxCode())
+                .companyName(jpaEntity.getCompanyName())
+                .companyAddress(jpaEntity.getCompanyAddress())
+                .items(jpaEntity.getItems() != null ? jpaEntity.getItems().stream()
                         .map(this::mapToOrderItemDomainEntity)
-                        .collect(Collectors.toList()))
+                        .collect(Collectors.toList()) : java.util.Collections.emptyList())
                 .build();
     }
 

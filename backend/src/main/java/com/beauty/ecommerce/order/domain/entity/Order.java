@@ -24,5 +24,9 @@ public class Order {
     private String shippingAddress;
     private String paymentTransactionId;
     private String cancelReason;
+    private boolean vatRequested;
+    private String taxCode;
+    private String companyName;
+    private String companyAddress;
     private List<OrderItem> items;
 }

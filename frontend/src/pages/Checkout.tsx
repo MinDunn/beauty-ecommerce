@@ -1,4 +1,4 @@
-import { useState, useMemo, useEffect } from 'react';
+import { useState, useMemo, useEffect, useRef } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Link, useNavigate } from 'react-router-dom';
 import type { AxiosError } from 'axios';
@@ -27,6 +27,7 @@ import couponService from '../api/couponService';
 import type { CouponData } from '../api/couponService';
 import { clearSelectedItems, updateQuantity, removeItem } from '../store/slices/cartSlice';
 import { orderService } from '../api/orderService';
+import { paymentService } from '../api/paymentService';
 import authService from '../api/authService';
 import { updateUser } from '../store/slices/authSlice';
 import { cartService } from '../api/cartService';
@@ -66,10 +67,13 @@ const Checkout = () => {
     companyAddress: ''
   });
 
+  const hasSyncedProfile = useRef(false);
+
   useEffect(() => {
     const fetchLatestProfile = async () => {
-      if (user) {
+      if (user && !hasSyncedProfile.current) {
         try {
+          hasSyncedProfile.current = true;
           const resp = await authService.getProfile();
           const profileData = resp.data.data;
           
@@ -89,6 +93,7 @@ const Checkout = () => {
           }));
         } catch (error) {
           console.error('Error fetching latest profile for checkout', error);
+          hasSyncedProfile.current = false;
         }
       }
     };
@@ -236,19 +241,31 @@ const Checkout = () => {
           productId: Number(item.id),
           variantName: item.variantName || null
         })),
-        wantsVat: vatInfo.wantsVat,
-        vatCompanyName: vatInfo.companyName,
-        vatTaxCode: vatInfo.taxCode,
-        vatCompanyAddress: vatInfo.companyAddress
+        vatRequested: vatInfo.wantsVat,
+        companyName: vatInfo.companyName,
+        taxCode: vatInfo.taxCode,
+        companyAddress: vatInfo.companyAddress
       };
 
       const response = await orderService.placeOrder(orderData);
       
-      // Bỏ qua thanh toán tự động, chuyển thẳng tới trang thành công với thông tin đơn hàng
       toast.success('Đặt hàng thành công! Cảm ơn bạn đã tin dùng Glowzy.', { id: loadingToast });
       dispatch(clearSelectedItems());
       
-      // Chuyển hướng tới trang thành công, truyền orderId và thông tin thanh toán
+      if (paymentMethod === 'MOMO') {
+        try {
+          const momoResponse = await paymentService.createMomoPayment(Number(response.id));
+          if (momoResponse && momoResponse.payUrl) {
+            window.location.href = momoResponse.payUrl;
+            return;
+          }
+        } catch (error) {
+          console.error("Momo payment creation failed", error);
+          toast.error("Không thể khởi tạo thanh toán MoMo. Vui lòng thử lại hoặc chọn COD.");
+        }
+      }
+
+      // Default redirect to success page
       navigate('/order-success', { 
         state: { 
           orderId: response.id,

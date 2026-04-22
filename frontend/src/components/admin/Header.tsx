@@ -1,5 +1,6 @@
 import { useState, useEffect, useRef } from "react";
 import { LogOut, Bell, Search, X, Loader2, ChevronDown, Menu, RefreshCw } from "lucide-react";
+import { cn } from "../../utils/cn";
 import { motion, AnimatePresence } from "framer-motion";
 import { useNavigate } from "react-router-dom";
 import { adminService } from "../../api/adminService";
@@ -11,7 +12,7 @@ import { reviewService } from "../../api/reviewService";
 type AdminNotification = {
   id: string;
   title: string;
-  type: "ĐƠN MỚI" | "FEEDBACK" | "TỒN KHO" | "NHẬP KHO" | "ĐÁNH GIÁ" | "HẾT HẠN";
+  type: "ĐƠN MỚI" | "FEEDBACK" | "TỒN KHO" | "NHẬP KHO" | "ĐÁNH GIÁ" | "HẾT HẠN" | "VAT";
   time: string;
   read: boolean;
   route: string;
@@ -59,6 +60,7 @@ export const Header = ({ logout, onToggleMenu }: { logout: () => void, onToggleM
         return diff > 0 && diff < 180 * 24 * 60 * 60 * 1000; // Under 6 months
       });
       const recentReceipts = (receipts || []).filter((receipt: any) => within48Hours(receipt.receivedAt));
+      const vatRequests = (orders || []).filter((order: any) => order.vatRequested && within48Hours(order.orderDate));
 
       const generated: AdminNotification[] = [];
 
@@ -69,6 +71,18 @@ export const Header = ({ logout, onToggleMenu }: { logout: () => void, onToggleM
           title: `Có ${newOrders.length} đơn hàng mới cần xử lý`,
           type: "ĐƠN MỚI",
           time: formatRelativeTime(latestOrder.orderDate),
+          read: false,
+          route: "/admin/orders"
+        });
+      }
+
+      if (vatRequests.length > 0) {
+        const latestVat = [...vatRequests].sort((a, b) => new Date(b.orderDate).getTime() - new Date(a.orderDate).getTime())[0];
+        generated.push({
+          id: `vat-${latestVat.id}`,
+          title: `Có ${vatRequests.length} yêu cầu xuất hóa đơn VAT mới`,
+          type: "VAT",
+          time: formatRelativeTime(latestVat.orderDate),
           read: false,
           route: "/admin/orders"
         });
@@ -277,7 +291,10 @@ export const Header = ({ logout, onToggleMenu }: { logout: () => void, onToggleM
                           {!n.read && <div className="w-1.5 h-1.5 bg-primary-500 rounded-full mt-1 shrink-0"></div>}
                         </div>
                         <div className="flex items-center gap-2">
-                          <span className="text-[8px] font-black px-1.5 py-0.5 rounded bg-slate-800 text-slate-500 uppercase tracking-tighter group-hover:bg-primary-500/20 group-hover:text-primary-500 transition-colors">{n.type}</span>
+                          <span className={cn(
+                            "text-[8px] font-black px-1.5 py-0.5 rounded uppercase tracking-tighter group-hover:opacity-100 transition-colors",
+                            n.type === "VAT" ? "bg-emerald-500/20 text-emerald-500" : "bg-slate-800 text-slate-500"
+                          )}>{n.type}</span>
                           <p className="text-[10px] text-slate-500 font-medium">{n.time}</p>
                         </div>
                       </button>

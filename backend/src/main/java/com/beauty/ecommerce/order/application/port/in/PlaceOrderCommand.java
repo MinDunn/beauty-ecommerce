@@ -15,6 +15,10 @@ public class PlaceOrderCommand {
     String shippingAddress;
     PaymentMethod paymentMethod;
     String couponCode;
+    boolean vatRequested;
+    String taxCode;
+    String companyName;
+    String companyAddress;
     List<CheckoutItem> checkoutItems;
 
     @Value

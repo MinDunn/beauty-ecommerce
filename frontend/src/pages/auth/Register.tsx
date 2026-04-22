@@ -153,9 +153,9 @@ const Register = () => {
                 />
                 <span className="text-xs text-gray-600 leading-relaxed font-medium">
                   Tôi đồng ý với{' '}
-                  <Link to="/terms" className="text-primary-600 font-black hover:underline">Điều khoản dịch vụ</Link>
+                  <Link to="/policy/terms" className="text-primary-600 font-black hover:underline">Điều khoản dịch vụ</Link>
                   {' '}và{' '}
-                  <Link to="/privacy" className="text-primary-600 font-black hover:underline">Chính sách bảo mật</Link>
+                  <Link to="/policy/privacy" className="text-primary-600 font-black hover:underline">Chính sách bảo mật</Link>
                   {' '}của Glowzy Beauty (Theo NĐ 13/2023/NĐ-CP).
                 </span>
               </label>
