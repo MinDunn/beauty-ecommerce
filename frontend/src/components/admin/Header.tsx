@@ -1,5 +1,5 @@
 import { useState, useEffect, useRef } from "react";
-import { LogOut, Bell, Search, X, Loader2, ChevronDown, Menu } from "lucide-react";
+import { LogOut, Bell, Search, X, Loader2, ChevronDown, Menu, RefreshCw } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
 import { useNavigate } from "react-router-dom";
 import { adminService } from "../../api/adminService";
@@ -23,6 +23,7 @@ export const Header = ({ logout, onToggleMenu }: { logout: () => void, onToggleM
   const [searchQuery, setSearchQuery] = useState("");
   const [notifications, setNotifications] = useState<AdminNotification[]>([]);
   const [loading, setLoading] = useState(false);
+  const [isReloading, setIsReloading] = useState(false);
   const userMenuRef = useRef<HTMLDivElement | null>(null);
   const navigate = useNavigate();
 
@@ -168,6 +169,20 @@ export const Header = ({ logout, onToggleMenu }: { logout: () => void, onToggleM
     return () => document.removeEventListener("mousedown", handleOutsideClick);
   }, []);
 
+  const handleGlobalReload = async () => {
+    setIsReloading(true);
+    try {
+      // 1. Dispatch global event immediately so the page starts loading in parallel
+      window.dispatchEvent(new CustomEvent('admin-reload-data'));
+      
+      // 2. Refresh header notifications
+      await fetchNotifications();
+    } finally {
+      // 3. Finish reloading state as soon as data is ready, no artificial delay
+      setIsReloading(false);
+    }
+  };
+
   const handleOpenNotification = (notification: AdminNotification) => {
     setShowNotifications(false);
     navigate(notification.route);
@@ -196,6 +211,15 @@ export const Header = ({ logout, onToggleMenu }: { logout: () => void, onToggleM
       </div>
 
       <div className="flex items-center gap-6">
+        <button 
+          onClick={handleGlobalReload}
+          disabled={isReloading}
+          className={`text-slate-400 hover:text-white transition-all p-2 rounded-lg hover:bg-slate-800 disabled:opacity-50 group ${isReloading ? "cursor-wait" : ""}`}
+          title="Tải lại dữ liệu"
+        >
+          <RefreshCw className={`w-5 h-5 ${isReloading ? "animate-spin text-primary-500" : "group-hover:rotate-180 transition-transform duration-500"}`} style={isReloading ? { animationDuration: '0.5s' } : {}} />
+        </button>
+
         <div className="relative">
           <button 
             onClick={() => setShowNotifications(!showNotifications)}

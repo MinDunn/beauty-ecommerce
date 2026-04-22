@@ -48,6 +48,13 @@ export const Coupons = () => {
   useEffect(() => {
     fetchCoupons();
     fetchCategories();
+
+    const handleGlobalReload = () => {
+      fetchCoupons();
+      fetchCategories();
+    };
+    window.addEventListener('admin-reload-data', handleGlobalReload);
+    return () => window.removeEventListener('admin-reload-data', handleGlobalReload);
   }, []);
 
   const fetchCoupons = async () => {

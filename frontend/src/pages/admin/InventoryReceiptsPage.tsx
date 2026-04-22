@@ -12,18 +12,25 @@ export const InventoryReceiptsPage = () => {
   const [selectedDate, setSelectedDate] = useState('');
   const [selectedHour, setSelectedHour] = useState('');
 
+  const fetchReceipts = async () => {
+    try {
+      const data = await adminService.getInventoryReceipts();
+      setReceipts(data);
+    } catch (error) {
+      toast.error('Không thể tải danh sách hóa đơn nhập hàng');
+    } finally {
+      setLoading(false);
+    }
+  };
+
   useEffect(() => {
-    const fetchReceipts = async () => {
-      try {
-        const data = await adminService.getInventoryReceipts();
-        setReceipts(data);
-      } catch (error) {
-        toast.error('Không thể tải danh sách hóa đơn nhập hàng');
-      } finally {
-        setLoading(false);
-      }
-    };
     fetchReceipts();
+
+    const handleGlobalReload = () => {
+      fetchReceipts();
+    };
+    window.addEventListener('admin-reload-data', handleGlobalReload);
+    return () => window.removeEventListener('admin-reload-data', handleGlobalReload);
   }, []);
 
   const normalizeText = (text: string) =>

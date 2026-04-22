@@ -24,18 +24,25 @@ export const InventoryAdjustmentsPage = () => {
   const [keyword, setKeyword] = useState('');
   const [selectedDate, setSelectedDate] = useState('');
 
+  const fetchAdjustments = async () => {
+    try {
+      const data = await productService.adminGetInventoryAdjustments();
+      setAdjustments(data);
+    } catch (error) {
+      toast.error('Không thể tải danh sách điều chỉnh kho');
+    } finally {
+      setLoading(false);
+    }
+  };
+
   useEffect(() => {
-    const fetchAdjustments = async () => {
-      try {
-        const data = await productService.adminGetInventoryAdjustments();
-        setAdjustments(data);
-      } catch (error) {
-        toast.error('Không thể tải danh sách điều chỉnh kho');
-      } finally {
-        setLoading(false);
-      }
-    };
     fetchAdjustments();
+
+    const handleGlobalReload = () => {
+      fetchAdjustments();
+    };
+    window.addEventListener('admin-reload-data', handleGlobalReload);
+    return () => window.removeEventListener('admin-reload-data', handleGlobalReload);
   }, []);
 
   const normalizeText = (text: string) =>

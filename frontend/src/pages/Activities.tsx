@@ -65,6 +65,12 @@ export const Activities = () => {
 
   useEffect(() => {
     fetchActivities();
+
+    const handleGlobalReload = () => {
+      fetchActivities(false);
+    };
+    window.addEventListener('admin-reload-data', handleGlobalReload);
+    return () => window.removeEventListener('admin-reload-data', handleGlobalReload);
   }, [selectedGroup, debouncedQuery]);
 
   const handleRefresh = () => {

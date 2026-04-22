@@ -264,6 +264,13 @@ export const Products = () => {
   useEffect(() => {
     fetchProducts();
     fetchCategories();
+
+    const handleGlobalReload = () => {
+      fetchProducts();
+      fetchCategories();
+    };
+    window.addEventListener('admin-reload-data', handleGlobalReload);
+    return () => window.removeEventListener('admin-reload-data', handleGlobalReload);
   }, []);
 
   // Fetch unit cost for adjustment preview

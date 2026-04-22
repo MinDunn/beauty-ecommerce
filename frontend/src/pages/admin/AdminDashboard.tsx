@@ -125,6 +125,13 @@ export const AdminDashboard = () => {
   useEffect(() => {
     fetchStats(days);
     fetchInventoryStats();
+
+    const handleGlobalReload = () => {
+      fetchStats(days);
+      fetchInventoryStats();
+    };
+    window.addEventListener('admin-reload-data', handleGlobalReload);
+    return () => window.removeEventListener('admin-reload-data', handleGlobalReload);
   }, [days]);
 
   const handleExport = async () => {

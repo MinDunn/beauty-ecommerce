@@ -71,6 +71,14 @@ export const Orders = () => {
     return () => clearTimeout(timer);
   }, [activeTab, searchQuery]);
 
+  useEffect(() => {
+    const handleGlobalReload = () => {
+      fetchOrders();
+    };
+    window.addEventListener('admin-reload-data', handleGlobalReload);
+    return () => window.removeEventListener('admin-reload-data', handleGlobalReload);
+  }, []);
+
   const executeStatusUpdate = async (id: number, status: string) => {
     try {
       await orderService.adminUpdateOrderStatus(id, status);

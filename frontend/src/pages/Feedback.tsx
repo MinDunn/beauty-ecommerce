@@ -76,11 +76,21 @@ export const FeedbackPage = () => {
   };
 
   useEffect(() => {
-    const handleChatSeen = () => {
+    fetchData();
+    window.addEventListener('admin-chat-seen', fetchData);
+    window.addEventListener('admin-feedback-seen', fetchData);
+    
+    // Global reload listener
+    const handleGlobalReload = () => {
       fetchData();
     };
-    window.addEventListener('admin-chat-seen', handleChatSeen);
-    return () => window.removeEventListener('admin-chat-seen', handleChatSeen);
+    window.addEventListener('admin-reload-data', handleGlobalReload);
+
+    return () => {
+      window.removeEventListener('admin-chat-seen', fetchData);
+      window.removeEventListener('admin-feedback-seen', fetchData);
+      window.removeEventListener('admin-reload-data', handleGlobalReload);
+    };
   }, []);
 
   useEffect(() => {

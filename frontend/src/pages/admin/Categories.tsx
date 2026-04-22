@@ -35,6 +35,12 @@ export const Categories = () => {
 
   useEffect(() => {
     fetchCategories();
+
+    const handleGlobalReload = () => {
+      fetchCategories();
+    };
+    window.addEventListener('admin-reload-data', handleGlobalReload);
+    return () => window.removeEventListener('admin-reload-data', handleGlobalReload);
   }, []);
 
   const fetchCategories = async () => {

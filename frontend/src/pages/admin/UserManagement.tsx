@@ -36,6 +36,12 @@ export const UserManagement = () => {
 
   useEffect(() => {
     fetchUsers();
+
+    const handleGlobalReload = () => {
+      fetchUsers();
+    };
+    window.addEventListener('admin-reload-data', handleGlobalReload);
+    return () => window.removeEventListener('admin-reload-data', handleGlobalReload);
   }, []);
 
   const handleCreateUser = async (e: React.FormEvent) => {
