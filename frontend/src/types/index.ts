@@ -38,6 +38,7 @@ export type OrderItem = {
   productId: number;
   productName: string;
   productImageUrl?: string;
+  variantName?: string | null;
   quantity: number;
   price: number;
   subTotal: number;
