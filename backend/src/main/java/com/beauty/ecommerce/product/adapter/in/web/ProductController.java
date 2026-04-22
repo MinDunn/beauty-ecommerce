@@ -2,6 +2,8 @@ package com.beauty.ecommerce.product.adapter.in.web;
 
 import com.beauty.ecommerce.product.adapter.in.web.response.ProductListResponse;
 import com.beauty.ecommerce.product.adapter.in.web.response.ProductResponse;
+import com.beauty.ecommerce.product.adapter.out.persistence.SkinTypeMetadataJpaEntity;
+import com.beauty.ecommerce.product.adapter.out.persistence.SkinTypeMetadataRepository;
 import com.beauty.ecommerce.product.application.port.in.GetProductUseCase;
 import com.beauty.ecommerce.product.domain.entity.Product;
 import com.beauty.ecommerce.review.adapter.out.persistence.ReviewRepository;
@@ -30,6 +32,7 @@ public class ProductController {
 
     private final GetProductUseCase productUseCase;
     private final ReviewRepository reviewRepository;
+    private final SkinTypeMetadataRepository skinTypeMetadataRepository;
 
     @GetMapping
     public ResponseEntity<Page<ProductListResponse>> getAllProducts(
@@ -140,6 +143,23 @@ public class ProductController {
     public ResponseEntity<Void> incrementViewCount(@PathVariable Long id) {
         productUseCase.incrementViewCount(id);
         return ResponseEntity.ok().build();
+    }
+
+    @GetMapping("/skin-types")
+    public ResponseEntity<List<String>> getSkinTypes() {
+        try {
+            System.out.println("DEBUG: Fetching skin types from metadata repository...");
+            List<String> skinTypes = skinTypeMetadataRepository.findAll().stream()
+                    .map(SkinTypeMetadataJpaEntity::getName)
+                    .collect(Collectors.toList());
+            System.out.println("DEBUG: Found " + skinTypes.size() + " skin types.");
+            return ResponseEntity.ok(skinTypes);
+        } catch (Exception e) {
+            System.err.println("ERROR: Failed to fetch skin types: " + e.getMessage());
+            e.printStackTrace();
+            // Return empty list instead of 500 for better UI stability
+            return ResponseEntity.ok(Collections.emptyList());
+        }
     }
 
     private ProductListResponse mapToListResponse(Product product, Double avgRating, Long reviewCount) {

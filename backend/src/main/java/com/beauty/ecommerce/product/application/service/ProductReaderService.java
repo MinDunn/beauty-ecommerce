@@ -72,7 +72,8 @@ public class ProductReaderService implements GetProductUseCase {
             }
 
             if (skinType != null && !skinType.isEmpty()) {
-                predicates.add(cb.equal(cb.lower(root.get("skinType")), skinType.toLowerCase()));
+                String pattern = "%" + skinType.toLowerCase() + "%";
+                predicates.add(cb.like(cb.lower(root.get("skinTypes")), pattern));
             }
 
             return cb.and(predicates.toArray(new Predicate[0]));

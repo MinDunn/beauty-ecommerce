@@ -78,6 +78,10 @@ export const productService = {
     } catch (error) {
       console.error("Failed to increment view count", error);
     }
+  },
+  getSkinTypes: async () => {
+    const response = await axiosInstance.get('/products/skin-types');
+    return response.data;
   }
 };
 

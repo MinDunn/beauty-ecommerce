@@ -28,6 +28,7 @@ const Category = () => {
   const [selectedPriceRange, setSelectedPriceRange] = useState<string | null>(null);
   const [selectedOnSale, setSelectedOnSale] = useState(onSaleParam);
   const [selectedSkinType, setSelectedSkinType] = useState<string | null>(null);
+  const [availableSkinTypes, setAvailableSkinTypes] = useState<string[]>([]);
 
   const categoryDescriptions: Record<string, string> = {
     'skincare': 'Serum, kem dưỡng, đặc trị, mặt nạ và các sản phẩm chăm sóc da chuyên sâu.',
@@ -61,7 +62,18 @@ const Category = () => {
         console.error("Failed to fetch categories", err);
       }
     };
+
+    const fetchSkinTypes = async () => {
+      try {
+        const types = await productService.getSkinTypes();
+        setAvailableSkinTypes(types);
+      } catch (err) {
+        console.error("Failed to fetch skin types", err);
+      }
+    };
+
     fetchMeta();
+    fetchSkinTypes();
   }, [slug]);
 
   useEffect(() => {
@@ -226,9 +238,13 @@ const Category = () => {
               selectedOnSale={selectedOnSale}
               onFilterChange={handleFilterChange}
               onReset={clearFilters}
+              availableSkinTypes={availableSkinTypes}
               isSkincare={
+                (slug === 'skincare' || slug === 'makeup' || slug === 'bodycare') ||
                 categories.find(c => normalize(c.name) === slug || (slug === 'skincare' && c.name === 'Chăm sóc da'))?.name === "Chăm sóc da" ||
-                categories.find(c => (normalize(c.name) === slug || (slug === 'skincare' && c.name === 'Chăm sóc da')) && c.parentId === categories.find(p => p.name === "Chăm sóc da")?.id) !== undefined
+                categories.find(c => (normalize(c.name) === slug || (slug === 'skincare' && c.name === 'Chăm sóc da')) && c.parentId === categories.find(p => p.name === "Chăm sóc da")?.id) !== undefined ||
+                categories.find(c => normalize(c.name) === slug || (slug === 'makeup' && c.name === 'Trang điểm'))?.name === "Trang điểm" ||
+                categories.find(c => normalize(c.name) === slug || (slug === 'bodycare' && c.name === 'Chăm sóc cơ thể'))?.name === "Chăm sóc cơ thể"
               }
              />
           </div>

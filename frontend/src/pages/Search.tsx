@@ -15,6 +15,7 @@ const SearchResultPage = () => {
   const [selectedPriceRange, setSelectedPriceRange] = useState<string | null>(null);
   const [selectedSkinTypes, setSelectedSkinTypes] = useState<string[]>([]);
   const [selectedOnSale, setSelectedOnSale] = useState(false);
+  const [availableSkinTypes, setAvailableSkinTypes] = useState<string[]>([]);
 
   const handleFilterChange = (type: 'price' | 'skinType' | 'offer' | 'rating', value: any) => {
      if (type === 'price') {
@@ -22,9 +23,7 @@ const SearchResultPage = () => {
      } else if (type === 'skinType') {
         setSelectedSkinTypes(prev => prev.includes(value) ? prev.filter(s => s !== value) : [...prev, value]);
      } else if (type === 'offer') {
-       setSelectedOnSale(prev => !prev);
-     } else if (type === 'rating') {
-       // Logic for rating filter if needed
+        setSelectedOnSale(prev => !prev);
      }
   };
 
@@ -52,11 +51,12 @@ const SearchResultPage = () => {
           keyword: query,
           minPrice,
           maxPrice,
-          page: 0, // Reset to page 0 on filter change
+          skinType: selectedSkinTypes.length > 0 ? selectedSkinTypes[0] : undefined, // Backend currently supports 1 skinType string
+          onSale: selectedOnSale,
+          page: 0,
           size: 20
         });
 
-        // Response from Spring Data Page object: { content: [...], totalElements: ... }
         setProducts(response.content || []);
         setTotalElements(response.totalElements || 0);
       } catch (error) {
@@ -67,13 +67,22 @@ const SearchResultPage = () => {
       }
     };
 
+    const fetchSkinTypes = async () => {
+      try {
+        const types = await productService.getSkinTypes();
+        setAvailableSkinTypes(types);
+      } catch (error) {
+        console.error('Lỗi khi tải danh sách loại da:', error);
+      }
+    };
+
     fetchProducts();
-  }, [query, selectedPriceRange]); // For now only keyword and price
+    fetchSkinTypes();
+  }, [query, selectedPriceRange, selectedSkinTypes, selectedOnSale]);
 
   return (
     <div className="bg-white min-h-screen pb-20">
       <div className="bg-slate-900 py-16 mb-8 relative overflow-hidden">
-        {/* Decorative elements */}
         <div className="absolute top-0 right-0 w-64 h-64 bg-primary-500/10 rounded-full blur-3xl -translate-y-1/2 translate-x-1/2" />
         <div className="absolute bottom-0 left-0 w-64 h-64 bg-primary-500/10 rounded-full blur-3xl translate-y-1/2 -translate-x-1/2" />
 
@@ -114,6 +123,8 @@ const SearchResultPage = () => {
               selectedOnSale={selectedOnSale}
               onFilterChange={handleFilterChange}
               onReset={clearFilters}
+              availableSkinTypes={availableSkinTypes}
+              isSkincare={true}
              />
           </div>
 

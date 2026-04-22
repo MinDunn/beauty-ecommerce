@@ -33,7 +33,7 @@ const FilterSection = ({ title, type, items, selectedItems, onToggle, defaultOpe
         isOpen ? "max-h-[500px] opacity-100 scale-y-100" : "max-h-0 opacity-0 scale-y-0"
       )}>
         {items.map((item) => {
-          const isSelected = (type === 'rating' || type === 'skinType' || type === 'price')
+          const isSelected = (type === 'rating' || type === 'price')
             ? selectedItems === item.id 
             : Array.isArray(selectedItems) 
                 ? selectedItems.includes(item.id) 
@@ -49,12 +49,12 @@ const FilterSection = ({ title, type, items, selectedItems, onToggle, defaultOpe
                   className={cn(
                     "peer w-5 h-5 appearance-none border-2 border-gray-200 transition-all cursor-pointer outline-none",
                     type === 'price' || type === 'rating' || type === 'skinType' ? "rounded-full" : "rounded-[6px]",
-                    "checked:bg-gray-900 checked:border-gray-900 hover:border-gray-400"
+                    "checked:border-gray-900 hover:border-gray-400"
                   )} 
                 />
                 <div className={cn(
-                  "absolute inset-0 m-auto rounded-sm bg-white scale-0 peer-checked:scale-100 transition-transform duration-200 pointer-events-none",
-                  type === 'price' || type === 'rating' || type === 'skinType' ? "w-1.5 h-1.5 rounded-full" : "w-2.5 h-2.5 rounded-[2px]"
+                  "absolute inset-0 m-auto scale-0 peer-checked:scale-100 transition-transform duration-200 pointer-events-none",
+                  type === 'price' || type === 'rating' || type === 'skinType' ? "w-2.5 h-2.5 rounded-full bg-gray-900" : "w-2.5 h-2.5 rounded-[2px] bg-gray-900"
                 )}></div>
               </div>
               <span className={cn(
@@ -79,6 +79,7 @@ interface FilterSidebarProps {
   selectedOnSale: boolean;
   onFilterChange: (type: 'price' | 'skinType' | 'offer' | 'rating', value: any) => void;
   onReset: () => void;
+  availableSkinTypes: string[];
   isSkincare?: boolean;
 }
 
@@ -90,6 +91,7 @@ export const FilterSidebar = ({
   selectedOnSale,
   onFilterChange,
   onReset,
+  availableSkinTypes,
   isSkincare
 }: FilterSidebarProps) => {
   const priceFilters = [
@@ -99,13 +101,10 @@ export const FilterSidebar = ({
     { id: 'p4', label: 'Trên 500.000 đ' },
   ];
 
-  const skinTypeFilters = [
-    { id: 'Da dầu', label: 'Da dầu' },
-    { id: 'Da khô', label: 'Da khô' },
-    { id: 'Da nhạy cảm', label: 'Da nhạy cảm' },
-    { id: 'Da hỗn hợp', label: 'Da hỗn hợp' },
-    { id: 'Da thường', label: 'Da thường' },
-  ];
+  const skinTypeFilters = availableSkinTypes.map(type => ({ 
+    id: type, 
+    label: type 
+  }));
 
   return (
     <>
@@ -152,7 +151,15 @@ export const FilterSidebar = ({
             </button>
           </div>
 
-          {isSkincare && (
+          <FilterSection 
+            title="Khoảng giá" 
+            type="price"
+            items={priceFilters} 
+            selectedItems={selectedPriceRange}
+            onToggle={onFilterChange}
+          />
+
+          {isSkincare && skinTypeFilters.length > 0 && (
             <FilterSection 
               title="Loại da" 
               type="skinType"
@@ -161,14 +168,6 @@ export const FilterSidebar = ({
               onToggle={onFilterChange}
             />
           )}
-
-          <FilterSection 
-            title="Khoảng giá" 
-            type="price"
-            items={priceFilters} 
-            selectedItems={selectedPriceRange}
-            onToggle={onFilterChange}
-          />
         </div>
 
         <div className="p-6 border-t border-gray-100 bg-white sticky bottom-0 lg:hidden flex gap-4">
