@@ -105,6 +105,18 @@ public class AdminInventoryController {
         return ResponseEntity.ok().build();
     }
 
+    @org.springframework.web.bind.annotation.DeleteMapping("/adjustments")
+    public ResponseEntity<Void> deleteAdjustments(@org.springframework.web.bind.annotation.RequestBody List<Long> ids) {
+        inventoryService.deleteAdjustments(ids);
+        return ResponseEntity.ok().build();
+    }
+
+    @org.springframework.web.bind.annotation.DeleteMapping("/adjustments/all")
+    public ResponseEntity<Void> deleteAllAdjustments() {
+        inventoryService.deleteAllAdjustments();
+        return ResponseEntity.ok().build();
+    }
+
     @Data
     public static class InventoryAdjustmentRequest {
         private Long productId;

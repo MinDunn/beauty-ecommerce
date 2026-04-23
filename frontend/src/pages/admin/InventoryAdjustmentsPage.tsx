@@ -3,7 +3,7 @@ import { Link } from 'react-router-dom';
 import { productService } from '../../api/productService';
 import { toast } from 'react-hot-toast';
 import { motion } from 'framer-motion';
-import { Calendar, Package, Clock, Search, Check, X as XIcon, AlertCircle, Eye, ArrowLeft } from 'lucide-react';
+import { Calendar, Package, Clock, Search, Check, X as XIcon, AlertCircle, Eye, ArrowLeft, RefreshCcw, Trash2 } from 'lucide-react';
 import { cn } from '../../utils/cn';
 import { adminService } from '../../api/adminService';
 
@@ -26,8 +26,10 @@ export const InventoryAdjustmentsPage = () => {
   const [loading, setLoading] = useState(true);
   const [keyword, setKeyword] = useState('');
   const [selectedDate, setSelectedDate] = useState('');
+  const [selectedIds, setSelectedIds] = useState<Set<number>>(new Set());
 
   const fetchAdjustments = async () => {
+    setLoading(true);
     try {
       const data = await productService.adminGetInventoryAdjustments();
       // Sắp xếp PENDING lên đầu để dễ thấy
@@ -41,6 +43,52 @@ export const InventoryAdjustmentsPage = () => {
       toast.error('Không thể tải danh sách điều chỉnh kho');
     } finally {
       setLoading(false);
+    }
+  };
+
+  const handleSelectAll = (e: React.ChangeEvent<HTMLInputElement>) => {
+    if (e.target.checked) {
+      setSelectedIds(new Set(filteredAdjustments.map(adj => adj.id)));
+    } else {
+      setSelectedIds(new Set());
+    }
+  };
+
+  const handleSelectRow = (id: number) => {
+    const newSelected = new Set(selectedIds);
+    if (newSelected.has(id)) {
+      newSelected.delete(id);
+    } else {
+      newSelected.add(id);
+    }
+    setSelectedIds(newSelected);
+  };
+
+  const handleDeleteSelected = async () => {
+    if (selectedIds.size === 0) return;
+    if (!window.confirm(`Bạn có chắc muốn xóa ${selectedIds.size} bản ghi đã chọn? Hành động này sẽ cập nhật lại số liệu thống kê.`)) return;
+    
+    try {
+      await adminService.deleteAdjustments(Array.from(selectedIds));
+      toast.success('Đã xóa các bản ghi được chọn');
+      setSelectedIds(new Set());
+      fetchAdjustments();
+      window.dispatchEvent(new CustomEvent('admin-reload-data'));
+    } catch (error) {
+      toast.error('Lỗi khi xóa dữ liệu');
+    }
+  };
+
+  const handleDeleteAll = async () => {
+    if (!window.confirm('CẢNH BÁO: Bạn có chắc muốn xóa TẤT CẢ lịch sử điều chỉnh kho? Hành động này không thể hoàn tác và sẽ đưa toàn bộ số liệu thống kê về 0.')) return;
+    try {
+      await adminService.deleteAllAdjustments();
+      toast.success('Đã xóa sạch lịch sử');
+      setSelectedIds(new Set());
+      fetchAdjustments();
+      window.dispatchEvent(new CustomEvent('admin-reload-data'));
+    } catch (error) {
+      toast.error('Lỗi khi xóa sạch lịch sử');
     }
   };
 
@@ -144,6 +192,35 @@ export const InventoryAdjustmentsPage = () => {
             </p>
           </div>
         </div>
+
+        <div className="flex items-center gap-3">
+          <button
+            onClick={fetchAdjustments}
+            className="flex items-center gap-2 px-4 py-2 bg-slate-800 text-slate-300 hover:bg-slate-700 hover:text-white rounded-xl border border-slate-700 transition-all font-bold text-xs"
+            title="Tải lại dữ liệu"
+          >
+            <RefreshCcw size={14} className={cn(loading && "animate-spin")} />
+            Làm mới
+          </button>
+          
+          {selectedIds.size > 0 ? (
+            <button
+              onClick={handleDeleteSelected}
+              className="flex items-center gap-2 px-4 py-2 bg-rose-500/10 text-rose-500 hover:bg-rose-500 hover:text-white rounded-xl border border-rose-500/20 transition-all font-bold text-xs shadow-lg shadow-rose-500/10"
+            >
+              <Trash2 size={14} />
+              Xóa đã chọn ({selectedIds.size})
+            </button>
+          ) : (
+            <button
+              onClick={handleDeleteAll}
+              className="flex items-center gap-2 px-4 py-2 bg-slate-800 text-slate-500 hover:bg-rose-500 hover:text-white rounded-xl border border-slate-700 hover:border-rose-500 transition-all font-bold text-xs"
+            >
+              <Trash2 size={14} />
+              Xóa lịch sử
+            </button>
+          )}
+        </div>
       </div>
 
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
@@ -203,6 +280,14 @@ export const InventoryAdjustmentsPage = () => {
           <table className="w-full text-left border-collapse">
             <thead>
               <tr className="bg-slate-800/50">
+                <th className="p-6 w-10">
+                  <input
+                    type="checkbox"
+                    checked={filteredAdjustments.length > 0 && selectedIds.size === filteredAdjustments.length}
+                    onChange={handleSelectAll}
+                    className="w-4 h-4 rounded border-slate-700 bg-slate-800 text-amber-500 focus:ring-amber-500 focus:ring-offset-slate-900"
+                  />
+                </th>
                 <th className="p-6 text-[10px] font-black uppercase tracking-widest text-slate-400">Thời gian</th>
                 <th className="p-6 text-[10px] font-black uppercase tracking-widest text-slate-400">Sản phẩm</th>
                 <th className="p-6 text-[10px] font-black uppercase tracking-widest text-slate-400 text-center">SL</th>
@@ -227,9 +312,18 @@ export const InventoryAdjustmentsPage = () => {
                     animate={{ opacity: 1 }}
                     className={cn(
                       "hover:bg-slate-800/30 transition-colors group",
-                      adj.status === 'REJECTED' && "opacity-50"
+                      adj.status === 'REJECTED' && "opacity-50",
+                      selectedIds.has(adj.id) && "bg-amber-500/5"
                     )}
                   >
+                    <td className="p-6">
+                      <input
+                        type="checkbox"
+                        checked={selectedIds.has(adj.id)}
+                        onChange={() => handleSelectRow(adj.id)}
+                        className="w-4 h-4 rounded border-slate-700 bg-slate-800 text-amber-500 focus:ring-amber-500 focus:ring-offset-slate-900"
+                      />
+                    </td>
                     <td className="p-6">
                       <div className="flex flex-col gap-1">
                         <div className="flex items-center gap-2 text-slate-300">

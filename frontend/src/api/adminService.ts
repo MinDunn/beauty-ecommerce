@@ -76,6 +76,12 @@ export const adminService = {
   },
   rejectAdjustment: async (id: number) => {
     await axiosInstance.post(`/admin/inventory/adjustments/reject?id=${id}`);
+  },
+  deleteAdjustments: async (ids: number[]) => {
+    await axiosInstance.delete('/admin/inventory/adjustments', { data: ids });
+  },
+  deleteAllAdjustments: async () => {
+    await axiosInstance.delete('/admin/inventory/adjustments/all');
   }
 };
 

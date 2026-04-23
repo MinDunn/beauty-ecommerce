@@ -12,6 +12,7 @@ services:
       - CLOUDINARY_CLOUD_NAME=${CLOUDINARY_CLOUD_NAME}
       - CLOUDINARY_API_KEY=${CLOUDINARY_API_KEY}
       - CLOUDINARY_API_SECRET=${CLOUDINARY_API_SECRET}
+      - TZ=Asia/Ho_Chi_Minh
     volumes:
       - uploads_data:/app/uploads
 
@@ -20,6 +21,8 @@ services:
       context: ./frontend
       args:
         - VITE_API_URL=http://localhost:8080/api
+    environment:
+      - TZ=Asia/Ho_Chi_Minh
     restart: always
     ports:
       - "5173:80"

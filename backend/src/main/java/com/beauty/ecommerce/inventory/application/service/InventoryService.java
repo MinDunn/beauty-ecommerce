@@ -403,4 +403,13 @@ public class InventoryService {
             LocalDateTime receivedAt
     ) {
     }
+    @Transactional
+    public void deleteAdjustments(List<Long> ids) {
+        adjustmentRepository.deleteAllById(ids);
+    }
+
+    @Transactional
+    public void deleteAllAdjustments() {
+        adjustmentRepository.deleteAll();
+    }
 }
