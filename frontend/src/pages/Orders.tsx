@@ -7,7 +7,7 @@ import { toast } from "react-hot-toast";
 import { 
   Eye, ShoppingCart, User, Phone, MapPin, CreditCard, CheckCircle2, 
   Search, Package, Truck, CheckCircle, XCircle, Clock, Trash2,
-  Filter, Zap, ArrowRight, AlertCircle, Printer, FileText
+  Filter, Zap, ArrowRight, AlertCircle, Printer, FileText, ChevronDown
 } from "lucide-react";
 import { getFullTimeline } from "../utils/orderUtils";
 import { cn } from "../utils/cn";
@@ -34,6 +34,9 @@ export const Orders = () => {
   const [searchQuery, setSearchQuery] = useState('');
   const [selectedIds, setSelectedIds] = useState<number[]>([]);
   const [isBulkProcessing, setIsBulkProcessing] = useState(false);
+  const [page, setPage] = useState(0);
+  const [pageSize] = useState(20);
+  const [totalElements, setTotalElements] = useState(0);
   const [previousMaxId] = useState(() => Number(localStorage.getItem('admin_last_seen_order_id') || 0));
 
   const printComponentRef = useRef<HTMLDivElement>(null);
@@ -78,13 +81,18 @@ export const Orders = () => {
     try {
       const params = {
         search: searchQuery || undefined,
-        status: activeTab === 'ALL' ? undefined : activeTab
+        status: activeTab === 'ALL' ? undefined : activeTab,
+        page: page,
+        size: pageSize,
+        sort: 'orderDate,desc'
       };
       const data = await orderService.adminGetAllOrders(params);
-      setOrders(data);
+      const ordersContent = data.content || [];
+      setOrders(ordersContent);
+      setTotalElements(data.totalElements || 0);
 
-      if (data && data.length > 0) {
-        const currentMaxId = Math.max(...data.map((o: Order) => o.id));
+      if (ordersContent.length > 0) {
+        const currentMaxId = Math.max(...ordersContent.map((o: Order) => o.id));
         const storedMaxId = Number(localStorage.getItem('admin_last_seen_order_id') || 0);
         if (currentMaxId > storedMaxId) {
           localStorage.setItem('admin_last_seen_order_id', currentMaxId.toString());
@@ -97,11 +105,15 @@ export const Orders = () => {
   };
 
   useEffect(() => {
+    setPage(0); // Reset page when filters change
+  }, [activeTab, searchQuery]);
+
+  useEffect(() => {
     const timer = setTimeout(() => {
       fetchOrders();
     }, 500);
     return () => clearTimeout(timer);
-  }, [activeTab, searchQuery]);
+  }, [activeTab, searchQuery, page]);
 
   useEffect(() => {
     const handleGlobalReload = () => {
@@ -454,6 +466,32 @@ export const Orders = () => {
         data={tableData} 
         rowClassName={(item: any) => item.rowClassName}
       />
+
+      {/* Pagination Controls */}
+      <div className="flex items-center justify-between bg-slate-900 border border-slate-800 p-4 rounded-2xl mt-4">
+        <div className="text-slate-500 text-[10px] font-black uppercase tracking-widest">
+          Tổng số: <span className="text-white">{totalElements}</span> đơn hàng
+        </div>
+        <div className="flex items-center gap-2">
+          <button
+            onClick={() => setPage(p => Math.max(0, p - 1))}
+            disabled={page === 0}
+            className="p-2 bg-slate-800 border border-slate-700 rounded-xl text-slate-400 hover:text-white hover:border-slate-600 disabled:opacity-30 disabled:cursor-not-allowed transition-all"
+          >
+            <ChevronDown className="rotate-90" size={18} />
+          </button>
+          <div className="bg-slate-800 border border-slate-700 px-4 py-2 rounded-xl text-[10px] font-black text-white uppercase tracking-widest min-w-[100px] text-center">
+            Trang {page + 1} / {Math.ceil(totalElements / pageSize) || 1}
+          </div>
+          <button
+            onClick={() => setPage(p => p + 1)}
+            disabled={(page + 1) * pageSize >= totalElements}
+            className="p-2 bg-slate-800 border border-slate-700 rounded-xl text-slate-400 hover:text-white hover:border-slate-600 disabled:opacity-30 disabled:cursor-not-allowed transition-all"
+          >
+            <ChevronDown className="-rotate-90" size={18} />
+          </button>
+        </div>
+      </div>
 
       {/* Bulk Action Bar */}
       {selectedIds.length > 0 && (

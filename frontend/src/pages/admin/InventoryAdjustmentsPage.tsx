@@ -1,8 +1,9 @@
 import { useMemo, useState, useEffect } from 'react';
+import { Link } from 'react-router-dom';
 import { productService } from '../../api/productService';
 import { toast } from 'react-hot-toast';
 import { motion } from 'framer-motion';
-import { Calendar, Package, Clock, Search, Check, X as XIcon, AlertCircle } from 'lucide-react';
+import { Calendar, Package, Clock, Search, Check, X as XIcon, AlertCircle, Eye, ArrowLeft } from 'lucide-react';
 import { cn } from '../../utils/cn';
 import { adminService } from '../../api/adminService';
 
@@ -127,13 +128,21 @@ export const InventoryAdjustmentsPage = () => {
   return (
     <div className="space-y-8 pb-10">
       <div className="flex justify-between items-center">
-        <div>
-          <h1 className="text-2xl md:text-3xl font-black text-white tracking-tight uppercase underline decoration-amber-500 decoration-4 underline-offset-8">
-            Nhật ký điều chỉnh kho
-          </h1>
-          <p className="text-slate-500 font-medium mt-4 italic">
-            Theo dõi lý do hao hụt sản phẩm và số tiền đền bù (nếu có).
-          </p>
+        <div className="flex items-start gap-6">
+          <Link 
+            to="/admin/products"
+            className="mt-1 p-3 bg-slate-900 border border-slate-800 text-slate-400 hover:text-white hover:border-slate-700 rounded-2xl transition-all shadow-xl group"
+          >
+            <ArrowLeft size={20} className="group-hover:-translate-x-1 transition-transform" />
+          </Link>
+          <div>
+            <h1 className="text-2xl md:text-3xl font-black text-white tracking-tight uppercase underline decoration-amber-500 decoration-4 underline-offset-8">
+              Nhật ký điều chỉnh kho
+            </h1>
+            <p className="text-slate-500 font-medium mt-4 italic">
+              Theo dõi lý do hao hụt sản phẩm và số tiền đền bù (nếu có).
+            </p>
+          </div>
         </div>
       </div>
 
@@ -234,11 +243,23 @@ export const InventoryAdjustmentsPage = () => {
                       </div>
                     </td>
                     <td className="p-6">
-                      <div className="flex items-center gap-2">
-                        <Package size={14} className="text-slate-500" />
-                        <div>
-                          <span className="block text-sm font-semibold text-slate-100">{adj.productName ?? 'Sản phẩm không xác định'}</span>
-                          {adj.variantName && <span className="block text-xs font-medium text-slate-400 italic">Phân loại: {adj.variantName}</span>}
+                      <div className="flex items-center gap-3">
+                        <div className="p-2 bg-slate-800 rounded-lg text-slate-500">
+                           <Package size={14} />
+                        </div>
+                        <div className="flex-1">
+                          <div className="flex items-center gap-2">
+                             <span className="block text-sm font-bold text-slate-100">{adj.productName ?? 'Sản phẩm không xác định'}</span>
+                             <Link 
+                               to={`/product/${adj.productId}`}
+                               target="_blank"
+                               className="p-1 text-primary-500 hover:bg-primary-500/10 rounded-md transition-all"
+                               title="Xem trang sản phẩm"
+                             >
+                               <Eye size={12} />
+                             </Link>
+                          </div>
+                          {adj.variantName && <span className="block text-[10px] font-medium text-slate-400 italic">Phân loại: {adj.variantName}</span>}
                         </div>
                       </div>
                     </td>

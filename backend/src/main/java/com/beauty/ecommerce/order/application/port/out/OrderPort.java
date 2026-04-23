@@ -10,6 +10,7 @@ public interface OrderPort {
     Order save(Order order);
     List<Order> findByUserEmail(String email);
     List<Order> findAll();
+    org.springframework.data.domain.Page<Order> findAll(String query, OrderStatus status, org.springframework.data.domain.Pageable pageable);
     Optional<Order> findById(Long id);
     void updateStatus(Long id, OrderStatus status);
     void updatePaymentStatus(Long id, PaymentStatus status);

@@ -241,19 +241,8 @@ public class OrderService implements OrderUseCase {
     }
 
     @Override
-    public List<Order> getAllOrders(String query, OrderStatus status) {
-        List<Order> orders = orderPort.findAll();
-        
-        return orders.stream()
-                .filter(order -> status == null || order.getStatus() == status)
-                .filter(order -> {
-                    if (query == null || query.trim().isEmpty()) return true;
-                    String q = query.toLowerCase().trim();
-                    boolean matchId = order.getId().toString().contains(q);
-                    boolean matchCustomer = order.getReceiverName() != null && order.getReceiverName().toLowerCase().contains(q);
-                    return matchId || matchCustomer;
-                })
-                .collect(Collectors.toList());
+    public org.springframework.data.domain.Page<Order> getAllOrders(String query, OrderStatus status, org.springframework.data.domain.Pageable pageable) {
+        return orderPort.findAll(query, status, pageable);
     }
 
     @Override

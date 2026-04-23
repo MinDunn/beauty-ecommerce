@@ -1,7 +1,8 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useMemo } from 'react';
 import { X, Package, ArrowRight, History, PhoneCall } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { orderService } from '../../api/orderService';
+import { useAuth } from '../../hooks/useAuth';
 import { toast } from 'react-hot-toast';
 import { cn } from '../../utils/cn';
 import { getFullTimeline } from '../../utils/orderUtils';
@@ -12,25 +13,36 @@ interface OrderLookupModalProps {
 }
 
 export const OrderLookupModal = ({ isOpen, onClose }: OrderLookupModalProps) => {
+  const { user } = useAuth();
   const [orderId, setOrderId] = useState('');
   const [isSearching, setIsSearching] = useState(false);
   const [result, setResult] = useState<any>(null);
   const [history, setHistory] = useState<string[]>([]);
   
+  // Use a stable key for storage based on user ID
+  const storageKey = useMemo(() => {
+    return user?.id ? `order_lookup_history_${user.id}` : 'order_lookup_history_guest';
+  }, [user?.id]);
+
   useEffect(() => {
-    const savedHistory = localStorage.getItem('order_lookup_history');
-    if (savedHistory) {
-      setHistory(JSON.parse(savedHistory));
+    if (isOpen) {
+      const savedHistory = localStorage.getItem(storageKey);
+      if (savedHistory) {
+        setHistory(JSON.parse(savedHistory));
+      } else {
+        setHistory([]);
+      }
     }
-  }, []);
+  }, [isOpen, storageKey]);
 
   const saveToHistory = (id: string) => {
     const cleanId = id.trim().toUpperCase();
     if (!cleanId) return;
     
+    // Maintain max 5 items
     const newHistory = [cleanId, ...history.filter(item => item !== cleanId)].slice(0, 5);
     setHistory(newHistory);
-    localStorage.setItem('order_lookup_history', JSON.stringify(newHistory));
+    localStorage.setItem(storageKey, JSON.stringify(newHistory));
   };
 
   const handleLookup = async (e: React.FormEvent) => {

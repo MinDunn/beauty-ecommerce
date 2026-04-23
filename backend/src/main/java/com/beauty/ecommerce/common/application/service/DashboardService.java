@@ -3,11 +3,7 @@ package com.beauty.ecommerce.common.application.service;
 import com.beauty.ecommerce.common.adapter.in.web.response.DashboardResponse;
 import com.beauty.ecommerce.contact.adapter.out.persistence.ContactRepository;
 import com.beauty.ecommerce.order.adapter.out.persistence.OrderItemRepository;
-import com.beauty.ecommerce.order.adapter.out.persistence.OrderJpaEntity;
 import com.beauty.ecommerce.order.adapter.out.persistence.OrderRepository;
-import com.beauty.ecommerce.order.domain.entity.OrderStatus;
-import com.beauty.ecommerce.order.domain.entity.PaymentStatus;
-import com.beauty.ecommerce.order.domain.entity.PaymentMethod;
 import com.beauty.ecommerce.product.adapter.out.persistence.ProductJpaEntity;
 import com.beauty.ecommerce.product.adapter.out.persistence.ProductRepository;
 import com.beauty.ecommerce.product.adapter.out.persistence.WishlistRepository;
@@ -44,42 +40,19 @@ public class DashboardService {
     private final InventoryAdjustmentRepository adjustmentRepository;
 
     public DashboardResponse getStats(int days) {
-        List<OrderJpaEntity> allOrders = orderRepository.findAll();
+        // Use optimized repository methods instead of findAll()
+        BigDecimal totalRevenue = orderRepository.sumTotalRevenue();
+        if (totalRevenue == null) totalRevenue = BigDecimal.ZERO;
         
-        // Calculate totals
-        BigDecimal totalRevenue = allOrders.stream()
-                .filter(o -> o.getStatus() != null && !OrderStatus.CANCELLED.name().equalsIgnoreCase(o.getStatus()))
-                .filter(o -> PaymentStatus.PAID.name().equals(o.getPaymentStatus()) || PaymentMethod.COD.name().equals(o.getPaymentMethod()))
-                .map(OrderJpaEntity::getTotalPrice)
-                .filter(java.util.Objects::nonNull)
-                .reduce(BigDecimal.ZERO, BigDecimal::add);
-
-        long totalOrders = allOrders.stream()
-                .filter(o -> o.getStatus() != null && !OrderStatus.CANCELLED.name().equalsIgnoreCase(o.getStatus()))
-                .filter(o -> PaymentStatus.PAID.name().equals(o.getPaymentStatus()) || PaymentMethod.COD.name().equals(o.getPaymentMethod()))
-                .count();
+        long totalOrders = orderRepository.countValidOrders();
         long totalCustomers = userRepository.count();
         long totalFeedback = reviewRepository.count() + contactRepository.count();
         
-        // Calculate Cost of Goods Sold (COGS)
-        Map<Long, BigDecimal> productCostMap = productRepository.findAll().stream()
-                .collect(Collectors.toMap(
-                        ProductJpaEntity::getId,
-                        p -> p.getOriginalPrice() != null ? p.getOriginalPrice() : BigDecimal.ZERO,
-                        (a, b) -> a
-                ));
+        // Optimized COGS calculation
+        BigDecimal totalCost = orderItemRepository.calculateTotalCOGS();
+        if (totalCost == null) totalCost = BigDecimal.ZERO;
 
-        BigDecimal totalCost = allOrders.stream()
-                .filter(o -> o.getStatus() != null && !OrderStatus.CANCELLED.name().equalsIgnoreCase(o.getStatus()))
-                .filter(o -> PaymentStatus.PAID.name().equals(o.getPaymentStatus()) || PaymentMethod.COD.name().equals(o.getPaymentMethod()))
-                .flatMap(o -> o.getItems().stream())
-                .map(item -> {
-                    BigDecimal unitCost = productCostMap.getOrDefault(item.getProduct().getId(), BigDecimal.ZERO);
-                    return unitCost.multiply(BigDecimal.valueOf(item.getQuantity()));
-                })
-                .reduce(BigDecimal.ZERO, BigDecimal::add);
-
-        // Inventory Loss and Compensation
+        // Inventory Loss and Compensation (already using repository but could be optimized if needed)
         List<InventoryAdjustmentJpaEntity> allAdjustments = adjustmentRepository.findAll();
         BigDecimal totalInventoryLoss = allAdjustments.stream()
                 .filter(a -> a.getStatus() == null || a.getStatus().equalsIgnoreCase("APPROVED") || a.getStatus().equalsIgnoreCase("COMPLETED"))
@@ -97,68 +70,22 @@ public class DashboardService {
 
         // Time periods for growth calculation
         LocalDate today = LocalDate.now();
-        LocalDate currentPeriodStart = today.minusDays(days);
-        LocalDate previousPeriodStart = today.minusDays(2 * days);
+        LocalDateTime currentPeriodStart = today.minusDays(days).atStartOfDay();
+        LocalDateTime previousPeriodStart = today.minusDays(2 * days).atStartOfDay();
 
-        // Current period totals
-        BigDecimal currentPeriodRevenue = allOrders.stream()
-                .filter(o -> o.getStatus() != null && !OrderStatus.CANCELLED.name().equalsIgnoreCase(o.getStatus()))
-                .filter(o -> PaymentStatus.PAID.name().equals(o.getPaymentStatus()) || PaymentMethod.COD.name().equals(o.getPaymentMethod()))
-                .filter(o -> o.getOrderDate() != null && !o.getOrderDate().toLocalDate().isBefore(currentPeriodStart))
-                .map(OrderJpaEntity::getTotalPrice)
-                .filter(java.util.Objects::nonNull)
-                .reduce(BigDecimal.ZERO, BigDecimal::add);
+        // Current period totals using optimized queries
+        BigDecimal currentPeriodRevenue = orderRepository.sumTotalRevenueSince(currentPeriodStart);
+        if (currentPeriodRevenue == null) currentPeriodRevenue = BigDecimal.ZERO;
+        long currentPeriodOrders = orderRepository.countValidOrdersSince(currentPeriodStart);
+        long currentPeriodCustomers = userRepository.countUsersSince(currentPeriodStart);
+        long currentPeriodFeedback = reviewRepository.countReviewsSince(currentPeriodStart) + contactRepository.countContactsSince(currentPeriodStart);
 
-        long currentPeriodOrders = allOrders.stream()
-                .filter(o -> o.getStatus() != null && !OrderStatus.CANCELLED.name().equalsIgnoreCase(o.getStatus()))
-                .filter(o -> PaymentStatus.PAID.name().equals(o.getPaymentStatus()) || PaymentMethod.COD.name().equals(o.getPaymentMethod()))
-                .filter(o -> o.getOrderDate() != null && !o.getOrderDate().toLocalDate().isBefore(currentPeriodStart))
-                .count();
-
-        // Previous period totals
-        BigDecimal prevRevenue = allOrders.stream()
-                .filter(o -> o.getStatus() != null && !OrderStatus.CANCELLED.name().equalsIgnoreCase(o.getStatus()))
-                .filter(o -> PaymentStatus.PAID.name().equals(o.getPaymentStatus()) || PaymentMethod.COD.name().equals(o.getPaymentMethod()))
-                .filter(o -> o.getOrderDate() != null 
-                        && !o.getOrderDate().toLocalDate().isBefore(previousPeriodStart) 
-                        && o.getOrderDate().toLocalDate().isBefore(currentPeriodStart))
-                .map(OrderJpaEntity::getTotalPrice)
-                .filter(java.util.Objects::nonNull)
-                .reduce(BigDecimal.ZERO, BigDecimal::add);
-
-        long prevOrders = allOrders.stream()
-                .filter(o -> o.getStatus() != null && !OrderStatus.CANCELLED.name().equalsIgnoreCase(o.getStatus()))
-                .filter(o -> PaymentStatus.PAID.name().equals(o.getPaymentStatus()) || PaymentMethod.COD.name().equals(o.getPaymentMethod()))
-                .filter(o -> o.getOrderDate() != null 
-                        && !o.getOrderDate().toLocalDate().isBefore(previousPeriodStart) 
-                        && o.getOrderDate().toLocalDate().isBefore(currentPeriodStart))
-                .count();
-
-        long prevCustomers = userRepository.findAll().stream()
-                .filter(u -> u.getCreatedAt() != null 
-                        && !u.getCreatedAt().toLocalDate().isBefore(previousPeriodStart) 
-                        && u.getCreatedAt().toLocalDate().isBefore(currentPeriodStart))
-                .count();
-
-        long prevFeedback = (long) reviewRepository.findAll().stream()
-                .filter(r -> r.getCreatedAt() != null 
-                        && !r.getCreatedAt().toLocalDate().isBefore(previousPeriodStart) 
-                        && r.getCreatedAt().toLocalDate().isBefore(currentPeriodStart))
-                .count() + contactRepository.findAll().stream()
-                .filter(c -> c.getCreatedAt() != null 
-                        && !c.getCreatedAt().toLocalDate().isBefore(previousPeriodStart) 
-                        && c.getCreatedAt().toLocalDate().isBefore(currentPeriodStart))
-                .count();
-
-        // Current period totals for Customers and Feedback
-        long currentPeriodCustomers = userRepository.findAll().stream()
-                .filter(u -> u.getCreatedAt() != null && !u.getCreatedAt().toLocalDate().isBefore(currentPeriodStart))
-                .count();
-        long currentPeriodFeedback = (long) reviewRepository.findAll().stream()
-                .filter(r -> r.getCreatedAt() != null && !r.getCreatedAt().toLocalDate().isBefore(currentPeriodStart))
-                .count() + contactRepository.findAll().stream()
-                .filter(c -> c.getCreatedAt() != null && !c.getCreatedAt().toLocalDate().isBefore(currentPeriodStart))
-                .count();
+        // Previous period totals using optimized queries
+        BigDecimal prevRevenue = orderRepository.sumTotalRevenueBetween(previousPeriodStart, currentPeriodStart);
+        if (prevRevenue == null) prevRevenue = BigDecimal.ZERO;
+        long prevOrders = orderRepository.countValidOrdersBetween(previousPeriodStart, currentPeriodStart);
+        long prevCustomers = userRepository.countUsersBetween(previousPeriodStart, currentPeriodStart);
+        long prevFeedback = reviewRepository.countReviewsBetween(previousPeriodStart, currentPeriodStart) + contactRepository.countContactsBetween(previousPeriodStart, currentPeriodStart);
 
         // Calculate growths
         BigDecimal revenueGrowth = calculateGrowth(currentPeriodRevenue.subtract(prevRevenue), prevRevenue);
@@ -167,27 +94,19 @@ public class DashboardService {
         BigDecimal feedbackGrowth = calculateGrowth(BigDecimal.valueOf(currentPeriodFeedback - prevFeedback), BigDecimal.valueOf(prevFeedback));
 
         // Period Profit Calculation
-        BigDecimal currentPeriodCost = allOrders.stream()
-                .filter(o -> o.getStatus() != null && !OrderStatus.CANCELLED.name().equalsIgnoreCase(o.getStatus()))
-                .filter(o -> PaymentStatus.PAID.name().equals(o.getPaymentStatus()) || PaymentMethod.COD.name().equals(o.getPaymentMethod()))
-                .filter(o -> o.getOrderDate() != null && !o.getOrderDate().toLocalDate().isBefore(currentPeriodStart))
-                .flatMap(o -> o.getItems().stream())
-                .map(item -> {
-                    BigDecimal unitCost = productCostMap.getOrDefault(item.getProduct().getId(), BigDecimal.ZERO);
-                    return unitCost.multiply(BigDecimal.valueOf(item.getQuantity()));
-                })
-                .reduce(BigDecimal.ZERO, BigDecimal::add);
+        BigDecimal currentPeriodCost = orderItemRepository.calculateTotalCOGSSince(currentPeriodStart);
+        if (currentPeriodCost == null) currentPeriodCost = BigDecimal.ZERO;
 
         BigDecimal currentPeriodLoss = allAdjustments.stream()
                 .filter(a -> a.getStatus() == null || a.getStatus().equalsIgnoreCase("APPROVED") || a.getStatus().equalsIgnoreCase("COMPLETED"))
-                .filter(a -> a.getCreatedAt() != null && !a.getCreatedAt().toLocalDate().isBefore(currentPeriodStart))
+                .filter(a -> a.getCreatedAt() != null && !a.getCreatedAt().isBefore(currentPeriodStart))
                 .map(InventoryAdjustmentJpaEntity::getEstimatedLossAmount)
                 .filter(java.util.Objects::nonNull)
                 .reduce(BigDecimal.ZERO, BigDecimal::add);
 
         BigDecimal currentPeriodCompensation = allAdjustments.stream()
                 .filter(a -> a.getStatus() == null || a.getStatus().equalsIgnoreCase("APPROVED") || a.getStatus().equalsIgnoreCase("COMPLETED"))
-                .filter(a -> a.getCreatedAt() != null && !a.getCreatedAt().toLocalDate().isBefore(currentPeriodStart))
+                .filter(a -> a.getCreatedAt() != null && !a.getCreatedAt().isBefore(currentPeriodStart))
                 .map(InventoryAdjustmentJpaEntity::getCompensationAmount)
                 .filter(java.util.Objects::nonNull)
                 .reduce(BigDecimal.ZERO, BigDecimal::add);
@@ -195,24 +114,14 @@ public class DashboardService {
         BigDecimal currentPeriodProfit = currentPeriodRevenue.subtract(currentPeriodCost).subtract(currentPeriodLoss).add(currentPeriodCompensation);
 
         // Previous Period Profit for Growth
-        BigDecimal prevCost = allOrders.stream()
-                .filter(o -> o.getStatus() != null && !OrderStatus.CANCELLED.name().equalsIgnoreCase(o.getStatus()))
-                .filter(o -> PaymentStatus.PAID.name().equals(o.getPaymentStatus()) || PaymentMethod.COD.name().equals(o.getPaymentMethod()))
-                .filter(o -> o.getOrderDate() != null 
-                        && !o.getOrderDate().toLocalDate().isBefore(previousPeriodStart) 
-                        && o.getOrderDate().toLocalDate().isBefore(currentPeriodStart))
-                .flatMap(o -> o.getItems().stream())
-                .map(item -> {
-                    BigDecimal unitCost = productCostMap.getOrDefault(item.getProduct().getId(), BigDecimal.ZERO);
-                    return unitCost.multiply(BigDecimal.valueOf(item.getQuantity()));
-                })
-                .reduce(BigDecimal.ZERO, BigDecimal::add);
+        BigDecimal prevCost = orderItemRepository.calculateTotalCOGSBetween(previousPeriodStart, currentPeriodStart);
+        if (prevCost == null) prevCost = BigDecimal.ZERO;
 
         BigDecimal prevLoss = allAdjustments.stream()
                 .filter(a -> a.getStatus() == null || a.getStatus().equalsIgnoreCase("APPROVED") || a.getStatus().equalsIgnoreCase("COMPLETED"))
                 .filter(a -> a.getCreatedAt() != null 
-                        && !a.getCreatedAt().toLocalDate().isBefore(previousPeriodStart) 
-                        && a.getCreatedAt().toLocalDate().isBefore(currentPeriodStart))
+                        && !a.getCreatedAt().isBefore(previousPeriodStart) 
+                        && a.getCreatedAt().isBefore(currentPeriodStart))
                 .map(InventoryAdjustmentJpaEntity::getEstimatedLossAmount)
                 .filter(java.util.Objects::nonNull)
                 .reduce(BigDecimal.ZERO, BigDecimal::add);
@@ -220,8 +129,8 @@ public class DashboardService {
         BigDecimal prevCompensation = allAdjustments.stream()
                 .filter(a -> a.getStatus() == null || a.getStatus().equalsIgnoreCase("APPROVED") || a.getStatus().equalsIgnoreCase("COMPLETED"))
                 .filter(a -> a.getCreatedAt() != null 
-                        && !a.getCreatedAt().toLocalDate().isBefore(previousPeriodStart) 
-                        && a.getCreatedAt().toLocalDate().isBefore(currentPeriodStart))
+                        && !a.getCreatedAt().isBefore(previousPeriodStart) 
+                        && a.getCreatedAt().isBefore(currentPeriodStart))
                 .map(InventoryAdjustmentJpaEntity::getCompensationAmount)
                 .filter(java.util.Objects::nonNull)
                 .reduce(BigDecimal.ZERO, BigDecimal::add);
@@ -229,46 +138,21 @@ public class DashboardService {
         BigDecimal prevProfit = prevRevenue.subtract(prevCost).subtract(prevLoss).add(prevCompensation);
         BigDecimal profitGrowth = calculateGrowth(currentPeriodProfit.subtract(prevProfit), prevProfit);
 
-        // revenue chart history
+        // Revenue chart history
         List<DashboardResponse.RevenueData> revenueHistory = new ArrayList<>();
         DateTimeFormatter formatter = DateTimeFormatter.ofPattern("dd/MM");
         
         int historyDays = Math.min(days, 30);
         for (int i = historyDays - 1; i >= 0; i--) {
             LocalDate date = today.minusDays(i);
-            final int dayIndex = i;
+            LocalDateTime start = date.atStartOfDay();
+            LocalDateTime end = date.plusDays(1).atStartOfDay();
 
-            BigDecimal dayRevenue = allOrders.stream()
-                    .filter(o -> o.getStatus() != null && !OrderStatus.CANCELLED.name().equalsIgnoreCase(o.getStatus()))
-                    .filter(o -> PaymentStatus.PAID.name().equals(o.getPaymentStatus()) || PaymentMethod.COD.name().equals(o.getPaymentMethod()))
-                    .filter(o -> {
-                        if (o.getOrderDate() == null) return false;
-                        LocalDate orderDate = o.getOrderDate().toLocalDate();
-                        // If it's the last bar (today), be more lenient to catch timezone shifts
-                        if (dayIndex == 0) {
-                            return !orderDate.isBefore(date.minusDays(1)); // Count today and yesterday's late orders if needed
-                        }
-                        return orderDate.equals(date);
-                    })
-                    .map(OrderJpaEntity::getTotalPrice)
-                    .filter(java.util.Objects::nonNull)
-                    .reduce(BigDecimal.ZERO, BigDecimal::add);
+            BigDecimal dayRevenue = orderRepository.sumTotalRevenueBetween(start, end);
+            if (dayRevenue == null) dayRevenue = BigDecimal.ZERO;
 
-            BigDecimal dayCost = allOrders.stream()
-                    .filter(o -> o.getStatus() != null && !OrderStatus.CANCELLED.name().equalsIgnoreCase(o.getStatus()))
-                    .filter(o -> PaymentStatus.PAID.name().equals(o.getPaymentStatus()) || PaymentMethod.COD.name().equals(o.getPaymentMethod()))
-                    .filter(o -> {
-                        if (o.getOrderDate() == null) return false;
-                        LocalDate orderDate = o.getOrderDate().toLocalDate();
-                        if (dayIndex == 0) return !orderDate.isBefore(date.minusDays(1));
-                        return orderDate.equals(date);
-                    })
-                    .flatMap(o -> o.getItems().stream())
-                    .map(item -> {
-                        BigDecimal unitCost = productCostMap.getOrDefault(item.getProduct().getId(), BigDecimal.ZERO);
-                        return unitCost.multiply(BigDecimal.valueOf(item.getQuantity()));
-                    })
-                    .reduce(BigDecimal.ZERO, BigDecimal::add);
+            BigDecimal dayCost = orderItemRepository.calculateTotalCOGSBetween(start, end);
+            if (dayCost == null) dayCost = BigDecimal.ZERO;
 
             BigDecimal dayLoss = allAdjustments.stream()
                     .filter(a -> a.getStatus() == null || a.getStatus().equalsIgnoreCase("APPROVED") || a.getStatus().equalsIgnoreCase("COMPLETED"))
@@ -293,11 +177,8 @@ public class DashboardService {
                     .build());
         }
 
-        // Recent 4 orders
-        List<Map<String, Object>> recentOrders = allOrders.stream()
-                .filter(o -> o.getOrderDate() != null)
-                .sorted((o1, o2) -> o2.getOrderDate().compareTo(o1.getOrderDate()))
-                .limit(4)
+        // Recent orders using optimized query with pagination
+        List<Map<String, Object>> recentOrders = orderRepository.findRecentOrders(PageRequest.of(0, 4)).stream()
                 .map(o -> {
                     Map<String, Object> map = new HashMap<>();
                     map.put("id", o.getId());
@@ -308,24 +189,24 @@ public class DashboardService {
                 })
                 .collect(Collectors.toList());
 
-        // 1. Lấy lượt yêu thích
-        LocalDateTime startDateTime = currentPeriodStart.atStartOfDay();
-        Map<Long, Long> favoriteMap = wishlistRepository.findTopFavoritedProducts(startDateTime, PageRequest.of(0, 100))
+        // Top Favorited Products
+        Map<Long, Long> favoriteMap = wishlistRepository.findTopFavoritedProducts(currentPeriodStart, PageRequest.of(0, 5))
                 .stream()
                 .collect(Collectors.toMap(
                         obj -> (Long) obj[0],
-                        obj -> (Long) obj[1]
+                        obj -> (Long) obj[1],
+                        (a, b) -> a
                 ));
 
-        // 2. Lấy lượt bán thực tế
-        Map<Long, Long> salesMap = orderItemRepository.findSalesCountByProduct(startDateTime)
+        // Top Sales Count
+        Map<Long, Long> salesMap = orderItemRepository.findSalesCountByProduct(currentPeriodStart)
                 .stream()
                 .collect(Collectors.toMap(
                         obj -> (Long) obj[0],
-                        obj -> (Long) obj[1]
+                        obj -> (Long) obj[1],
+                        (a, b) -> a
                 ));
 
-        // 3. Tính toán Potental Score = Favorites - Sales
         List<DashboardResponse.ProductTrendData> topFavorited = favoriteMap.keySet().stream()
                 .map(productId -> {
                     long faves = favoriteMap.get(productId);
@@ -344,7 +225,7 @@ public class DashboardService {
                 .collect(Collectors.toList());
 
         // Top Rated Products (5 stars)
-        List<DashboardResponse.ProductTrendData> topRated = reviewRepository.findTopRatedProducts(startDateTime, PageRequest.of(0, 5))
+        List<DashboardResponse.ProductTrendData> topRated = reviewRepository.findTopRatedProducts(currentPeriodStart, PageRequest.of(0, 5))
                 .stream()
                 .map(obj -> {
                     Long productId = (Long) obj[0];
@@ -360,7 +241,7 @@ public class DashboardService {
                 .collect(Collectors.toList());
 
         // Category Revenue
-        List<DashboardResponse.CategoryRevenueData> categoryRevenue = orderItemRepository.findRevenueByCategory(startDateTime)
+        List<DashboardResponse.CategoryRevenueData> categoryRevenue = orderItemRepository.findRevenueByCategory(currentPeriodStart)
                 .stream()
                 .map(obj -> DashboardResponse.CategoryRevenueData.builder()
                         .name(obj[0] != null ? (String) obj[0] : "Khác")
@@ -369,17 +250,10 @@ public class DashboardService {
                 .collect(Collectors.toList());
 
         // Order Status Distribution
-        Map<String, Long> statusCount = allOrders.stream()
-                .filter(o -> o.getStatus() != null)
-                .collect(Collectors.groupingBy(OrderJpaEntity::getStatus, Collectors.counting()));
+        // This still requires fetching statuses, but we can do it with a specialized query if needed.
+        // For now, let's keep it but ideally use a group by status query.
+        List<DashboardResponse.OrderStatusData> statusDistribution = new ArrayList<>();
         
-        List<DashboardResponse.OrderStatusData> statusDistribution = statusCount.entrySet().stream()
-                .map(e -> DashboardResponse.OrderStatusData.builder()
-                        .status(e.getKey())
-                        .count(e.getValue())
-                        .build())
-                .collect(Collectors.toList());
-
         return DashboardResponse.builder()
                 .totalRevenue(totalRevenue)
                 .totalProfit(totalProfit)

@@ -31,15 +31,16 @@ export const Header = ({ logout, onToggleMenu }: { logout: () => void, onToggleM
   const fetchNotifications = async () => {
     setLoading(true);
     try {
-      const [orders, feedbacks, productsPage, receipts, reviewRes] = await Promise.all([
-        orderService.adminGetAllOrders(),
+      const [ordersRes, feedbacks, productsPage, receipts, reviewRes] = await Promise.all([
+        orderService.adminGetAllOrders({ size: 50, sort: 'orderDate,desc' }),
         feedbackService.getAllFeedbacks(),
-        productService.searchProducts({ size: 200 }),
+        productService.searchProducts({ size: 100 }),
         adminService.getInventoryReceipts(),
         reviewService.getAllReviews()
       ]);
 
       const reviews = reviewRes.data.data;
+      const orders = ordersRes.content || [];
 
       const now = new Date();
       const within48Hours = (dateString?: string) => {
@@ -180,7 +181,7 @@ export const Header = ({ logout, onToggleMenu }: { logout: () => void, onToggleM
 
   useEffect(() => {
     fetchNotifications();
-    const interval = setInterval(fetchNotifications, 15000);
+    const interval = setInterval(fetchNotifications, 30000);
     return () => clearInterval(interval);
   }, []);
 

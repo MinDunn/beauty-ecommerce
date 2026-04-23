@@ -24,4 +24,10 @@ public interface ReviewRepository extends JpaRepository<ReviewJpaEntity, Long> {
            "GROUP BY r.productId " +
            "ORDER BY reviewCount DESC")
     List<Object[]> findTopRatedProducts(java.time.LocalDateTime startDate, org.springframework.data.domain.Pageable pageable);
+
+    @org.springframework.data.jpa.repository.Query("SELECT COUNT(r) FROM ReviewJpaEntity r WHERE r.createdAt >= :startDate")
+    long countReviewsSince(@org.springframework.data.repository.query.Param("startDate") java.time.LocalDateTime startDate);
+
+    @org.springframework.data.jpa.repository.Query("SELECT COUNT(r) FROM ReviewJpaEntity r WHERE r.createdAt >= :startDate AND r.createdAt < :endDate")
+    long countReviewsBetween(@org.springframework.data.repository.query.Param("startDate") java.time.LocalDateTime startDate, @org.springframework.data.repository.query.Param("endDate") java.time.LocalDateTime endDate);
 }

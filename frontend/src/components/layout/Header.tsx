@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useMemo } from 'react';
 import { Link, useNavigate, useLocation } from 'react-router-dom';
 import { useSelector } from 'react-redux';
 import {
@@ -11,7 +11,8 @@ import {
   User,
   Heart,
   ChevronDown,
-  BookOpen
+  BookOpen,
+  History
 } from 'lucide-react';
 import type { RootState } from '../../store';
 import { useAuth } from '../../hooks/useAuth';
@@ -28,7 +29,30 @@ export const Header = () => {
   const [isMenuOpen, setIsMenuOpen] = useState(false);
   const [isOrderLookupOpen, setIsOrderLookupOpen] = useState(false);
   const [searchQuery, setSearchQuery] = useState('');
+  const [isSearchFocused, setIsSearchFocused] = useState(false);
+  const [searchHistory, setSearchHistory] = useState<string[]>([]);
   const [expandedCategoryId, setExpandedCategoryId] = useState<number | null>(null);
+
+  const productSearchHistoryKey = useMemo(() => {
+    return user?.id ? `product_search_history_${user.id}` : 'product_search_history_guest';
+  }, [user?.id]);
+
+  useEffect(() => {
+    const saved = localStorage.getItem(productSearchHistoryKey);
+    if (saved) {
+      setSearchHistory(JSON.parse(saved));
+    } else {
+      setSearchHistory([]);
+    }
+  }, [productSearchHistoryKey]);
+
+  const saveSearchToHistory = (query: string) => {
+    const trimmed = query.trim();
+    if (!trimmed) return;
+    const newHistory = [trimmed, ...searchHistory.filter(h => h !== trimmed)].slice(0, 5);
+    setSearchHistory(newHistory);
+    localStorage.setItem(productSearchHistoryKey, JSON.stringify(newHistory));
+  };
 
   const handleLogout = async () => {
     await logout();
@@ -38,8 +62,10 @@ export const Header = () => {
   const handleSearch = (e: React.FormEvent) => {
     e.preventDefault();
     if (searchQuery.trim()) {
+      saveSearchToHistory(searchQuery);
       navigate(`/search?q=${encodeURIComponent(searchQuery)}`);
       setIsMenuOpen(false);
+      setIsSearchFocused(false);
     }
   };
 
@@ -112,6 +138,8 @@ export const Header = () => {
                 type="text"
                 value={searchQuery}
                 onChange={(e: any) => setSearchQuery(e.target.value)}
+                onFocus={() => setIsSearchFocused(true)}
+                onBlur={() => setTimeout(() => setIsSearchFocused(false), 200)}
                 placeholder="Tìm kiếm sản phẩm, thương hiệu..."
                 className="w-full pl-4 pr-12 py-2 bg-white border border-primary-100 rounded-full focus:ring-2 focus:ring-primary-500 transition-all outline-none text-sm"
               />
@@ -119,6 +147,43 @@ export const Header = () => {
                 <Search size={18} />
               </button>
             </form>
+
+            {/* Search History Dropdown */}
+            {isSearchFocused && searchHistory.length > 0 && (
+              <div className="absolute top-full left-0 right-0 mt-2 bg-white border border-gray-100 rounded-2xl shadow-2xl overflow-hidden z-[100] animate-in fade-in slide-in-from-top-2 duration-200">
+                <div className="px-4 py-2 border-b border-gray-50 flex items-center justify-between">
+                  <span className="text-[10px] font-black uppercase tracking-widest text-gray-400">Tìm kiếm gần đây</span>
+                  <button 
+                    onMouseDown={(e) => {
+                      e.preventDefault();
+                      setSearchHistory([]);
+                      localStorage.removeItem(productSearchHistoryKey);
+                    }}
+                    className="text-[9px] font-bold text-rose-500 hover:underline"
+                  >
+                    Xóa tất cả
+                  </button>
+                </div>
+                <div className="py-1">
+                  {searchHistory.map((h, i) => (
+                    <button
+                      key={i}
+                      onMouseDown={(e) => {
+                        e.preventDefault();
+                        setSearchQuery(h);
+                        navigate(`/search?q=${encodeURIComponent(h)}`);
+                        setIsSearchFocused(false);
+                        saveSearchToHistory(h);
+                      }}
+                      className="w-full px-4 py-2.5 flex items-center gap-3 text-sm text-gray-600 hover:bg-gray-50 transition-colors text-left"
+                    >
+                      <History size={14} className="text-gray-400" />
+                      <span className="flex-1 truncate">{h}</span>
+                    </button>
+                  ))}
+                </div>
+              </div>
+            )}
           </div>
 
           {/* User Actions & Utility Links */}

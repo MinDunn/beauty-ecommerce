@@ -9,6 +9,8 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
 import java.math.BigDecimal;
 import java.util.List;
 import java.util.stream.Collectors;
@@ -21,12 +23,12 @@ public class AdminOrderController {
     private final OrderUseCase orderUseCase;
 
     @GetMapping
-    public ResponseEntity<List<OrderResponse>> getAllOrders(
+    public ResponseEntity<Page<OrderResponse>> getAllOrders(
             @RequestParam(required = false) String search,
-            @RequestParam(required = false) OrderStatus status) {
-        List<OrderResponse> response = orderUseCase.getAllOrders(search, status).stream()
-                .map(this::mapToResponse)
-                .collect(Collectors.toList());
+            @RequestParam(required = false) OrderStatus status,
+            Pageable pageable) {
+        Page<OrderResponse> response = orderUseCase.getAllOrders(search, status, pageable)
+                .map(this::mapToResponse);
         return ResponseEntity.ok(response);
     }
 

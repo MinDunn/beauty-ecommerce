@@ -8,7 +8,7 @@ import java.util.List;
 public interface OrderUseCase {
     Order placeOrder(PlaceOrderCommand command);
     List<Order> getOrderHistory(String email);
-    List<Order> getAllOrders(String query, OrderStatus status);
+    org.springframework.data.domain.Page<Order> getAllOrders(String query, OrderStatus status, org.springframework.data.domain.Pageable pageable);
     void updateOrderStatus(Long orderId, OrderStatus status);
     void updateOrdersStatus(List<Long> orderIds, OrderStatus status);
     void updatePaymentStatus(Long orderId, PaymentStatus status);

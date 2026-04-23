@@ -16,6 +16,11 @@ import org.springframework.transaction.annotation.Transactional;
 import java.util.List;
 import java.util.Optional;
 import java.util.stream.Collectors;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
+import org.springframework.data.jpa.domain.Specification;
+import jakarta.persistence.criteria.Predicate;
+import java.util.ArrayList;
 
 @Component
 @RequiredArgsConstructor
@@ -80,6 +85,30 @@ public class OrderPersistenceAdapter implements OrderPort {
         return orderRepository.findAllByOrderByOrderDateDesc().stream()
                 .map(orderMapper::mapToDomainEntity)
                 .collect(Collectors.toList());
+    }
+
+    @Override
+    public Page<Order> findAll(String query, OrderStatus status, Pageable pageable) {
+        Specification<OrderJpaEntity> spec = (root, q, cb) -> {
+            List<Predicate> predicates = new ArrayList<>();
+            
+            if (status != null) {
+                predicates.add(cb.equal(root.get("status"), status.name()));
+            }
+            
+            if (query != null && !query.trim().isEmpty()) {
+                String search = "%" + query.toLowerCase().trim() + "%";
+                predicates.add(cb.or(
+                    cb.like(cb.lower(root.get("id").as(String.class)), search),
+                    cb.like(cb.lower(root.get("receiverName")), search),
+                    cb.like(cb.lower(root.get("receiverPhone")), search)
+                ));
+            }
+            
+            return cb.and(predicates.toArray(new Predicate[0]));
+        };
+        
+        return orderRepository.findAll(spec, pageable).map(orderMapper::mapToDomainEntity);
     }
 
     @Override

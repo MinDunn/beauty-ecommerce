@@ -26,7 +26,7 @@ export const orderService = {
     });
     return response.data;
   },
-  adminGetAllOrders: async (params?: { search?: string; status?: string }) => {
+  adminGetAllOrders: async (params?: { search?: string; status?: string; page?: number; size?: number; sort?: string }) => {
     const response = await axiosInstance.get('/admin/orders', { params });
     return response.data;
   },
