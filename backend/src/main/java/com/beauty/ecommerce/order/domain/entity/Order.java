@@ -16,12 +16,14 @@ public class Order {
     private Long userId;
     private LocalDateTime orderDate;
     private BigDecimal totalPrice;
+    private BigDecimal shippingFee;
     private OrderStatus status;
     private PaymentMethod paymentMethod;
     private PaymentStatus paymentStatus;
     private String receiverName;
     private String receiverPhone;
     private String shippingAddress;
+    private String province;
     private String paymentTransactionId;
     private String cancelReason;
     private boolean vatRequested;

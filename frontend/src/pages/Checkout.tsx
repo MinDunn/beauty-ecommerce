@@ -3,21 +3,7 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { Link, useNavigate } from 'react-router-dom';
 import type { AxiosError } from 'axios';
 import { 
-  ShieldCheck, 
-  ArrowRight, 
-  MapPin, 
-  CreditCard, 
-  Wallet, 
-  Banknote, 
-  ChevronRight, 
-  Check,
-  ChevronLeft,
-  Truck,
-  Ticket,
-  Minus,
-  Plus,
-  Trash2,
-  ReceiptText
+  Truck, MapPin, ReceiptText, ChevronLeft, CreditCard, Ticket, Check, ChevronRight, Wallet, Banknote, Minus, Plus, Trash2, ArrowRight, ShieldCheck
 } from 'lucide-react';
 import { useSelector, useDispatch } from 'react-redux';
 import type { RootState } from '../store';
@@ -33,6 +19,8 @@ import { updateUser } from '../store/slices/authSlice';
 import { cartService } from '../api/cartService';
 import { VoucherDrawer } from '../components/checkout/VoucherDrawer';
 import PaymentSecurity from '../components/checkout/PaymentSecurity';
+import { VIETNAM_LOCATIONS } from '../data/vietnam-locations';
+import { settingService } from '../api/settingService';
 
 const STAGES = [
   { id: 1, name: 'Vận chuyển', icon: Truck },
@@ -57,8 +45,27 @@ const Checkout = () => {
     receiverName: user?.fullName || '',
     receiverPhone: user?.phone || '',
     shippingAddress: user?.address || '',
+    province: user?.province || '',
     note: ''
   });
+
+  const [shippingRates, setShippingRates] = useState<Record<string, string>>({
+    SHIPPING_FEE_CITY: '20000',
+    SHIPPING_FEE_PROVINCE: '35000',
+    SHIPPING_FREE_THRESHOLD: '500000'
+  });
+
+  useEffect(() => {
+    const fetchRates = async () => {
+      try {
+        const rates = await settingService.getShippingSettings();
+        if (rates) setShippingRates(rates);
+      } catch (error) {
+        console.error("Failed to fetch shipping rates", error);
+      }
+    };
+    fetchRates();
+  }, []);
 
   const [vatInfo, setVatInfo] = useState({
     wantsVat: false,
@@ -159,7 +166,16 @@ const Checkout = () => {
   };
 
   // Summary Calculations
-  const shippingFee = useMemo(() => subTotal > 500000 ? 0 : 25000, [subTotal]);
+  const shippingFee = useMemo(() => {
+    const threshold = Number(shippingRates.SHIPPING_FREE_THRESHOLD || 500000);
+    if (subTotal >= threshold) return 0;
+    
+    if (!shippingInfo.province) return 0; // Default to 0 until province selected
+
+    const location = VIETNAM_LOCATIONS.find(l => l.id === shippingInfo.province);
+    const rateKey = location?.type === 'CITY' ? 'SHIPPING_FEE_CITY' : 'SHIPPING_FEE_PROVINCE';
+    return Number(shippingRates[rateKey] || (location?.type === 'CITY' ? 20000 : 35000));
+  }, [subTotal, shippingInfo.province, shippingRates]);
   
   const discount = useMemo(() => {
     if (!appliedCoupon) return 0;
@@ -209,7 +225,7 @@ const Checkout = () => {
 
   const handleNext = () => {
     if (currentStep === 1) {
-      if (!shippingInfo.receiverName || !shippingInfo.receiverPhone || !shippingInfo.shippingAddress) {
+      if (!shippingInfo.receiverName || !shippingInfo.receiverPhone || !shippingInfo.province || !shippingInfo.shippingAddress) {
         toast.error('Vui lòng điền đầy đủ thông tin vận chuyển');
         return;
       }
@@ -235,8 +251,10 @@ const Checkout = () => {
         receiverName: shippingInfo.receiverName,
         receiverPhone: shippingInfo.receiverPhone,
         shippingAddress: shippingInfo.shippingAddress,
+        province: VIETNAM_LOCATIONS.find(l => l.id === shippingInfo.province)?.name || '',
         paymentMethod: paymentMethod,
         couponCode: appliedCoupon?.code || undefined,
+        shippingFee: shippingFee,
         checkoutItems: selectedItems.map(item => ({
           productId: Number(item.id),
           variantName: item.variantName || null
@@ -364,7 +382,25 @@ const Checkout = () => {
                            placeholder="09xxx..." 
                          />
                        </div>
-                       <div className="space-y-2 md:col-span-2">
+                        <div className="space-y-2 md:col-span-2">
+                           <label className="text-xs font-black text-slate-400 uppercase tracking-widest ml-1">Tỉnh / Thành phố</label>
+                           <div className="relative group">
+                             <select
+                               value={shippingInfo.province}
+                               onChange={(e) => setShippingInfo({...shippingInfo, province: e.target.value})}
+                               className="w-full px-6 py-4 bg-gray-50 border-2 border-transparent focus:border-primary-500 focus:bg-white rounded-2xl outline-none transition-all font-bold appearance-none cursor-pointer"
+                             >
+                               <option value="">Chọn Tỉnh / Thành phố...</option>
+                               {VIETNAM_LOCATIONS.map(loc => (
+                                 <option key={loc.id} value={loc.id}>{loc.name}</option>
+                               ))}
+                             </select>
+                             <div className="absolute right-6 top-1/2 -translate-y-1/2 pointer-events-none text-slate-400 group-focus-within:text-primary-500 transition-colors">
+                               <ChevronRight size={20} className="rotate-90" />
+                             </div>
+                           </div>
+                        </div>
+                        <div className="space-y-2 md:col-span-2">
                          <label className="text-xs font-black text-slate-400 uppercase tracking-widest ml-1">Địa chỉ nhận hàng cụ thể</label>
                          <input 
                            type="text" 

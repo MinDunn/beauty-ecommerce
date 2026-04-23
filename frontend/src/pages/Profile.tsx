@@ -1,6 +1,6 @@
 import { useState, useEffect, useRef } from 'react';
 import { useSelector, useDispatch } from 'react-redux';
-import { User, Mail, Lock, Phone, MapPin, Package, Settings, ChevronRight, Camera, LogOut, Heart, Sparkles, AlertTriangle, ReceiptText, FileText } from 'lucide-react';
+import { User, Mail, Lock, Phone, MapPin, Package, Settings, ChevronRight, Camera, LogOut, Heart, Sparkles, AlertTriangle, ReceiptText, FileText, Home } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import type { RootState } from '../store';
 import { logout as logoutAction, updateUser } from '../store/slices/authSlice';
@@ -16,6 +16,7 @@ import { ProductCard } from '../components/ui/ProductCard';
 import { upsertItem, selectOnlyItems } from '../store/slices/cartSlice';
 import { getFullTimeline } from '../utils/orderUtils';
 import socketService from '../api/socketService';
+import { VIETNAM_LOCATIONS } from '../data/vietnam-locations';
 
 const Profile = () => {
   const { user } = useSelector((state: RootState) => state.auth);
@@ -34,6 +35,7 @@ const Profile = () => {
     fullName: '',
     phone: '',
     address: '',
+    province: '',
     marketingConsent: false
   });
 
@@ -67,6 +69,7 @@ const Profile = () => {
         fullName: resp.data.data.fullName || '',
         phone: resp.data.data.phone || '',
         address: resp.data.data.address || '',
+        province: resp.data.data.province || '',
         marketingConsent: resp.data.data.marketingConsent || false
       });
     } catch (error) {
@@ -504,9 +507,15 @@ const Profile = () => {
                         {order.status === 'DELIVERED' ? 'Mua lại' : 'Mua thêm đơn nữa'}
                       </button>
 
-                      <div className="pl-4 border-l border-gray-100">
-                        <p className="text-[8px] font-black text-primary-500 uppercase tracking-widest mb-0.5">Tổng thanh toán</p>
-                        <p className="text-xl font-black text-slate-900 tracking-tighter">{(order.totalPrice || 0).toLocaleString()}đ</p>
+                      <div className="pl-4 border-l border-gray-100 text-right">
+                        <div className="flex flex-col items-end">
+                           <div className="flex gap-4 text-[9px] font-bold text-gray-400 uppercase tracking-widest mb-1">
+                              <span>Phí ship:</span>
+                              <span className="text-slate-600">{(order.shippingFee || 0).toLocaleString()}đ</span>
+                           </div>
+                           <p className="text-[8px] font-black text-primary-500 uppercase tracking-widest mb-0.5">Tổng thanh toán</p>
+                           <p className="text-xl font-black text-slate-900 tracking-tighter">{(order.totalPrice || 0).toLocaleString()}đ</p>
+                        </div>
                       </div>
                    </div>
                 </div>
@@ -797,16 +806,32 @@ const Profile = () => {
                        </div>
                     </div>
                     <div className="space-y-2 md:col-span-2">
-                       <label className="text-[10px] font-black text-gray-400 uppercase tracking-widest ml-1">Địa chỉ giao hàng mặc định</label>
+                       <label className="text-[10px] font-black text-gray-400 uppercase tracking-widest ml-1">Tỉnh / Thành phố</label>
+                       <div className="relative">
+                        <select
+                          value={formData.province}
+                          onChange={(e) => setFormData({...formData, province: e.target.value})}
+                          className="glowzy-input pl-12 appearance-none cursor-pointer"
+                        >
+                          <option value="">Chọn Tỉnh / Thành phố...</option>
+                          {VIETNAM_LOCATIONS.map(loc => (
+                            <option key={loc.id} value={loc.id}>{loc.name}</option>
+                          ))}
+                        </select>
+                        <MapPin className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-400" size={20} />
+                       </div>
+                    </div>
+                    <div className="space-y-2 md:col-span-2">
+                       <label className="text-[10px] font-black text-gray-400 uppercase tracking-widest ml-1">Địa chỉ giao hàng cụ thể</label>
                        <div className="relative">
                         <textarea 
                           rows={2} 
                           value={formData.address}
                           onChange={(e) => setFormData({...formData, address: e.target.value})}
-                          placeholder="Vui lòng điền địa chỉ để nhận hàng" 
+                          placeholder="Số nhà, tên đường, phường/xã..." 
                           className="glowzy-input pl-12 resize-none" 
                         />
-                        <MapPin className="absolute left-4 top-6 text-gray-400" size={20} />
+                        <Home className="absolute left-4 top-6 text-gray-400" size={20} />
                        </div>
                     </div>
                     <div className="md:col-span-2 pt-4">

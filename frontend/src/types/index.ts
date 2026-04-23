@@ -60,6 +60,7 @@ export type Order = {
   id: number;
   orderDate: string;
   totalPrice: number;
+  shippingFee: number;
   status: string;
   paymentMethod?: string;
   paymentStatus?: string;

@@ -38,15 +38,18 @@ public class OrderPersistenceAdapter implements OrderPort {
                 .orElseThrow(() -> new RuntimeException("User not found"));
 
         OrderJpaEntity orderJpaEntity = OrderJpaEntity.builder()
+                .id(order.getId())
                 .user(user)
                 .orderDate(order.getOrderDate())
                 .totalPrice(order.getTotalPrice())
+                .shippingFee(order.getShippingFee())
                 .status(order.getStatus() != null ? order.getStatus().name() : null)
                 .paymentMethod(order.getPaymentMethod() != null ? order.getPaymentMethod().name() : null)
                 .paymentStatus(order.getPaymentStatus() != null ? order.getPaymentStatus().name() : null)
                 .receiverName(order.getReceiverName())
                 .receiverPhone(order.getReceiverPhone())
                 .shippingAddress(order.getShippingAddress())
+                .province(order.getProvince())
                 .cancelReason(order.getCancelReason())
                 .vatRequested(order.isVatRequested())
                 .taxCode(order.getTaxCode())

@@ -5,6 +5,7 @@ import jakarta.persistence.GeneratedValue;
 import jakarta.persistence.GenerationType;
 import jakarta.persistence.Id;
 import jakarta.persistence.Table;
+import jakarta.persistence.Column;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Getter;
@@ -30,7 +31,12 @@ public class UserJpaEntity {
     private String password;
     private String fullName;
     private String phone;
+    @Column(name = "address")
     private String address;
+
+    @Column(name = "province")
+    private String province;
+
     private String avatarUrl;
     private String role; // USER, ADMIN
 

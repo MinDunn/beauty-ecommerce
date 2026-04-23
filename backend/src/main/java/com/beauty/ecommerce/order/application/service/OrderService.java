@@ -42,6 +42,7 @@ public class OrderService implements OrderUseCase {
     private final com.beauty.ecommerce.payment.application.service.MoMoService moMoService;
     private final EmailService emailService;
     private final com.beauty.ecommerce.product.application.port.out.LoadProductPort loadProductPort;
+    private final com.beauty.ecommerce.common.application.service.SystemSettingService settingService;
 
     @Override
     @Transactional
@@ -130,6 +131,7 @@ public class OrderService implements OrderUseCase {
                     .reduce(BigDecimal.ZERO, BigDecimal::add);
 
             // Apply Coupon
+            BigDecimal discount = BigDecimal.ZERO;
             String couponCode = command.getCouponCode();
             if (couponCode != null && !couponCode.trim().isEmpty()) {
                 java.util.List<Long> categoryIds = cartItems.stream()
@@ -142,7 +144,6 @@ public class OrderService implements OrderUseCase {
 
                 int totalItemCount = cartItems.stream().mapToInt(CartItem::getQuantity).sum();
                 CouponJpaEntity coupon = couponService.validateCoupon(couponCode, totalPrice.doubleValue(), categoryIds, totalItemCount, user.getId());
-                BigDecimal discount = BigDecimal.ZERO;
                 if ("PERCENTAGE".equalsIgnoreCase(coupon.getDiscountType())) {
                     discount = totalPrice.multiply(coupon.getDiscountValue()).divide(new BigDecimal(100), 2, java.math.RoundingMode.HALF_UP);
                 } else {
@@ -154,10 +155,35 @@ public class OrderService implements OrderUseCase {
                 }
             }
 
+            BigDecimal shippingFee = BigDecimal.ZERO;
+            if (totalPrice.compareTo(new BigDecimal(settingService.getSetting("SHIPPING_FREE_THRESHOLD", "500000"))) < 0) {
+                boolean isCity = false;
+                if (command.getProvince() != null) {
+                    // Check if it's one of the 6 major cities
+                    String province = command.getProvince();
+                    if (province.contains("Hà Nội") || province.contains("Hồ Chí Minh") || 
+                        province.contains("Hải Phòng") || province.contains("Đà Nẵng") || 
+                        province.contains("Cần Thơ") || province.contains("Huế")) {
+                        isCity = true;
+                    }
+                }
+                
+                String rateKey = isCity ? "SHIPPING_FEE_CITY" : "SHIPPING_FEE_PROVINCE";
+                String defaultRate = isCity ? "20000" : "35000";
+                shippingFee = new BigDecimal(settingService.getSetting(rateKey, defaultRate));
+            }
+
+            log.info("ORDER DEBUG: subTotal={}, discount={}, shippingFee={}, finalTotalPrice={}", 
+                totalPrice.add(discount).subtract(shippingFee), discount, shippingFee, totalPrice.add(shippingFee));
+            
+            totalPrice = totalPrice.add(shippingFee);
+
             Order order = Order.builder()
                     .userId(user.getId())
                     .orderDate(LocalDateTime.now())
                     .totalPrice(totalPrice)
+                    .shippingFee(shippingFee)
+                    .province(command.getProvince())
                     .status(OrderStatus.PENDING)
                     .paymentMethod(command.getPaymentMethod())
                     .paymentStatus(PaymentStatus.UNPAID)

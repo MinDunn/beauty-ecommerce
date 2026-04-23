@@ -16,10 +16,13 @@ public class OrderRequest {
     @NotBlank(message = "Shipping address is required")
     private String shippingAddress;
 
+    private String province;
+
     @NotBlank(message = "Payment method is required")
     private String paymentMethod;
 
     private String couponCode;
+    private java.math.BigDecimal shippingFee;
     private boolean vatRequested;
     private String taxCode;
     private String companyName;

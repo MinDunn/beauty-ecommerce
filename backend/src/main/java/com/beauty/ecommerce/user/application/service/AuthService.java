@@ -73,6 +73,7 @@ public class AuthService {
                 .fullName(user.getFullName())
                 .phone(user.getPhone())
                 .address(user.getAddress())
+                .province(user.getProvince())
                 .role(user.getRole())
                 .build();
     }
@@ -110,6 +111,7 @@ public class AuthService {
                 .fullName(user.getFullName())
                 .phone(user.getPhone())
                 .address(user.getAddress())
+                .province(user.getProvince())
                 .role(user.getRole())
                 .build();
     }
@@ -214,6 +216,7 @@ public class AuthService {
                 .fullName(user.getFullName())
                 .phone(user.getPhone())
                 .address(user.getAddress())
+                .province(user.getProvince())
                 .avatarUrl(user.getAvatarUrl())
                 .role(user.getRole())
                 .createdAt(user.getCreatedAt())
@@ -229,6 +232,7 @@ public class AuthService {
         if (request.getFullName() != null) user.setFullName(request.getFullName());
         if (request.getPhone() != null) user.setPhone(request.getPhone());
         if (request.getAddress() != null) user.setAddress(request.getAddress());
+        if (request.getProvince() != null) user.setProvince(request.getProvince());
         if (request.getAvatarUrl() != null) user.setAvatarUrl(request.getAvatarUrl());
 
         userRepository.save(user);

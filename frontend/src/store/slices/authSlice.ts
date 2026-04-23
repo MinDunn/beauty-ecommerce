@@ -7,6 +7,7 @@ interface User {
   role: string;
   phone?: string;
   address?: string;
+  province?: string;
   avatarUrl?: string;
 }
 

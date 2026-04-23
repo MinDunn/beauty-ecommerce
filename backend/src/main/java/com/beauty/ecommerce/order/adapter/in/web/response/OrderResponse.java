@@ -14,12 +14,14 @@ public class OrderResponse {
     private Long id;
     private LocalDateTime orderDate;
     private BigDecimal totalPrice;
+    private BigDecimal shippingFee;
     private OrderStatus status;
     private String paymentMethod;
     private String paymentStatus;
     private String receiverName;
     private String receiverPhone;
     private String shippingAddress;
+    private String province;
     private String cancelReason;
     private boolean vatRequested;
     private String taxCode;

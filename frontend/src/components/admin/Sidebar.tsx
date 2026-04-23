@@ -10,6 +10,7 @@ import {
   User,
   Layers,
   Ticket,
+  Settings,
   X
 } from "lucide-react";
 import { clsx } from "clsx";
@@ -95,6 +96,7 @@ export const Sidebar = ({ isOpen, onClose }: SidebarProps) => {
     { path: "/admin/users", name: "Người dùng", icon: User },
     { path: "/admin/feedback", name: "Phản hồi", icon: MessageSquare, badge: newFeedbackCount },
     { path: "/admin/activities", name: "Hoạt động", icon: Bell },
+    { path: "/admin/settings", name: "Cài đặt", icon: Settings },
   ];
 
   return (

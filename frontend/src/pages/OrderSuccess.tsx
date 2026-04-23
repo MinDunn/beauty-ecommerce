@@ -131,6 +131,16 @@ const OrderSuccess = () => {
                              <p className="text-lg font-black text-slate-900 uppercase">Dư Nhật Anh</p>
                           </div>
 
+                          <div className="bg-white p-5 rounded-2xl border border-gray-100 hover:border-pink-200 transition-colors group">
+                             <p className="text-[9px] font-black text-gray-400 uppercase tracking-widest mb-1">Số tiền cần thanh toán</p>
+                             <div className="flex justify-between items-center">
+                                <span className="text-xl font-black text-red-600 tracking-tight">{totalAmount.toLocaleString()}đ</span>
+                                <button onClick={() => handleCopy(totalAmount.toString(), 'Số tiền')} className="p-2 hover:bg-pink-50 text-gray-400 hover:text-pink-500 rounded-lg transition-all">
+                                   <Copy size={16} />
+                                </button>
+                             </div>
+                          </div>
+
                           <div className="bg-white p-5 rounded-2xl border border-gray-100 hover:border-pink-200 transition-colors">
                              <p className="text-[9px] font-black text-gray-400 uppercase tracking-widest mb-1">Nội dung chuyển khoản</p>
                              <div className="flex justify-between items-center">

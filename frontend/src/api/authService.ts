@@ -7,6 +7,7 @@ export interface UserProfile {
   fullName: string;
   phone?: string;
   address?: string;
+  province?: string;
   avatarUrl?: string;
   role: string;
   marketingConsent?: boolean;

@@ -11,6 +11,7 @@ export const orderService = {
     shippingAddress: string; 
     paymentMethod: string; 
     couponCode?: string;
+    shippingFee: number;
     checkoutItems?: { productId: number; variantName: string | null }[];
   }) => {
     const response = await axiosInstance.post('/orders', data);

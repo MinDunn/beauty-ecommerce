@@ -32,6 +32,9 @@ public class OrderJpaEntity {
     @Column(name = "total_price")
     private BigDecimal totalPrice;
 
+    @Column(name = "shipping_fee")
+    private BigDecimal shippingFee;
+
     @Column(name = "status")
     private String status;
 
@@ -49,6 +52,9 @@ public class OrderJpaEntity {
 
     @Column(name = "shipping_address")
     private String shippingAddress;
+
+    @Column(name = "province")
+    private String province;
 
     @Column(name = "payment_transaction_id")
     private String paymentTransactionId;

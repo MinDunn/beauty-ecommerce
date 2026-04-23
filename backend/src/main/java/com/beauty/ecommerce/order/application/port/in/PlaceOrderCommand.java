@@ -13,8 +13,10 @@ public class PlaceOrderCommand {
     String receiverName;
     String receiverPhone;
     String shippingAddress;
+    String province;
     PaymentMethod paymentMethod;
     String couponCode;
+    java.math.BigDecimal shippingFee;
     boolean vatRequested;
     String taxCode;
     String companyName;

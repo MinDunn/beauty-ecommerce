@@ -609,7 +609,11 @@ export const Orders = () => {
             </div>
 
             {/* Order Summary */}
-            <div className="pt-4 border-t border-slate-800">
+            <div className="pt-4 border-t border-slate-800 space-y-2">
+              <div className="flex justify-between items-center text-slate-500 text-[10px] font-black uppercase tracking-widest px-4">
+                <span>Phí vận chuyển</span>
+                <span>{(selectedOrder.shippingFee || 0).toLocaleString()}đ</span>
+              </div>
               <div className="flex justify-between items-center bg-primary-500/10 p-4 rounded-2xl border border-primary-500/20">
                 <p className="text-sm font-black text-primary-500 uppercase tracking-widest">Tổng cộng</p>
                 <p className="text-xl font-black text-white">{selectedOrder.totalPrice.toLocaleString()}đ</p>
