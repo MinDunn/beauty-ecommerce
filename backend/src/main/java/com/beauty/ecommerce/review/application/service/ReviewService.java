@@ -9,6 +9,7 @@ import com.beauty.ecommerce.review.adapter.out.persistence.ReviewJpaEntity;
 import com.beauty.ecommerce.review.adapter.out.persistence.ReviewRepository;
 import com.beauty.ecommerce.user.adapter.out.persistence.UserJpaEntity;
 import com.beauty.ecommerce.user.adapter.out.persistence.UserRepository;
+import com.beauty.ecommerce.order.adapter.out.persistence.OrderRepository;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
@@ -26,6 +27,7 @@ public class ReviewService {
     private final ReviewRepository reviewRepository;
     private final UserRepository userRepository;
     private final ProductRepository productRepository;
+    private final OrderRepository orderRepository;
 
     @Transactional
     public ReviewResponse createReview(Long productId, String userEmail, CreateReviewRequest request) {
@@ -45,6 +47,12 @@ public class ReviewService {
                 .anyMatch(r -> r.getUserId().equals(user.getId()));
         if (alreadyReviewed) {
             throw new BadRequestException("Bạn đã đánh giá sản phẩm này rồi");
+        }
+
+        // Kiểm tra user đã mua sản phẩm này chưa (đơn hàng phải ở trạng thái DELIVERED)
+        boolean hasPurchased = orderRepository.hasPurchasedProduct(user.getId(), productId);
+        if (!hasPurchased) {
+            throw new BadRequestException("Bạn chỉ có thể đánh giá sản phẩm sau khi đã mua và nhận hàng thành công");
         }
 
         // Tạo review
@@ -170,5 +178,11 @@ public class ReviewService {
                 .isEdited(review.getIsEdited())
                 .createdAt(review.getCreatedAt().toString() + "Z")
                 .build();
+    }
+
+    public boolean checkUserPurchasedProduct(Long productId, String userEmail) {
+        UserJpaEntity user = userRepository.findByEmail(userEmail)
+                .orElseThrow(() -> new ResourceNotFoundException("Không tìm thấy người dùng"));
+        return orderRepository.hasPurchasedProduct(user.getId(), productId);
     }
 }

@@ -47,6 +47,7 @@ public class ProductPersistenceAdapter implements LoadProductPort, UpdateProduct
         }
         
         product.setStockQuantity(product.getStockQuantity() - quantity);
+        product.setSold((product.getSold() != null ? product.getSold() : 0) + quantity);
         productRepository.save(product);
         
         // Sync Expiry Date (FEFO) after stock reduction
@@ -58,6 +59,7 @@ public class ProductPersistenceAdapter implements LoadProductPort, UpdateProduct
         ProductJpaEntity product = productRepository.findById(productId)
                 .orElseThrow(() -> new RuntimeException("Product not found"));
         product.setStockQuantity(product.getStockQuantity() + quantity);
+        product.setSold(Math.max(0, (product.getSold() != null ? product.getSold() : 0) - quantity));
         productRepository.save(product);
         
         // Sync Expiry Date (FEFO) after stock restore

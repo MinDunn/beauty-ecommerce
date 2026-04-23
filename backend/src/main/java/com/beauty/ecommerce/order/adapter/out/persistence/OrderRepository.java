@@ -16,4 +16,7 @@ public interface OrderRepository extends JpaRepository<OrderJpaEntity, Long> {
 
     @org.springframework.data.jpa.repository.Query("SELECT SUM(o.totalPrice) FROM OrderJpaEntity o WHERE o.user.id = :userId AND (o.status = 'DELIVERED' OR o.status = 'COMPLETED')")
     java.math.BigDecimal sumTotalSpentByUserId(Long userId);
+
+    @org.springframework.data.jpa.repository.Query("SELECT COUNT(o) > 0 FROM OrderJpaEntity o JOIN o.items i WHERE o.user.id = :userId AND i.product.id = :productId AND o.status = 'DELIVERED'")
+    boolean hasPurchasedProduct(@org.springframework.data.repository.query.Param("userId") Long userId, @org.springframework.data.repository.query.Param("productId") Long productId);
 }

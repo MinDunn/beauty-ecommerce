@@ -42,6 +42,7 @@ const ProductDetails = () => {
   const [selectedVariant, setSelectedVariant] = useState<any>(null);
   const [relatedProducts, setRelatedProducts] = useState<any[]>([]);
   const [loadingRelated, setLoadingRelated] = useState(false);
+  const [hasPurchased, setHasPurchased] = useState(false);
 
   const fetchProduct = useCallback(async () => {
     if (!id) return;
@@ -159,6 +160,20 @@ const ProductDetails = () => {
       fetchReviews();
     }
   }, [id, fetchReviews]);
+
+  useEffect(() => {
+    const checkPurchase = async () => {
+      if (user && id && !isNaN(Number(id))) {
+        try {
+          const resp = await reviewService.checkPurchase(Number(id));
+          setHasPurchased(resp.data.data);
+        } catch (error) {
+          console.error('Error checking purchase status', error);
+        }
+      }
+    };
+    checkPurchase();
+  }, [id, user]);
 
   useEffect(() => {
     const fetchRelatedProducts = async () => {
@@ -774,33 +789,47 @@ const ProductDetails = () => {
                     </div>
                   </div>
 
-                  <div className="lg:col-span-2 space-y-8">
-                    {!!user ? (
-                      <>
-                        <h4 className="text-xl font-black text-gray-900 uppercase italic tracking-tight">Để lại nhận xét cho chúng tôi</h4>
-                        <form onSubmit={handleSubmitReview} className="space-y-6">
-                          <div className="flex items-center gap-8">
-                            <span className="text-[10px] font-black text-gray-400 uppercase tracking-widest italic">Chất lượng sản phẩm:</span>
-                            <div className="flex items-center gap-3">
-                              {[1, 2, 3, 4, 5].map(s => (
-                                <button key={s} type="button" onClick={() => setNewReview({ ...newReview, rating: s })} className="hover:scale-125 transition-transform active:scale-95">
-                                  <Star fill={s <= newReview.rating ? "#f59e0b" : "none"} stroke={s <= newReview.rating ? "#f59e0b" : "#cbd5e1"} size={36} />
-                                </button>
-                              ))}
+                    <div className="lg:col-span-2 space-y-8">
+                      {!!user ? (
+                        <>
+                          {!hasPurchased ? (
+                            <div className="p-10 bg-amber-50 rounded-[2.5rem] border border-amber-100 flex flex-col items-center text-center gap-4">
+                              <div className="w-16 h-16 bg-white rounded-full flex items-center justify-center text-amber-500 shadow-sm">
+                                <AlertCircle size={32} />
+                              </div>
+                              <div>
+                                <h4 className="text-xl font-black text-amber-900 uppercase italic tracking-tight">Bạn chưa thể đánh giá</h4>
+                                <p className="text-amber-700 font-medium leading-relaxed mt-2">Glowzy chỉ cho phép những khách hàng đã mua và nhận hàng thành công đánh giá sản phẩm này để đảm bảo tính khách quan nhất.</p>
+                              </div>
                             </div>
-                          </div>
-                          <textarea
-                            value={newReview.comment}
-                            onChange={(e) => setNewReview({ ...newReview, comment: e.target.value })}
-                            placeholder="Hãy chia sẻ trải nghiệm chân thực của bạn về sản phẩm này với cộng đồng Glowzy nhé..."
-                            className="glowzy-input min-h-[160px] resize-none p-8 text-base shadow-inner"
-                          />
-                          <button disabled={isSubmittingReview} className="glowzy-btn-primary w-full md:w-auto px-12 py-5 shadow-2xl shadow-primary-500/30">
-                            {isSubmittingReview ? 'Đang gửi...' : 'Gửi nhận xét ngay'}
-                          </button>
-                        </form>
-                      </>
-                    ) : (
+                          ) : (
+                            <>
+                              <h4 className="text-xl font-black text-gray-900 uppercase italic tracking-tight">Để lại nhận xét cho chúng tôi</h4>
+                              <form onSubmit={handleSubmitReview} className="space-y-6">
+                                <div className="flex items-center gap-8">
+                                  <span className="text-[10px] font-black text-gray-400 uppercase tracking-widest italic">Chất lượng sản phẩm:</span>
+                                  <div className="flex items-center gap-3">
+                                    {[1, 2, 3, 4, 5].map(s => (
+                                      <button key={s} type="button" onClick={() => setNewReview({ ...newReview, rating: s })} className="hover:scale-125 transition-transform active:scale-95">
+                                        <Star fill={s <= newReview.rating ? "#f59e0b" : "none"} stroke={s <= newReview.rating ? "#f59e0b" : "#cbd5e1"} size={36} />
+                                      </button>
+                                    ))}
+                                  </div>
+                                </div>
+                                <textarea
+                                  value={newReview.comment}
+                                  onChange={(e) => setNewReview({ ...newReview, comment: e.target.value })}
+                                  placeholder="Hãy chia sẻ trải nghiệm chân thực của bạn về sản phẩm này với cộng đồng Glowzy nhé..."
+                                  className="glowzy-input min-h-[160px] resize-none p-8 text-base shadow-inner"
+                                />
+                                <button disabled={isSubmittingReview} className="glowzy-btn-primary w-full md:w-auto px-12 py-5 shadow-2xl shadow-primary-500/30">
+                                  {isSubmittingReview ? 'Đang gửi...' : 'Gửi nhận xét ngay'}
+                                </button>
+                              </form>
+                            </>
+                          )}
+                        </>
+                      ) : (
                       <div className="flex flex-col items-center justify-center py-16 bg-gray-50/50 rounded-[2rem] border border-gray-100">
                         <ShoppingCart size={48} className="text-gray-200 mb-6" />
                         <p className="text-lg font-black text-gray-900 uppercase tracking-tight italic mb-2">Chưa thể đánh giá</p>

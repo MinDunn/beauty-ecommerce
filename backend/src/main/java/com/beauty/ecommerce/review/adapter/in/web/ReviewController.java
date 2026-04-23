@@ -67,4 +67,13 @@ public class ReviewController {
         ReviewResponse response = reviewService.updateReview(id, authentication.getName(), request);
         return ResponseEntity.ok(ApiResponse.success("Cập nhật đánh giá thành công", response));
     }
+
+    @GetMapping("/check-purchase/{productId}")
+    public ResponseEntity<ApiResponse<Boolean>> checkPurchase(
+            @PathVariable Long productId,
+            Authentication authentication) {
+        if (authentication == null) return ResponseEntity.ok(ApiResponse.success(false));
+        boolean hasPurchased = reviewService.checkUserPurchasedProduct(productId, authentication.getName());
+        return ResponseEntity.ok(ApiResponse.success(hasPurchased));
+    }
 }

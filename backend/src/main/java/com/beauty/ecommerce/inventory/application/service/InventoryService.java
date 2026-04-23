@@ -145,6 +145,7 @@ public class InventoryService {
         ProductJpaEntity product = productRepository.findById(productId)
                 .orElseThrow(() -> new RuntimeException("Sản phẩm không tồn tại"));
 
+        // 1. Sync Stock from Variants
         List<com.beauty.ecommerce.product.adapter.out.persistence.ProductVariantJpaEntity> variants = variantRepository.findByProductId(productId);
         
         if (variants != null && !variants.isEmpty()) {
@@ -182,6 +183,13 @@ public class InventoryService {
                     }
                 }
             }
+        }
+
+        // 2. Sync Sold Count from Orders
+        Integer actualSold = productRepository.findActualSoldCount(productId);
+        if (actualSold != null && !actualSold.equals(product.getSold())) {
+            product.setSold(actualSold);
+            productRepository.save(product);
         }
     }
 

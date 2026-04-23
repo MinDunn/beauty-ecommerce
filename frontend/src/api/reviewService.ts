@@ -43,7 +43,10 @@ export const reviewService = {
     axiosInstance.put<ApiResponse<Review>>(`/reviews/${id}/reply`, data),
 
   updateReview: (id: number, data: UpdateReviewRequest) =>
-    axiosInstance.put<ApiResponse<Review>>(`/reviews/${id}`, data)
+    axiosInstance.put<ApiResponse<Review>>(`/reviews/${id}`, data),
+
+  checkPurchase: (productId: number) =>
+    axiosInstance.get<ApiResponse<boolean>>(`/reviews/check-purchase/${productId}`)
 };
 
 export default reviewService;
