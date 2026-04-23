@@ -79,7 +79,8 @@ export const ProductCard = ({
       brand,
       quantity: 1,
       variantName: null,
-      categoryId
+      categoryId,
+      stockQuantity
     }));
     toast.success('Đã thêm vào giỏ hàng');
   };

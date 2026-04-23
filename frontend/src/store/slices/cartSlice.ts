@@ -48,7 +48,11 @@ const cartSlice = createSlice({
       state.totalAmount += newItem.price * newItem.quantity;
 
       if (!existingItem) {
-        state.items.push({ ...newItem, selected: true });
+        state.items.push({ 
+          ...newItem, 
+          selected: true,
+          stockQuantity: newItem.stockQuantity ?? 100 // Fallback to 100 if data is missing
+        });
       } else {
         existingItem.quantity += newItem.quantity;
         existingItem.selected = true; // Auto select if added again

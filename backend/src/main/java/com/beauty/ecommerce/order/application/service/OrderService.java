@@ -118,11 +118,10 @@ public class OrderService implements OrderUseCase {
 
             // Pre-check stock availability
             for (CartItem item : cartItems) {
-                com.beauty.ecommerce.product.domain.entity.Product product = loadProductPort.loadProductById(item.getProductId())
-                    .orElseThrow(() -> new RuntimeException("Sản phẩm không tồn tại: " + item.getProductName()));
-                
-                if (product.getStockQuantity() < item.getQuantity()) {
-                    throw new RuntimeException("Sản phẩm '" + item.getProductName() + "' đã hết hàng hoặc không đủ số lượng.");
+                if (item.getStockQuantity() < item.getQuantity()) {
+                    throw new RuntimeException("Sản phẩm '" + item.getProductName() + 
+                        (item.getVariantName() != null ? " (" + item.getVariantName() + ")" : "") + 
+                        "' đã hết hàng hoặc không đủ số lượng.");
                 }
             }
 
@@ -203,10 +202,9 @@ public class OrderService implements OrderUseCase {
                 couponService.useCoupon(couponCode);
             }
 
-            // 2. Update Product Stock (Only for COD)
             if (command.getPaymentMethod() == PaymentMethod.COD) {
                 for (CartItem cartItem : cartItems) {
-                    updateProductStockPort.updateStock(cartItem.getProductId(), cartItem.getQuantity());
+                    updateProductStockPort.updateStock(cartItem.getProductId(), cartItem.getQuantity(), cartItem.getVariantName());
                 }
             }
 
@@ -293,7 +291,7 @@ public class OrderService implements OrderUseCase {
 
         // 1. Deduct stock
         for (OrderItem item : order.getItems()) {
-            updateProductStockPort.updateStock(item.getProductId(), item.getQuantity());
+            updateProductStockPort.updateStock(item.getProductId(), item.getQuantity(), item.getVariantName());
         }
 
         // 2. Update status & transId
@@ -370,7 +368,7 @@ public class OrderService implements OrderUseCase {
 
         // 2. Restore Stock
         for (OrderItem item : order.getItems()) {
-            updateProductStockPort.restoreStock(item.getProductId(), item.getQuantity());
+            updateProductStockPort.restoreStock(item.getProductId(), item.getQuantity(), item.getVariantName());
         }
 
         // 3. Finalize Status

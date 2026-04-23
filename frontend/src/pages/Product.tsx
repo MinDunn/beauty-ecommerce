@@ -983,7 +983,7 @@ export const Products = () => {
             <Loader2 className="w-8 h-8 text-primary-500 animate-spin" />
           </div>
         ) : (
-          <div className="max-h-[410px] overflow-y-auto scrollbar-thin scrollbar-track-slate-900 scrollbar-thumb-slate-800">
+          <div className="max-h-[550px] overflow-y-auto scrollbar-thin scrollbar-track-slate-900 scrollbar-thumb-slate-800">
             <Table
               columns={[
                 { header: "Tên sản phẩm", key: "name" },

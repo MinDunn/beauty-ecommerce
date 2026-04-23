@@ -65,9 +65,8 @@ public class CartPersistenceAdapter implements CartPort {
     @Override
     @Transactional
     public void delete(String email, Long productId, String variantName) {
-        CartItemJpaEntity cartItem = cartRepository.findByUserEmailAndProductIdAndVariantName(email, productId, variantName)
-                .orElseThrow(() -> new RuntimeException("Cart item not found"));
-        cartRepository.delete(cartItem);
+        cartRepository.findByUserEmailAndProductIdAndVariantName(email, productId, variantName)
+                .ifPresent(cartRepository::delete);
     }
 
     @Override

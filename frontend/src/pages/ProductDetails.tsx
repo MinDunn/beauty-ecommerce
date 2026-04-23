@@ -199,7 +199,7 @@ const ProductDetails = () => {
     }
   }, [product?.categoryId, id]);
 
-  const ProductCard = ({ id, name, price, originalPrice, image, categoryId, brand, views = 0 }: any) => {
+  const ProductCard = ({ id, name, price, originalPrice, image, categoryId, brand, views = 0, stockQuantity }: any) => {
     const resolvedImage = resolveProductImage(image);
 
     const handleQuickAddToCart = (e: React.MouseEvent) => {
@@ -213,7 +213,8 @@ const ProductDetails = () => {
         brand: brand || 'Glowzy',
         quantity: 1,
         variantName: null,
-        categoryId: categoryId
+        categoryId: categoryId,
+        stockQuantity: stockQuantity
       }));
       toast.success('Đã thêm vào giỏ hàng');
     };
@@ -298,6 +299,8 @@ const ProductDetails = () => {
   };
 
   const handleAddToCart = async () => {
+    const currentStock = selectedVariant ? selectedVariant.stockQuantity : product.stockQuantity;
+
     const payload = {
       id: product.id,
       name: product.name,
@@ -307,10 +310,8 @@ const ProductDetails = () => {
       quantity: quantity,
       variantName: selectedVariant?.variantName || null,
       categoryId: product.categoryId,
-      stockQuantity: product.stockQuantity
+      stockQuantity: currentStock
     };
-
-    const currentStock = selectedVariant ? selectedVariant.stockQuantity : product.stockQuantity;
     if (currentStock <= 0) {
       toast.error('Xin lỗi, sản phẩm này hiện đã hết hàng');
       return;
@@ -1021,6 +1022,7 @@ const ProductDetails = () => {
                 categoryId={p.categoryId}
                 brand={p.brand}
                 views={p.viewCount}
+                stockQuantity={p.stockQuantity}
               />
             ))}
           </div>

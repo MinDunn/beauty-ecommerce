@@ -38,15 +38,32 @@ public class ProductPersistenceAdapter implements LoadProductPort, UpdateProduct
     }
 
     @Override
-    public void updateStock(Long productId, Integer quantity) {
+    public void updateStock(Long productId, Integer quantity, String variantName) {
         ProductJpaEntity product = productRepository.findById(productId)
                 .orElseThrow(() -> new RuntimeException("Product not found"));
         
-        if (product.getStockQuantity() < quantity) {
-            throw new RuntimeException("Not enough stock for product: " + product.getName());
+        if (variantName != null && !variantName.trim().isEmpty()) {
+            com.beauty.ecommerce.product.adapter.out.persistence.ProductVariantJpaEntity variant = product.getVariants().stream()
+                    .filter(v -> v.getVariantName().equalsIgnoreCase(variantName.trim()))
+                    .findFirst()
+                    .orElseThrow(() -> new RuntimeException("Biến thể '" + variantName + "' không tồn tại"));
+            
+            if (variant.getStockQuantity() < quantity) {
+                throw new RuntimeException("Không đủ tồn kho cho biến thể: " + variantName);
+            }
+            variant.setStockQuantity(variant.getStockQuantity() - quantity);
+            
+            // Also subtract from total product stock to keep it in sync
+            if (product.getStockQuantity() != null) {
+                product.setStockQuantity(Math.max(0, product.getStockQuantity() - quantity));
+            }
+        } else {
+            if (product.getStockQuantity() < quantity) {
+                throw new RuntimeException("Không đủ tồn kho cho sản phẩm: " + product.getName());
+            }
+            product.setStockQuantity(product.getStockQuantity() - quantity);
         }
         
-        product.setStockQuantity(product.getStockQuantity() - quantity);
         product.setSold((product.getSold() != null ? product.getSold() : 0) + quantity);
         productRepository.save(product);
         
@@ -55,10 +72,24 @@ public class ProductPersistenceAdapter implements LoadProductPort, UpdateProduct
     }
 
     @Override
-    public void restoreStock(Long productId, Integer quantity) {
+    public void restoreStock(Long productId, Integer quantity, String variantName) {
         ProductJpaEntity product = productRepository.findById(productId)
                 .orElseThrow(() -> new RuntimeException("Product not found"));
-        product.setStockQuantity(product.getStockQuantity() + quantity);
+        
+        if (variantName != null && !variantName.trim().isEmpty()) {
+            product.getVariants().stream()
+                    .filter(v -> v.getVariantName().equalsIgnoreCase(variantName.trim()))
+                    .findFirst()
+                    .ifPresent(v -> v.setStockQuantity(v.getStockQuantity() + quantity));
+            
+            // Also restore to total product stock
+            if (product.getStockQuantity() != null) {
+                product.setStockQuantity(product.getStockQuantity() + quantity);
+            }
+        } else {
+            product.setStockQuantity(product.getStockQuantity() + quantity);
+        }
+
         product.setSold(Math.max(0, (product.getSold() != null ? product.getSold() : 0) - quantity));
         productRepository.save(product);
         

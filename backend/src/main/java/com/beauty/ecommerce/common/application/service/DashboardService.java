@@ -11,6 +11,7 @@ import com.beauty.ecommerce.review.adapter.out.persistence.ReviewRepository;
 import com.beauty.ecommerce.user.adapter.out.persistence.UserRepository;
 import com.beauty.ecommerce.inventory.adapter.out.persistence.InventoryAdjustmentRepository;
 import com.beauty.ecommerce.inventory.adapter.out.persistence.InventoryAdjustmentJpaEntity;
+import com.beauty.ecommerce.inventory.application.service.InventoryService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.stereotype.Service;
@@ -38,6 +39,7 @@ public class DashboardService {
     private final OrderItemRepository orderItemRepository;
     private final ProductRepository productRepository;
     private final InventoryAdjustmentRepository adjustmentRepository;
+    private final InventoryService inventoryService;
 
     public DashboardResponse getStats(int days) {
         // Use optimized repository methods instead of findAll()
@@ -48,9 +50,12 @@ public class DashboardService {
         long totalCustomers = userRepository.count();
         long totalFeedback = reviewRepository.count() + contactRepository.count();
         
-        // Optimized COGS calculation
-        BigDecimal totalCost = orderItemRepository.calculateTotalCOGS();
-        if (totalCost == null) totalCost = BigDecimal.ZERO;
+        // Optimized COGS calculation using InventoryService for accuracy
+        BigDecimal totalCost = calculateActualCOGS(orderItemRepository.findAll().stream()
+                .filter(oi -> !"CANCELLED".equalsIgnoreCase(oi.getOrder().getStatus()))
+                .filter(oi -> "PAID".equalsIgnoreCase(oi.getOrder().getPaymentStatus()) 
+                           || "COD".equalsIgnoreCase(oi.getOrder().getPaymentMethod()))
+                .collect(Collectors.toList()));
 
         // Inventory Loss and Compensation (already using repository but could be optimized if needed)
         List<InventoryAdjustmentJpaEntity> allAdjustments = adjustmentRepository.findAll();
@@ -94,8 +99,12 @@ public class DashboardService {
         BigDecimal feedbackGrowth = calculateGrowth(BigDecimal.valueOf(currentPeriodFeedback - prevFeedback), BigDecimal.valueOf(prevFeedback));
 
         // Period Profit Calculation
-        BigDecimal currentPeriodCost = orderItemRepository.calculateTotalCOGSSince(currentPeriodStart);
-        if (currentPeriodCost == null) currentPeriodCost = BigDecimal.ZERO;
+        BigDecimal currentPeriodCost = calculateActualCOGS(orderItemRepository.findAll().stream()
+                .filter(oi -> oi.getOrder().getOrderDate().isAfter(currentPeriodStart) || oi.getOrder().getOrderDate().isEqual(currentPeriodStart))
+                .filter(oi -> !"CANCELLED".equalsIgnoreCase(oi.getOrder().getStatus()))
+                .filter(oi -> "PAID".equalsIgnoreCase(oi.getOrder().getPaymentStatus()) 
+                           || "COD".equalsIgnoreCase(oi.getOrder().getPaymentMethod()))
+                .collect(Collectors.toList()));
 
         BigDecimal currentPeriodLoss = allAdjustments.stream()
                 .filter(a -> a.getStatus() == null || a.getStatus().equalsIgnoreCase("APPROVED") || a.getStatus().equalsIgnoreCase("COMPLETED"))
@@ -283,5 +292,15 @@ public class DashboardService {
             return currentDiff.compareTo(BigDecimal.ZERO) > 0 ? BigDecimal.valueOf(100) : BigDecimal.ZERO;
         }
         return currentDiff.divide(previous, 4, RoundingMode.HALF_UP).multiply(BigDecimal.valueOf(100));
+    }
+
+    public BigDecimal calculateActualCOGS(List<com.beauty.ecommerce.order.adapter.out.persistence.OrderItemJpaEntity> items) {
+        if (items == null || items.isEmpty()) return BigDecimal.ZERO;
+        return items.stream()
+                .map(item -> {
+                    BigDecimal unitCost = inventoryService.getUnitCost(item.getProduct().getId(), item.getVariantName());
+                    return unitCost.multiply(BigDecimal.valueOf(item.getQuantity()));
+                })
+                .reduce(BigDecimal.ZERO, BigDecimal::add);
     }
 }

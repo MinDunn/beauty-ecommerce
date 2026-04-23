@@ -320,8 +320,14 @@ public class InventoryService {
         }
         
         return productRepository.findById(productId)
-                .map(p -> p.getOriginalPrice() != null ? p.getOriginalPrice() : BigDecimal.ZERO)
-                .orElse(BigDecimal.ZERO);
+                .map(p -> {
+                    // Fallback to 70% of current price as estimated cost if no receipts found
+                    if (p.getCurrentPrice() != null) {
+                        return p.getCurrentPrice().multiply(new java.math.BigDecimal("0.7"));
+                    }
+                    return p.getOriginalPrice() != null ? p.getOriginalPrice() : java.math.BigDecimal.ZERO;
+                })
+                .orElse(java.math.BigDecimal.ZERO);
     }
 
     private BigDecimal calculateEstimatedLoss(Long productId, String variantName, Integer quantity) {

@@ -128,7 +128,7 @@ const OrderSuccess = () => {
 
                           <div className="bg-white p-5 rounded-2xl border border-gray-100 hover:border-pink-200 transition-colors">
                              <p className="text-[9px] font-black text-gray-400 uppercase tracking-widest mb-1">Chủ tài khoản</p>
-                             <p className="text-lg font-black text-slate-900 uppercase">Nguyễn Đức Anh</p>
+                             <p className="text-lg font-black text-slate-900 uppercase">Dư Nhật Anh</p>
                           </div>
 
                           <div className="bg-white p-5 rounded-2xl border border-gray-100 hover:border-pink-200 transition-colors">

@@ -177,6 +177,9 @@ const ChatWidget = () => {
                           <>Chào mừng bạn đến với <strong className="text-primary-500">Glowzy</strong>! 🌸</>
                         )}
                       </p>
+                      <p className="text-[10px] text-gray-400 mt-2 italic border-t border-gray-50 pt-2">
+                        🤖 Đây là tin nhắn tự động. Giờ làm việc của nhân viên cửa hàng: 8:00 - 16:00 hàng ngày.
+                      </p>
                     </div>
                   </motion.div>
 
@@ -188,7 +191,7 @@ const ChatWidget = () => {
                   >
                     <div className="max-w-[85%] rounded-2xl p-3.5 shadow-sm bg-white text-gray-800 border border-gray-100 rounded-tl-none">
                       <p className="text-xs md:text-sm leading-relaxed">
-                        Bạn cần hỗ trợ gì hôm nay ạ? Chọn nhanh bên dưới hoặc nhắn tin cho mình nhé! 👇
+                        Bạn cần hỗ trợ gì hôm nay ạ? Trong lúc đợi nhân viên cửa hàng phản hồi, bạn có thể chọn nhanh bên dưới nhé! 👇
                       </p>
                     </div>
                   </motion.div>

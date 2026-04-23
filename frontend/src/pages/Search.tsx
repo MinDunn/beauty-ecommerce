@@ -164,6 +164,7 @@ const SearchResultPage = () => {
                     originalPrice={product.originalPrice}
                     image={product.imageUrl}
                     views={product.viewCount || 0}
+                    stockQuantity={product.stockQuantity}
                   />
                 ))}
               </div>

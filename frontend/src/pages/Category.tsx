@@ -307,6 +307,7 @@ const Category = () => {
                     image={product.imageUrl}
                     reviewCount={product.reviewCount}
                     views={product.viewCount || 0}
+                    stockQuantity={product.stockQuantity}
                   />
                 ))}
               </div>
