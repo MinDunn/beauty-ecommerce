@@ -1,4 +1,4 @@
--- Migration V40: Add reply fields to reviews (Idempotent version)
+  -- Migration V40: Add reply fields to reviews (Idempotent version)
 -- Bổ sung cột phản hồi của admin vào bảng reviews
 
 DROP PROCEDURE IF EXISTS add_column_if_not_exists;

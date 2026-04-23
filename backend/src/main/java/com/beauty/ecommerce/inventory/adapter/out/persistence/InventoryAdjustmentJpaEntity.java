@@ -46,4 +46,8 @@ public class InventoryAdjustmentJpaEntity {
 
     @Column(name = "remarks", columnDefinition = "TEXT")
     private String remarks; // Ghi chú chi tiết không bắt buộc
+
+    @Column(name = "status")
+    @Builder.Default
+    private String status = "COMPLETED"; // COMPLETED, PENDING, APPROVED, REJECTED
 }

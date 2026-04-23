@@ -13,6 +13,8 @@ import com.beauty.ecommerce.product.adapter.out.persistence.ProductRepository;
 import com.beauty.ecommerce.product.adapter.out.persistence.WishlistRepository;
 import com.beauty.ecommerce.review.adapter.out.persistence.ReviewRepository;
 import com.beauty.ecommerce.user.adapter.out.persistence.UserRepository;
+import com.beauty.ecommerce.inventory.adapter.out.persistence.InventoryAdjustmentRepository;
+import com.beauty.ecommerce.inventory.adapter.out.persistence.InventoryAdjustmentJpaEntity;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.stereotype.Service;
@@ -39,6 +41,7 @@ public class DashboardService {
     private final WishlistRepository wishlistRepository;
     private final OrderItemRepository orderItemRepository;
     private final ProductRepository productRepository;
+    private final InventoryAdjustmentRepository adjustmentRepository;
 
     public DashboardResponse getStats(int days) {
         List<OrderJpaEntity> allOrders = orderRepository.findAll();
@@ -57,6 +60,40 @@ public class DashboardService {
                 .count();
         long totalCustomers = userRepository.count();
         long totalFeedback = reviewRepository.count() + contactRepository.count();
+        
+        // Calculate Cost of Goods Sold (COGS)
+        Map<Long, BigDecimal> productCostMap = productRepository.findAll().stream()
+                .collect(Collectors.toMap(
+                        ProductJpaEntity::getId,
+                        p -> p.getOriginalPrice() != null ? p.getOriginalPrice() : BigDecimal.ZERO,
+                        (a, b) -> a
+                ));
+
+        BigDecimal totalCost = allOrders.stream()
+                .filter(o -> o.getStatus() != null && !OrderStatus.CANCELLED.name().equalsIgnoreCase(o.getStatus()))
+                .filter(o -> PaymentStatus.PAID.name().equals(o.getPaymentStatus()) || PaymentMethod.COD.name().equals(o.getPaymentMethod()))
+                .flatMap(o -> o.getItems().stream())
+                .map(item -> {
+                    BigDecimal unitCost = productCostMap.getOrDefault(item.getProduct().getId(), BigDecimal.ZERO);
+                    return unitCost.multiply(BigDecimal.valueOf(item.getQuantity()));
+                })
+                .reduce(BigDecimal.ZERO, BigDecimal::add);
+
+        // Inventory Loss and Compensation
+        List<InventoryAdjustmentJpaEntity> allAdjustments = adjustmentRepository.findAll();
+        BigDecimal totalInventoryLoss = allAdjustments.stream()
+                .filter(a -> a.getStatus() == null || a.getStatus().equalsIgnoreCase("APPROVED") || a.getStatus().equalsIgnoreCase("COMPLETED"))
+                .map(InventoryAdjustmentJpaEntity::getEstimatedLossAmount)
+                .filter(java.util.Objects::nonNull)
+                .reduce(BigDecimal.ZERO, BigDecimal::add);
+        
+        BigDecimal totalCompensation = allAdjustments.stream()
+                .filter(a -> a.getStatus() == null || a.getStatus().equalsIgnoreCase("APPROVED") || a.getStatus().equalsIgnoreCase("COMPLETED"))
+                .map(InventoryAdjustmentJpaEntity::getCompensationAmount)
+                .filter(java.util.Objects::nonNull)
+                .reduce(BigDecimal.ZERO, BigDecimal::add);
+
+        BigDecimal totalProfit = totalRevenue.subtract(totalCost).subtract(totalInventoryLoss).add(totalCompensation);
 
         // Time periods for growth calculation
         LocalDate today = LocalDate.now();
@@ -129,6 +166,69 @@ public class DashboardService {
         BigDecimal customerGrowth = calculateGrowth(BigDecimal.valueOf(currentPeriodCustomers - prevCustomers), BigDecimal.valueOf(prevCustomers));
         BigDecimal feedbackGrowth = calculateGrowth(BigDecimal.valueOf(currentPeriodFeedback - prevFeedback), BigDecimal.valueOf(prevFeedback));
 
+        // Period Profit Calculation
+        BigDecimal currentPeriodCost = allOrders.stream()
+                .filter(o -> o.getStatus() != null && !OrderStatus.CANCELLED.name().equalsIgnoreCase(o.getStatus()))
+                .filter(o -> PaymentStatus.PAID.name().equals(o.getPaymentStatus()) || PaymentMethod.COD.name().equals(o.getPaymentMethod()))
+                .filter(o -> o.getOrderDate() != null && !o.getOrderDate().toLocalDate().isBefore(currentPeriodStart))
+                .flatMap(o -> o.getItems().stream())
+                .map(item -> {
+                    BigDecimal unitCost = productCostMap.getOrDefault(item.getProduct().getId(), BigDecimal.ZERO);
+                    return unitCost.multiply(BigDecimal.valueOf(item.getQuantity()));
+                })
+                .reduce(BigDecimal.ZERO, BigDecimal::add);
+
+        BigDecimal currentPeriodLoss = allAdjustments.stream()
+                .filter(a -> a.getStatus() == null || a.getStatus().equalsIgnoreCase("APPROVED") || a.getStatus().equalsIgnoreCase("COMPLETED"))
+                .filter(a -> a.getCreatedAt() != null && !a.getCreatedAt().toLocalDate().isBefore(currentPeriodStart))
+                .map(InventoryAdjustmentJpaEntity::getEstimatedLossAmount)
+                .filter(java.util.Objects::nonNull)
+                .reduce(BigDecimal.ZERO, BigDecimal::add);
+
+        BigDecimal currentPeriodCompensation = allAdjustments.stream()
+                .filter(a -> a.getStatus() == null || a.getStatus().equalsIgnoreCase("APPROVED") || a.getStatus().equalsIgnoreCase("COMPLETED"))
+                .filter(a -> a.getCreatedAt() != null && !a.getCreatedAt().toLocalDate().isBefore(currentPeriodStart))
+                .map(InventoryAdjustmentJpaEntity::getCompensationAmount)
+                .filter(java.util.Objects::nonNull)
+                .reduce(BigDecimal.ZERO, BigDecimal::add);
+
+        BigDecimal currentPeriodProfit = currentPeriodRevenue.subtract(currentPeriodCost).subtract(currentPeriodLoss).add(currentPeriodCompensation);
+
+        // Previous Period Profit for Growth
+        BigDecimal prevCost = allOrders.stream()
+                .filter(o -> o.getStatus() != null && !OrderStatus.CANCELLED.name().equalsIgnoreCase(o.getStatus()))
+                .filter(o -> PaymentStatus.PAID.name().equals(o.getPaymentStatus()) || PaymentMethod.COD.name().equals(o.getPaymentMethod()))
+                .filter(o -> o.getOrderDate() != null 
+                        && !o.getOrderDate().toLocalDate().isBefore(previousPeriodStart) 
+                        && o.getOrderDate().toLocalDate().isBefore(currentPeriodStart))
+                .flatMap(o -> o.getItems().stream())
+                .map(item -> {
+                    BigDecimal unitCost = productCostMap.getOrDefault(item.getProduct().getId(), BigDecimal.ZERO);
+                    return unitCost.multiply(BigDecimal.valueOf(item.getQuantity()));
+                })
+                .reduce(BigDecimal.ZERO, BigDecimal::add);
+
+        BigDecimal prevLoss = allAdjustments.stream()
+                .filter(a -> a.getStatus() == null || a.getStatus().equalsIgnoreCase("APPROVED") || a.getStatus().equalsIgnoreCase("COMPLETED"))
+                .filter(a -> a.getCreatedAt() != null 
+                        && !a.getCreatedAt().toLocalDate().isBefore(previousPeriodStart) 
+                        && a.getCreatedAt().toLocalDate().isBefore(currentPeriodStart))
+                .map(InventoryAdjustmentJpaEntity::getEstimatedLossAmount)
+                .filter(java.util.Objects::nonNull)
+                .reduce(BigDecimal.ZERO, BigDecimal::add);
+
+        BigDecimal prevCompensation = allAdjustments.stream()
+                .filter(a -> a.getStatus() == null || a.getStatus().equalsIgnoreCase("APPROVED") || a.getStatus().equalsIgnoreCase("COMPLETED"))
+                .filter(a -> a.getCreatedAt() != null 
+                        && !a.getCreatedAt().toLocalDate().isBefore(previousPeriodStart) 
+                        && a.getCreatedAt().toLocalDate().isBefore(currentPeriodStart))
+                .map(InventoryAdjustmentJpaEntity::getCompensationAmount)
+                .filter(java.util.Objects::nonNull)
+                .reduce(BigDecimal.ZERO, BigDecimal::add);
+
+        BigDecimal prevProfit = prevRevenue.subtract(prevCost).subtract(prevLoss).add(prevCompensation);
+        BigDecimal profitGrowth = calculateGrowth(currentPeriodProfit.subtract(prevProfit), prevProfit);
+
         // revenue chart history
         List<DashboardResponse.RevenueData> revenueHistory = new ArrayList<>();
         DateTimeFormatter formatter = DateTimeFormatter.ofPattern("dd/MM");
@@ -154,9 +254,42 @@ public class DashboardService {
                     .filter(java.util.Objects::nonNull)
                     .reduce(BigDecimal.ZERO, BigDecimal::add);
 
+            BigDecimal dayCost = allOrders.stream()
+                    .filter(o -> o.getStatus() != null && !OrderStatus.CANCELLED.name().equalsIgnoreCase(o.getStatus()))
+                    .filter(o -> PaymentStatus.PAID.name().equals(o.getPaymentStatus()) || PaymentMethod.COD.name().equals(o.getPaymentMethod()))
+                    .filter(o -> {
+                        if (o.getOrderDate() == null) return false;
+                        LocalDate orderDate = o.getOrderDate().toLocalDate();
+                        if (dayIndex == 0) return !orderDate.isBefore(date.minusDays(1));
+                        return orderDate.equals(date);
+                    })
+                    .flatMap(o -> o.getItems().stream())
+                    .map(item -> {
+                        BigDecimal unitCost = productCostMap.getOrDefault(item.getProduct().getId(), BigDecimal.ZERO);
+                        return unitCost.multiply(BigDecimal.valueOf(item.getQuantity()));
+                    })
+                    .reduce(BigDecimal.ZERO, BigDecimal::add);
+
+            BigDecimal dayLoss = allAdjustments.stream()
+                    .filter(a -> a.getStatus() == null || a.getStatus().equalsIgnoreCase("APPROVED") || a.getStatus().equalsIgnoreCase("COMPLETED"))
+                    .filter(a -> a.getCreatedAt() != null && a.getCreatedAt().toLocalDate().equals(date))
+                    .map(InventoryAdjustmentJpaEntity::getEstimatedLossAmount)
+                    .filter(java.util.Objects::nonNull)
+                    .reduce(BigDecimal.ZERO, BigDecimal::add);
+
+            BigDecimal dayCompensation = allAdjustments.stream()
+                    .filter(a -> a.getStatus() == null || a.getStatus().equalsIgnoreCase("APPROVED") || a.getStatus().equalsIgnoreCase("COMPLETED"))
+                    .filter(a -> a.getCreatedAt() != null && a.getCreatedAt().toLocalDate().equals(date))
+                    .map(InventoryAdjustmentJpaEntity::getCompensationAmount)
+                    .filter(java.util.Objects::nonNull)
+                    .reduce(BigDecimal.ZERO, BigDecimal::add);
+
+            BigDecimal dayProfit = dayRevenue.subtract(dayCost).subtract(dayLoss).add(dayCompensation);
+
             revenueHistory.add(DashboardResponse.RevenueData.builder()
                     .date(date.format(formatter))
                     .revenue(dayRevenue)
+                    .profit(dayProfit)
                     .build());
         }
 
@@ -249,13 +382,18 @@ public class DashboardService {
 
         return DashboardResponse.builder()
                 .totalRevenue(totalRevenue)
+                .totalProfit(totalProfit)
                 .totalOrders(totalOrders)
                 .totalCustomers(totalCustomers)
                 .totalFeedback(totalFeedback)
                 .revenueGrowth(revenueGrowth)
+                .profitGrowth(profitGrowth)
                 .orderGrowth(orderGrowth)
                 .customerGrowth(customerGrowth)
                 .feedbackGrowth(feedbackGrowth)
+                .totalCost(totalCost)
+                .totalInventoryLoss(totalInventoryLoss)
+                .totalCompensation(totalCompensation)
                 .revenueHistory(revenueHistory)
                 .recentOrders(recentOrders)
                 .topFavoritedProducts(topFavorited)

@@ -2,8 +2,9 @@ import { useMemo, useState, useEffect } from 'react';
 import { productService } from '../../api/productService';
 import { toast } from 'react-hot-toast';
 import { motion } from 'framer-motion';
-import { Calendar, Package, Clock, Search } from 'lucide-react';
+import { Calendar, Package, Clock, Search, Check, X as XIcon, AlertCircle } from 'lucide-react';
 import { cn } from '../../utils/cn';
+import { adminService } from '../../api/adminService';
 
 interface InventoryAdjustment {
   id: number;
@@ -16,6 +17,7 @@ interface InventoryAdjustment {
   variantName?: string;
   remarks?: string;
   adjustedAt: string;
+  status: string; // PENDING, APPROVED, REJECTED, COMPLETED
 }
 
 export const InventoryAdjustmentsPage = () => {
@@ -27,11 +29,41 @@ export const InventoryAdjustmentsPage = () => {
   const fetchAdjustments = async () => {
     try {
       const data = await productService.adminGetInventoryAdjustments();
-      setAdjustments(data);
+      // Sắp xếp PENDING lên đầu để dễ thấy
+      const sorted = [...data].sort((a: any, b: any) => {
+        if (a.status === 'PENDING' && b.status !== 'PENDING') return -1;
+        if (a.status !== 'PENDING' && b.status === 'PENDING') return 1;
+        return new Date(b.adjustedAt).getTime() - new Date(a.adjustedAt).getTime();
+      });
+      setAdjustments(sorted);
     } catch (error) {
       toast.error('Không thể tải danh sách điều chỉnh kho');
     } finally {
       setLoading(false);
+    }
+  };
+
+  const handleApprove = async (id: number) => {
+    try {
+      await adminService.approveAdjustment(id);
+      toast.success('Đã phê duyệt điều chỉnh kho');
+      fetchAdjustments();
+      // Phát sự kiện để cập nhật lại Dashboard nếu cần
+      window.dispatchEvent(new CustomEvent('admin-reload-data'));
+    } catch (error) {
+      toast.error('Lỗi khi phê duyệt');
+    }
+  };
+
+  const handleReject = async (id: number) => {
+    if (!window.confirm('Bạn có chắc muốn từ chối điều chỉnh này?')) return;
+    try {
+      await adminService.rejectAdjustment(id);
+      toast.success('Đã từ chối điều chỉnh');
+      fetchAdjustments();
+      window.dispatchEvent(new CustomEvent('admin-reload-data'));
+    } catch (error) {
+      toast.error('Lỗi khi từ chối');
     }
   };
 
@@ -64,11 +96,24 @@ export const InventoryAdjustmentsPage = () => {
   }, [adjustments, keyword, selectedDate]);
 
   const stats = useMemo(() => {
-    const totalLoss = adjustments.reduce((sum, adj) => adj.quantity < 0 ? sum + Math.abs(adj.quantity) : sum, 0);
-    const totalValueLoss = adjustments.reduce((sum, adj) => sum + (adj.estimatedLossAmount || 0), 0);
-    const totalCompensation = adjustments.reduce((sum, adj) => sum + (adj.compensationAmount || 0), 0);
-    const netLoss = Math.max(0, totalValueLoss - totalCompensation);
-    return { totalLoss, totalValueLoss, totalCompensation, netLoss };
+    // Chỉ tính toán số liệu thực tế dựa trên các bản ghi đã được PHÊ DUYỆT hoặc HOÀN TẤT
+    const activeAdjustments = adjustments.filter(adj => 
+      adj.status === 'APPROVED' || adj.status === 'COMPLETED' || adj.status === undefined
+    );
+
+    const totalLostUnits = activeAdjustments.reduce((sum, adj) => adj.quantity < 0 ? sum + Math.abs(adj.quantity) : sum, 0);
+    const totalSurplusUnits = activeAdjustments.reduce((sum, adj) => adj.quantity > 0 ? sum + adj.quantity : sum, 0);
+
+    // estimatedLossAmount > 0 is Real Loss, < 0 is Surplus
+    const totalValueLoss = activeAdjustments.reduce((sum, adj) => adj.estimatedLossAmount > 0 ? sum + adj.estimatedLossAmount : sum, 0);
+    const totalValueSurplus = activeAdjustments.reduce((sum, adj) => adj.estimatedLossAmount < 0 ? sum + Math.abs(adj.estimatedLossAmount) : sum, 0);
+
+    const totalCompensation = activeAdjustments.reduce((sum, adj) => sum + (adj.compensationAmount || 0), 0);
+
+    // Final balance: (Loss - Surplus - Compensation)
+    const netBalance = totalValueLoss - totalValueSurplus - totalCompensation;
+
+    return { totalLostUnits, totalSurplusUnits, totalValueLoss, totalValueSurplus, totalCompensation, netBalance };
   }, [adjustments]);
 
   if (loading) {
@@ -94,20 +139,34 @@ export const InventoryAdjustmentsPage = () => {
 
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
         <div className="bg-slate-900 border border-slate-800 rounded-3xl p-6 flex flex-col justify-center gap-2">
-            <p className="text-[10px] font-black uppercase tracking-widest text-slate-500">Sản phẩm hao hụt</p>
-            <p className="text-2xl font-black text-white">{stats.totalLoss} đơn vị</p>
+          <p className="text-[10px] font-black uppercase tracking-widest text-slate-500">Hao hụt / Thặng dư</p>
+          <div className="flex items-baseline gap-2">
+            <span className="text-2xl font-black text-rose-500">-{stats.totalLostUnits}</span>
+            <span className="text-slate-600">/</span>
+            <span className="text-xl font-black text-emerald-500">+{stats.totalSurplusUnits}</span>
+          </div>
         </div>
         <div className="bg-slate-900 border border-slate-800 rounded-3xl p-6 flex flex-col justify-center gap-2">
-            <p className="text-[10px] font-black uppercase tracking-widest text-slate-500">Tổng thiệt hại (vốn)</p>
-            <p className="text-2xl font-black text-rose-500">{stats.totalValueLoss.toLocaleString('vi-VN')} đ</p>
+          <p className="text-[10px] font-black uppercase tracking-widest text-slate-500">Tổng thiệt hại (vốn)</p>
+          <p className="text-2xl font-black text-rose-500">{stats.totalValueLoss.toLocaleString('vi-VN')} đ</p>
         </div>
         <div className="bg-slate-900 border border-slate-800 rounded-3xl p-6 flex flex-col justify-center gap-2">
-            <p className="text-[10px] font-black uppercase tracking-widest text-emerald-500/80">Tiền đền bù nhận được</p>
-            <p className="text-2xl font-black text-emerald-500">{stats.totalCompensation.toLocaleString('vi-VN')} đ</p>
+          <p className="text-[10px] font-black uppercase tracking-widest text-emerald-500/80">Thặng dư / Đền bù</p>
+          <p className="text-2xl font-black text-emerald-500">{(stats.totalValueSurplus + stats.totalCompensation).toLocaleString('vi-VN')} đ</p>
         </div>
-        <div className="bg-slate-900 border-2 border-amber-500/20 rounded-3xl p-6 flex flex-col justify-center gap-2 shadow-[0_0_20px_rgba(245,158,11,0.05)]">
-            <p className="text-[10px] font-black uppercase tracking-widest text-amber-500">Mất mát thực tế</p>
-            <p className="text-2xl font-black text-white">{stats.netLoss.toLocaleString('vi-VN')} đ</p>
+        <div className={cn(
+          "bg-slate-900 border-2 rounded-3xl p-6 flex flex-col justify-center gap-2 shadow-xl",
+          stats.netBalance > 0 ? "border-rose-500/20" : "border-emerald-500/20"
+        )}>
+          <p className="text-[10px] font-black uppercase tracking-widest text-slate-400">
+            {stats.netBalance > 0 ? "Mất mát thực tế" : "Thặng dư thực tế"}
+          </p>
+          <p className={cn(
+            "text-2xl font-black",
+            stats.netBalance > 0 ? "text-rose-500" : "text-emerald-500"
+          )}>
+            {Math.abs(stats.netBalance).toLocaleString('vi-VN')} đ
+          </p>
         </div>
       </div>
 
@@ -141,32 +200,36 @@ export const InventoryAdjustmentsPage = () => {
                 <th className="p-6 text-[10px] font-black uppercase tracking-widest text-slate-400">Lý do</th>
                 <th className="p-6 text-[10px] font-black uppercase tracking-widest text-slate-400 text-right">Thiệt hại</th>
                 <th className="p-6 text-[10px] font-black uppercase tracking-widest text-slate-400 text-right">Đền bù</th>
+                <th className="p-6 text-[10px] font-black uppercase tracking-widest text-slate-400 text-center">Trạng thái / Thao tác</th>
               </tr>
             </thead>
             <tbody className="divide-y divide-slate-800">
               {filteredAdjustments.length === 0 ? (
                 <tr>
-                  <td colSpan={6} className="p-10 text-center text-slate-500 italic">
+                  <td colSpan={7} className="p-10 text-center text-slate-500 italic">
                     Chưa có nhật ký điều chỉnh nào.
                   </td>
                 </tr>
               ) : (
                 filteredAdjustments.map((adj) => (
-                  <motion.tr 
+                  <motion.tr
                     key={adj.id}
                     initial={{ opacity: 0 }}
                     animate={{ opacity: 1 }}
-                    className="hover:bg-slate-800/30 transition-colors group"
+                    className={cn(
+                      "hover:bg-slate-800/30 transition-colors group",
+                      adj.status === 'REJECTED' && "opacity-50"
+                    )}
                   >
                     <td className="p-6">
                       <div className="flex flex-col gap-1">
                         <div className="flex items-center gap-2 text-slate-300">
-                           <Calendar size={12} className="text-slate-500" />
-                           <span className="text-xs font-bold">{new Date(adj.adjustedAt).toLocaleDateString('vi-VN')}</span>
+                          <Calendar size={12} className="text-slate-500" />
+                          <span className="text-xs font-bold">{new Date(adj.adjustedAt).toLocaleDateString('vi-VN')}</span>
                         </div>
                         <div className="flex items-center gap-2 text-slate-500">
-                           <Clock size={12} />
-                           <span className="text-[10px]">{new Date(adj.adjustedAt).toLocaleTimeString('vi-VN')}</span>
+                          <Clock size={12} />
+                          <span className="text-[10px]">{new Date(adj.adjustedAt).toLocaleTimeString('vi-VN')}</span>
                         </div>
                       </div>
                     </td>
@@ -203,15 +266,51 @@ export const InventoryAdjustmentsPage = () => {
                     )}>
                       {adj.estimatedLossAmount !== 0 ? (
                         <div className="flex flex-col">
-                           <span>{adj.estimatedLossAmount < 0 ? '+' : ''}{Math.abs(adj.estimatedLossAmount).toLocaleString('vi-VN')} đ</span>
-                           <span className="text-[9px] uppercase tracking-tighter opacity-70">
-                              {adj.estimatedLossAmount < 0 ? 'Hồi lại (Thặng dư)' : 'Thiệt hại (Vốn)'}
-                           </span>
+                          <span>{adj.estimatedLossAmount < 0 ? '+' : ''}{Math.abs(adj.estimatedLossAmount).toLocaleString('vi-VN')} đ</span>
+                          <span className="text-[9px] uppercase tracking-tighter opacity-70">
+                            {adj.estimatedLossAmount < 0 ? 'Hồi lại (Thặng dư)' : 'Thiệt hại (Vốn)'}
+                          </span>
                         </div>
                       ) : (adj.quantity !== 0 ? '0 đ' : '---')}
                     </td>
                     <td className="p-6 text-sm font-black text-emerald-500 text-right">
                       {adj.compensationAmount > 0 ? `${adj.compensationAmount.toLocaleString('vi-VN')} đ` : '---'}
+                    </td>
+                    <td className="p-6">
+                      <div className="flex flex-col items-center gap-2">
+                        {adj.status === 'PENDING' ? (
+                          <div className="flex items-center gap-2">
+                            <button
+                              onClick={() => handleApprove(adj.id)}
+                              className="p-2 bg-emerald-500/20 text-emerald-500 rounded-lg hover:bg-emerald-500 hover:text-white transition-all shadow-lg shadow-emerald-500/10"
+                              title="Phê duyệt"
+                            >
+                              <Check size={16} />
+                            </button>
+                            <button
+                              onClick={() => handleReject(adj.id)}
+                              className="p-2 bg-rose-500/20 text-rose-500 rounded-lg hover:bg-rose-500 hover:text-white transition-all shadow-lg shadow-rose-500/10"
+                              title="Từ chối"
+                            >
+                              <XIcon size={16} />
+                            </button>
+                          </div>
+                        ) : (
+                          <span className={cn(
+                            "px-2 py-1 rounded text-[10px] font-black uppercase tracking-tighter",
+                            adj.status === 'APPROVED' || adj.status === 'COMPLETED' 
+                              ? "bg-emerald-500/10 text-emerald-500 border border-emerald-500/20" 
+                              : "bg-slate-800 text-slate-500 border border-slate-700"
+                          )}>
+                            {adj.status === 'APPROVED' || adj.status === 'COMPLETED' ? 'Đã duyệt' : 'Đã từ chối'}
+                          </span>
+                        )}
+                        {adj.status === 'PENDING' && (
+                          <span className="flex items-center gap-1 text-[9px] text-amber-500 font-bold animate-pulse">
+                            <AlertCircle size={10} /> Chờ duyệt
+                          </span>
+                        )}
+                      </div>
                     </td>
                   </motion.tr>
                 ))

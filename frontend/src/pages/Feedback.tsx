@@ -5,7 +5,7 @@ import { Table } from "../components/admin/Table";
 import { feedbackService } from "../api/feedbackService";
 import { reviewService, type Review } from "../api/reviewService";
 import { toast } from "react-hot-toast";
-import { MessageSquare, User, Mail, Calendar, Star, Package, Trash2, Check, Send } from "lucide-react";
+import { MessageSquare, User, Mail, Calendar, Star, Package, Trash2, Check, Send, Edit2 } from "lucide-react";
 import { clsx } from "clsx";
 import AdminChat from "../components/admin/AdminChat";
 import { chatService } from "../api/chatService";
@@ -225,9 +225,16 @@ export const FeedbackPage = () => {
       </div>
     ),
     rating: (
-        <div className="flex items-center gap-1 text-amber-500 bg-amber-500/10 px-2 py-1 rounded-lg w-fit">
-            <Star size={12} fill="currentColor" />
-            <span className="text-xs font-black">{rev.ratingStar}</span>
+        <div className="flex items-center gap-2">
+            <div className="flex items-center gap-1 text-amber-500 bg-amber-500/10 px-2 py-1 rounded-lg w-fit">
+                <Star size={12} fill="currentColor" />
+                <span className="text-xs font-black">{rev.ratingStar}</span>
+            </div>
+            {rev.isEdited && (
+              <span className="text-[10px] font-black text-primary-500 uppercase tracking-widest italic bg-primary-500/10 px-2 py-1 rounded-lg border border-primary-500/20">
+                (Đã chỉnh sửa)
+              </span>
+            )}
         </div>
     ),
     comment: (
@@ -236,30 +243,7 @@ export const FeedbackPage = () => {
             "{rev.comment}"
           </p>
           
-          {rev.adminReply ? (
-            <div className="ml-6 p-4 bg-primary-500/5 border border-primary-500/10 rounded-2xl relative group/reply">
-                 <div className="absolute -left-3 top-4 w-3 h-px bg-primary-500/20"></div>
-                 <div className="flex items-center gap-2 mb-2">
-                    <div className="w-5 h-5 bg-primary-500 rounded flex items-center justify-center">
-                        <Check size={10} className="text-white" />
-                    </div>
-                    <span className="text-[10px] font-black text-primary-500 uppercase tracking-widest">
-                        Admin đã phản hồi
-                    </span>
-                 </div>
-                 <p className="text-slate-300 text-xs italic">"{rev.adminReply}"</p>
-                 <button 
-                  onClick={() => {
-                    setReplyingTo(rev.id);
-                    setReplyContent(rev.adminReply || "");
-                  }}
-                  className="absolute top-2 right-2 p-1.5 text-slate-600 hover:text-primary-500 transition-colors opacity-0 group-hover/reply:opacity-100"
-                  title="Chỉnh sửa phản hồi"
-                 >
-                    <Star size={10} fill="currentColor" />
-                 </button>
-            </div>
-          ) : replyingTo === rev.id ? (
+          {replyingTo === rev.id ? (
             <div className="ml-6 space-y-3 p-4 bg-slate-800/50 rounded-2xl border border-primary-500/30 animate-in slide-in-from-top-1 duration-300">
                 <textarea 
                   value={replyContent}
@@ -281,9 +265,32 @@ export const FeedbackPage = () => {
                       className="bg-primary-500 hover:bg-primary-400 text-white px-4 py-1.5 rounded-lg text-[10px] font-black uppercase tracking-widest transition-all shadow-lg shadow-primary-500/20 disabled:opacity-50 flex items-center gap-2"
                     >
                         {submittingReply ? <span className="w-3 h-3 border-2 border-white/20 border-t-white rounded-full animate-spin" /> : <Send size={12} />}
-                        Gửi phản hồi
+                        {rev.adminReply ? "Cập nhật" : "Gửi phản hồi"}
                     </button>
                 </div>
+            </div>
+          ) : rev.adminReply ? (
+            <div className="ml-6 p-4 bg-primary-50/5 border border-primary-500/10 rounded-2xl relative group/reply">
+                 <div className="absolute -left-3 top-4 w-3 h-px bg-primary-500/20"></div>
+                 <div className="flex items-center gap-2 mb-2">
+                    <div className="w-5 h-5 bg-primary-500 rounded flex items-center justify-center">
+                        <Check size={10} className="text-white" />
+                    </div>
+                    <span className="text-[10px] font-black text-primary-500 uppercase tracking-widest">
+                        Admin đã phản hồi
+                    </span>
+                 </div>
+                 <p className="text-slate-300 text-xs italic">"{rev.adminReply}"</p>
+                 <button 
+                  onClick={() => {
+                    setReplyingTo(rev.id);
+                    setReplyContent(rev.adminReply || "");
+                  }}
+                  className="absolute top-2 right-2 p-2 bg-white/80 hover:bg-white text-primary-500 rounded-lg shadow-sm border border-primary-500/10 transition-all hover:scale-110 active:scale-95"
+                  title="Chỉnh sửa phản hồi"
+                 >
+                    <Edit2 size={12} />
+                 </button>
             </div>
           ) : (
             <button 

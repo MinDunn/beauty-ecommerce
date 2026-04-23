@@ -34,5 +34,8 @@ public class ReviewJpaEntity {
     private String adminReply;
     private LocalDateTime repliedAt;
     
+    @Builder.Default
+    private Boolean isEdited = false;
+    
     private LocalDateTime createdAt;
 }

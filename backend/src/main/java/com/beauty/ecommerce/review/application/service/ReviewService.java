@@ -137,8 +137,13 @@ public class ReviewService {
             throw new BadRequestException("Bạn không có quyền chỉnh sửa đánh giá này");
         }
 
+        if (review.getIsEdited() != null && review.getIsEdited()) {
+            throw new BadRequestException("Mỗi đánh giá chỉ được phép chỉnh sửa một lần duy nhất");
+        }
+
         review.setRatingStar(request.getRatingStar());
         review.setComment(request.getComment());
+        review.setIsEdited(true);
         // Khi user sửa đánh giá, có thể xóa phản hồi cũ của admin để admin phản hồi lại thông tin mới
         // Hoặc giữ nguyên tùy requirement. Ở đây tôi giữ nguyên.
         
@@ -162,6 +167,7 @@ public class ReviewService {
                 .comment(review.getComment())
                 .adminReply(review.getAdminReply())
                 .repliedAt(review.getRepliedAt() != null ? review.getRepliedAt().toString() + "Z" : null)
+                .isEdited(review.getIsEdited())
                 .createdAt(review.getCreatedAt().toString() + "Z")
                 .build();
     }

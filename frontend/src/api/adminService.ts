@@ -3,14 +3,19 @@ import type { ApiResponse } from '../types/api';
 
 export interface DashboardStats {
   totalRevenue: number;
+  totalProfit: number;
   revenueGrowth: number;
+  profitGrowth: number;
   totalOrders: number;
   orderGrowth: number;
   totalCustomers: number;
   customerGrowth: number;
   totalFeedback: number;
   feedbackGrowth: number;
-  revenueHistory: Array<{ date: string; revenue: number }>;
+  totalCost: number;
+  totalInventoryLoss: number;
+  totalCompensation: number;
+  revenueHistory: Array<{ date: string; revenue: number; profit: number }>;
   recentOrders: Array<{
     id: number;
     name: string;
@@ -61,6 +66,16 @@ export const adminService = {
   getInventoryReceipts: async () => {
     const response = await axiosInstance.get<ApiResponse<any[]>>('/admin/inventory/receipts');
     return response.data.data;
+  },
+  getPendingAdjustments: async () => {
+    const response = await axiosInstance.get<ApiResponse<any[]>>('/admin/inventory/adjustments/pending');
+    return response.data.data;
+  },
+  approveAdjustment: async (id: number) => {
+    await axiosInstance.post(`/admin/inventory/adjustments/approve?id=${id}`);
+  },
+  rejectAdjustment: async (id: number) => {
+    await axiosInstance.post(`/admin/inventory/adjustments/reject?id=${id}`);
   }
 };
 

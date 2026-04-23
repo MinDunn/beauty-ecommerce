@@ -141,7 +141,7 @@ public class InventoryService {
     }
 
     @Transactional
-    public void syncProductStock(Long productId) {
+    public synchronized void syncProductStock(Long productId) {
         ProductJpaEntity product = productRepository.findById(productId)
                 .orElseThrow(() -> new RuntimeException("Sản phẩm không tồn tại"));
 
@@ -158,26 +158,99 @@ public class InventoryService {
                     int discrepancy = currentSum - oldStock;
                     BigDecimal estimatedLoss = calculateEstimatedLoss(productId, null, discrepancy);
                     
-                    InventoryAdjustmentJpaEntity adjustment = InventoryAdjustmentJpaEntity.builder()
-                            .productId(productId)
-                            .quantity(discrepancy)
-                            .reason("Hệ thống tự đồng bộ (Auto-healing)")
-                            .compensationAmount(BigDecimal.ZERO)
-                            .estimatedLossAmount(estimatedLoss)
-                            .remarks(null)
-                            .createdBy("SYSTEM")
-                            .createdAt(LocalDateTime.now())
-                            .build();
-                    adjustmentRepository.save(adjustment);
+                    // Kiểm tra xem đã có yêu cầu PENDING nào cho sản phẩm này với cùng mức chênh lệch chưa
+                    List<InventoryAdjustmentJpaEntity> pendingAdjustments = adjustmentRepository.findAll().stream()
+                            .filter(a -> a.getProductId().equals(productId))
+                            .filter(a -> "PENDING".equals(a.getStatus()))
+                            .filter(a -> a.getQuantity() != null && a.getQuantity().equals(discrepancy))
+                            .collect(Collectors.toList());
+
+                    if (pendingAdjustments.isEmpty()) {
+                        String detailedReason = String.format("Hệ thống phát hiện chênh lệch (Tổng biến thể: %d != Tổng kho: %d)", currentSum, oldStock);
+                        InventoryAdjustmentJpaEntity adjustment = InventoryAdjustmentJpaEntity.builder()
+                                .productId(productId)
+                                .quantity(discrepancy)
+                                .reason(detailedReason)
+                                .compensationAmount(BigDecimal.ZERO)
+                                .estimatedLossAmount(estimatedLoss)
+                                .remarks("Cần phê duyệt để đồng bộ dữ liệu kho.")
+                                .createdBy("SYSTEM")
+                                .status("PENDING")
+                                .createdAt(LocalDateTime.now())
+                                .build();
+                        adjustmentRepository.save(adjustment);
+                    }
                 }
-                
-                product.setStockQuantity(currentSum);
-                productRepository.save(product);
             }
-            
-            // Sync expiry date after stock sync
-            syncProductExpiryDate(productId);
         }
+    }
+
+    @Transactional
+    public void approveAdjustment(Long adjustmentId, String adminName) {
+        InventoryAdjustmentJpaEntity adj = adjustmentRepository.findById(adjustmentId)
+                .orElseThrow(() -> new RuntimeException("Yêu cầu điều chỉnh không tồn tại"));
+
+        if (!"PENDING".equals(adj.getStatus())) {
+            throw new RuntimeException("Chỉ có thể phê duyệt yêu cầu ở trạng thái PENDING");
+        }
+
+        // Apply changes to stock
+        ProductJpaEntity product = productRepository.findById(adj.getProductId())
+                .orElseThrow(() -> new RuntimeException("Sản phẩm không tồn tại"));
+        
+        int newStock = (product.getStockQuantity() != null ? product.getStockQuantity() : 0) + adj.getQuantity();
+        product.setStockQuantity(newStock);
+        productRepository.save(product);
+
+        adj.setStatus("APPROVED");
+        adj.setRemarks(adj.getRemarks() + " | Phê duyệt bởi " + adminName + " vào lúc " + LocalDateTime.now());
+        adjustmentRepository.save(adj);
+        
+        syncProductExpiryDate(adj.getProductId());
+    }
+
+    @Transactional
+    public void rejectAdjustment(Long adjustmentId, String adminName) {
+        InventoryAdjustmentJpaEntity adj = adjustmentRepository.findById(adjustmentId)
+                .orElseThrow(() -> new RuntimeException("Yêu cầu điều chỉnh không tồn tại"));
+
+        if (!"PENDING".equals(adj.getStatus())) {
+            throw new RuntimeException("Chỉ có thể từ chối yêu cầu ở trạng thái PENDING");
+        }
+
+        adj.setStatus("REJECTED");
+        adj.setRemarks(adj.getRemarks() + " | Từ chối bởi " + adminName + " vào lúc " + LocalDateTime.now());
+        adjustmentRepository.save(adj);
+    }
+
+    public List<InventoryAdjustmentResponse> getPendingAdjustments() {
+        List<InventoryAdjustmentJpaEntity> pending = adjustmentRepository.findAll().stream()
+                .filter(a -> "PENDING".equals(a.getStatus()))
+                .collect(Collectors.toList());
+        
+        if (pending.isEmpty()) return List.of();
+
+        Map<Long, String> productNameById = productRepository.findAllById(
+                        pending.stream().map(InventoryAdjustmentJpaEntity::getProductId).collect(Collectors.toSet())
+                )
+                .stream()
+                .collect(Collectors.toMap(ProductJpaEntity::getId, ProductJpaEntity::getName));
+
+        return pending.stream()
+                .map(adj -> new InventoryAdjustmentResponse(
+                        adj.getId(),
+                        adj.getProductId(),
+                        productNameById.getOrDefault(adj.getProductId(), "Sản phẩm không xác định"),
+                        adj.getQuantity(),
+                        adj.getReason(),
+                        adj.getCompensationAmount(),
+                        adj.getEstimatedLossAmount(),
+                        adj.getVariantName(),
+                        adj.getRemarks(),
+                        adj.getCreatedAt(),
+                        adj.getCreatedBy()
+                ))
+                .toList();
     }
 
     @Transactional

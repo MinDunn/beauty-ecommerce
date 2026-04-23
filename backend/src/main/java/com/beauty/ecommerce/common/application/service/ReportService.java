@@ -3,6 +3,12 @@ package com.beauty.ecommerce.common.application.service;
 import com.beauty.ecommerce.order.adapter.out.persistence.OrderJpaEntity;
 import com.beauty.ecommerce.order.adapter.out.persistence.OrderRepository;
 import com.beauty.ecommerce.order.domain.entity.OrderStatus;
+import com.beauty.ecommerce.order.domain.entity.PaymentStatus;
+import com.beauty.ecommerce.order.domain.entity.PaymentMethod;
+import com.beauty.ecommerce.product.adapter.out.persistence.ProductJpaEntity;
+import com.beauty.ecommerce.product.adapter.out.persistence.ProductRepository;
+import com.beauty.ecommerce.inventory.adapter.out.persistence.InventoryAdjustmentRepository;
+import com.beauty.ecommerce.inventory.adapter.out.persistence.InventoryAdjustmentJpaEntity;
 import lombok.RequiredArgsConstructor;
 import org.apache.poi.ss.usermodel.*;
 import org.apache.poi.ss.util.CellRangeAddress;
@@ -24,6 +30,8 @@ import java.util.stream.Collectors;
 public class ReportService {
 
     private final OrderRepository orderRepository;
+    private final ProductRepository productRepository;
+    private final InventoryAdjustmentRepository adjustmentRepository;
 
     public byte[] generateOrderReportCsv() {
         return generateOrderReportExcel();
@@ -140,17 +148,17 @@ public class ReportService {
             Cell s1TitleCell = s1TitleRow.createCell(0);
             s1TitleCell.setCellValue("BÁO CÁO TÓM TẮT DOANH THU THEO NGÀY");
             s1TitleCell.setCellStyle(titleStyle);
-            sheet1.addMergedRegion(new CellRangeAddress(3, 3, 0, 4));
+            sheet1.addMergedRegion(new CellRangeAddress(3, 3, 0, 7));
 
             Row s1DateRow = sheet1.createRow(4);
             Cell s1DateCell = s1DateRow.createCell(0);
             s1DateCell.setCellValue("Ngày lập biểu: " + today.format(dateFormatter));
             s1DateCell.setCellStyle(dateSubTitleStyle);
-            sheet1.addMergedRegion(new CellRangeAddress(4, 4, 0, 4));
+            sheet1.addMergedRegion(new CellRangeAddress(4, 4, 0, 7));
 
             // Data Header
             Row s1HeaderRow = sheet1.createRow(6);
-            String[] s1Columns = {"STT", "Ngày", "Tổng số đơn", "Đơn thành công", "Doanh thu (VNĐ)"};
+            String[] s1Columns = {"STT", "Ngày", "Tổng số đơn", "Đơn thành công", "Doanh thu", "Giá vốn", "Thất thoát", "Lợi nhuận"};
             for (int i = 0; i < s1Columns.length; i++) {
                 Cell cell = s1HeaderRow.createCell(i);
                 cell.setCellValue(s1Columns[i]);
@@ -168,6 +176,18 @@ public class ReportService {
             int s1RowNum = 7;
             int s1Stt = 1;
             BigDecimal totalSystemRevenue = BigDecimal.ZERO;
+            BigDecimal totalSystemCost = BigDecimal.ZERO;
+            BigDecimal totalSystemLoss = BigDecimal.ZERO;
+            BigDecimal totalSystemProfit = BigDecimal.ZERO;
+
+            Map<Long, BigDecimal> productCostMap = productRepository.findAll().stream()
+                    .collect(Collectors.toMap(
+                            ProductJpaEntity::getId,
+                            p -> p.getOriginalPrice() != null ? p.getOriginalPrice() : BigDecimal.ZERO,
+                            (a, b) -> a
+                    ));
+            
+            List<InventoryAdjustmentJpaEntity> adjustments = adjustmentRepository.findAll();
 
             for (LocalDate date : sortedDates) {
                 List<OrderJpaEntity> dayOrders = ordersByDate.get(date);
@@ -184,12 +204,39 @@ public class ReportService {
                 
                 totalSystemRevenue = totalSystemRevenue.add(dayRevenue);
 
+                BigDecimal dayCost = dayOrders.stream()
+                        .filter(o -> o.getStatus() != null && !OrderStatus.CANCELLED.name().equalsIgnoreCase(o.getStatus()))
+                        .filter(o -> PaymentStatus.PAID.name().equals(o.getPaymentStatus()) || PaymentMethod.COD.name().equals(o.getPaymentMethod()))
+                        .flatMap(o -> o.getItems().stream())
+                        .map(item -> {
+                            BigDecimal unitCost = productCostMap.getOrDefault(item.getProduct().getId(), BigDecimal.ZERO);
+                            return unitCost.multiply(BigDecimal.valueOf(item.getQuantity()));
+                        })
+                        .reduce(BigDecimal.ZERO, BigDecimal::add);
+                totalSystemCost = totalSystemCost.add(dayCost);
+
+                BigDecimal dayLoss = adjustments.stream()
+                        .filter(a -> a.getCreatedAt() != null && a.getCreatedAt().toLocalDate().equals(date))
+                        .map(a -> {
+                            BigDecimal loss = a.getEstimatedLossAmount() != null ? a.getEstimatedLossAmount() : BigDecimal.ZERO;
+                            BigDecimal comp = a.getCompensationAmount() != null ? a.getCompensationAmount() : BigDecimal.ZERO;
+                            return loss.subtract(comp);
+                        })
+                        .reduce(BigDecimal.ZERO, BigDecimal::add);
+                totalSystemLoss = totalSystemLoss.add(dayLoss);
+
+                BigDecimal dayProfit = dayRevenue.subtract(dayCost).subtract(dayLoss);
+                totalSystemProfit = totalSystemProfit.add(dayProfit);
+
                 Row row = sheet1.createRow(s1RowNum++);
                 Cell c0 = row.createCell(0); c0.setCellValue(s1Stt++); c0.setCellStyle(centerStyle);
                 Cell c1 = row.createCell(1); c1.setCellValue(date.format(dateFormatter)); c1.setCellStyle(centerStyle);
                 Cell c2 = row.createCell(2); c2.setCellValue(totalOrdersCount); c2.setCellStyle(centerStyle);
                 Cell c3 = row.createCell(3); c3.setCellValue(completedOrdersCount); c3.setCellStyle(centerStyle);
                 Cell c4 = row.createCell(4); c4.setCellValue(dayRevenue.doubleValue()); c4.setCellStyle(currencyStyle);
+                Cell c5 = row.createCell(5); c5.setCellValue(dayCost.doubleValue()); c5.setCellStyle(currencyStyle);
+                Cell c6 = row.createCell(6); c6.setCellValue(dayLoss.doubleValue()); c6.setCellStyle(currencyStyle);
+                Cell c7 = row.createCell(7); c7.setCellValue(dayProfit.doubleValue()); c7.setCellStyle(currencyStyle);
             }
 
             // Summary Footer
@@ -198,12 +245,18 @@ public class ReportService {
             Cell s1fC1 = s1TotalRow.createCell(1); s1fC1.setCellValue("TỔNG CỘNG"); s1fC1.setCellStyle(tableHeaderStyle);
             Cell s1fC2 = s1TotalRow.createCell(2); s1fC2.setCellValue(""); s1fC2.setCellStyle(tableHeaderStyle);
             Cell s1fC3 = s1TotalRow.createCell(3); s1fC3.setCellValue(""); s1fC3.setCellStyle(tableHeaderStyle);
-            Cell s1fC4 = s1TotalRow.createCell(4); s1fC4.setCellValue(totalSystemRevenue.doubleValue()); 
+            Cell s1fC4 = s1TotalRow.createCell(4); s1fC4.setCellValue(totalSystemRevenue.doubleValue());
+            Cell s1fC5 = s1TotalRow.createCell(5); s1fC5.setCellValue(totalSystemCost.doubleValue());
+            Cell s1fC6 = s1TotalRow.createCell(6); s1fC6.setCellValue(totalSystemLoss.doubleValue());
+            Cell s1fC7 = s1TotalRow.createCell(7); s1fC7.setCellValue(totalSystemProfit.doubleValue());
             
             CellStyle totalCurrencyStyle = workbook.createCellStyle();
             totalCurrencyStyle.cloneStyleFrom(tableHeaderStyle);
             totalCurrencyStyle.setDataFormat(format.getFormat("#,##0"));
             s1fC4.setCellStyle(totalCurrencyStyle);
+            s1fC5.setCellStyle(totalCurrencyStyle);
+            s1fC6.setCellStyle(totalCurrencyStyle);
+            s1fC7.setCellStyle(totalCurrencyStyle);
 
             for (int i = 0; i < s1Columns.length; i++) {
                 sheet1.autoSizeColumn(i);
@@ -228,16 +281,16 @@ public class ReportService {
             Cell s2TitleCell = s2TitleRow.createCell(0);
             s2TitleCell.setCellValue("SỔ CHI TIẾT ĐƠN HÀNG PHÁT SINH");
             s2TitleCell.setCellStyle(titleStyle);
-            sheet2.addMergedRegion(new CellRangeAddress(3, 3, 0, 8));
+            sheet2.addMergedRegion(new CellRangeAddress(3, 3, 0, 10));
 
             Row s2DateRow = sheet2.createRow(4);
             Cell s2DateCell = s2DateRow.createCell(0);
             s2DateCell.setCellValue("Ngày lập biểu: " + today.format(dateFormatter));
             s2DateCell.setCellStyle(dateSubTitleStyle);
-            sheet2.addMergedRegion(new CellRangeAddress(4, 4, 0, 8));
+            sheet2.addMergedRegion(new CellRangeAddress(4, 4, 0, 10));
 
             Row s2HeaderRow = sheet2.createRow(6);
-            String[] s2Columns = {"STT", "Mã đơn hàng", "Thời gian đặt", "Tên người nhận", "Số điện thoại", "Địa chỉ giao hàng", "Tổng tiền", "Trạng thái", "Phương thức"};
+            String[] s2Columns = {"STT", "Mã đơn hàng", "Thời gian đặt", "Tên người nhận", "Số điện thoại", "Địa chỉ giao hàng", "Giá vốn", "Doanh thu", "Lợi nhuận", "Trạng thái", "Phương thức"};
             for (int i = 0; i < s2Columns.length; i++) {
                 Cell cell = s2HeaderRow.createCell(i);
                 cell.setCellValue(s2Columns[i]);
@@ -256,16 +309,28 @@ public class ReportService {
                 Cell c4 = row.createCell(4); c4.setCellValue(order.getReceiverPhone() != null ? order.getReceiverPhone() : ""); c4.setCellStyle(centerStyle);
                 Cell c5 = row.createCell(5); c5.setCellValue(order.getShippingAddress() != null ? order.getShippingAddress() : ""); c5.setCellStyle(cellStyle);
                 
-                Cell c6 = row.createCell(6); 
-                if (order.getTotalPrice() != null) {
-                    c6.setCellValue(order.getTotalPrice().doubleValue());
-                } else {
-                    c6.setCellValue(0);
-                }
+                Cell c6 = row.createCell(6);
+                BigDecimal orderCost = order.getItems().stream()
+                        .map(item -> {
+                            BigDecimal unitCost = productCostMap.getOrDefault(item.getProduct().getId(), BigDecimal.ZERO);
+                            return unitCost.multiply(BigDecimal.valueOf(item.getQuantity()));
+                        })
+                        .reduce(BigDecimal.ZERO, BigDecimal::add);
+                c6.setCellValue(orderCost.doubleValue());
                 c6.setCellStyle(currencyStyle);
+
+                Cell c7 = row.createCell(7); 
+                BigDecimal orderRevenue = order.getTotalPrice() != null ? order.getTotalPrice() : BigDecimal.ZERO;
+                c7.setCellValue(orderRevenue.doubleValue());
+                c7.setCellStyle(currencyStyle);
+
+                Cell c8 = row.createCell(8);
+                BigDecimal orderProfit = orderRevenue.subtract(orderCost);
+                c8.setCellValue(orderProfit.doubleValue());
+                c8.setCellStyle(currencyStyle);
                 
-                Cell c7 = row.createCell(7); c7.setCellValue(order.getStatus() != null ? order.getStatus() : ""); c7.setCellStyle(centerStyle);
-                Cell c8 = row.createCell(8); c8.setCellValue(order.getPaymentMethod() != null ? order.getPaymentMethod() : ""); c8.setCellStyle(centerStyle);
+                Cell c9 = row.createCell(9); c9.setCellValue(order.getStatus() != null ? order.getStatus() : ""); c9.setCellStyle(centerStyle);
+                Cell c10 = row.createCell(10); c10.setCellValue(order.getPaymentMethod() != null ? order.getPaymentMethod() : ""); c10.setCellStyle(centerStyle);
             }
 
             for (int i = 0; i < s2Columns.length; i++) {
@@ -273,7 +338,7 @@ public class ReportService {
                 sheet2.setColumnWidth(i, sheet2.getColumnWidth(i) + 512); 
             }
 
-            createSignatures(sheet2, s2RowNum + 2, 8);
+            createSignatures(sheet2, s2RowNum + 2, 10);
 
             ByteArrayOutputStream outputStream = new ByteArrayOutputStream();
             workbook.write(outputStream);

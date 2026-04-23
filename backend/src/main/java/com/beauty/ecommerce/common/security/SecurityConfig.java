@@ -43,14 +43,17 @@ public class SecurityConfig {
                 .csrf(AbstractHttpConfigurer::disable)
                 .authorizeHttpRequests(auth -> auth
                         // Public endpoints
-                        .requestMatchers(AntPathRequestMatcher.antMatcher(HttpMethod.GET, "/api/products/**")).permitAll()
+                        .requestMatchers(AntPathRequestMatcher.antMatcher(HttpMethod.GET, "/api/products/**"))
+                        .permitAll()
                         .requestMatchers(AntPathRequestMatcher.antMatcher("/api/public/**")).permitAll()
                         .requestMatchers(AntPathRequestMatcher.antMatcher("/api/auth/**")).permitAll()
                         .requestMatchers(AntPathRequestMatcher.antMatcher("/api/chat/**")).permitAll()
                         .requestMatchers(AntPathRequestMatcher.antMatcher("/ws/**")).permitAll()
                         .requestMatchers(AntPathRequestMatcher.antMatcher("/api/payment/momo-ipn")).permitAll()
-                        .requestMatchers(AntPathRequestMatcher.antMatcher(HttpMethod.GET, "/api/products/**")).permitAll()
-                        .requestMatchers(AntPathRequestMatcher.antMatcher(HttpMethod.POST, "/api/products/*/view")).permitAll()
+                        .requestMatchers(AntPathRequestMatcher.antMatcher(HttpMethod.GET, "/api/products/**"))
+                        .permitAll()
+                        .requestMatchers(AntPathRequestMatcher.antMatcher(HttpMethod.POST, "/api/products/*/view"))
+                        .permitAll()
                         .requestMatchers(HttpMethod.GET, "/api/categories/**").permitAll()
                         .requestMatchers(HttpMethod.GET, "/api/coupons/**").permitAll()
                         .requestMatchers(HttpMethod.GET, "/api/reviews/**").permitAll()
@@ -59,19 +62,17 @@ public class SecurityConfig {
                         .requestMatchers(HttpMethod.GET, "/api/orders/public/lookup/**").permitAll()
                         // Admin endpoints
                         .requestMatchers("/api/admin/**").hasAuthority("ROLE_ADMIN")
-                        // All other requests require authentication (including /api/auth/logout and /api/users/**)
-                        .anyRequest().authenticated()
-                )
+                        // All other requests require authentication (including /api/auth/logout and
+                        // /api/users/**)
+                        .anyRequest().authenticated())
                 .sessionManagement(session -> session
-                        .sessionCreationPolicy(SessionCreationPolicy.STATELESS)
-                )
+                        .sessionCreationPolicy(SessionCreationPolicy.STATELESS))
                 .exceptionHandling(exceptions -> exceptions
                         .authenticationEntryPoint((request, response, authException) -> {
                             response.setStatus(HttpServletResponse.SC_UNAUTHORIZED);
                             response.setContentType("application/json");
                             response.getWriter().write("{\"message\": \"Unauthorized\", \"status\": 401}");
-                        })
-                )
+                        }))
                 .authenticationProvider(authenticationProvider())
                 .addFilterBefore(jwtAuthenticationFilter, UsernamePasswordAuthenticationFilter.class);
 
@@ -101,8 +102,7 @@ public class SecurityConfig {
         CorsConfiguration configuration = new CorsConfiguration();
         configuration.setAllowedOrigins(List.of(
                 "http://localhost:5173", "http://localhost:5174", "http://localhost:3000",
-                "http://192.168.1.6:5173", "http://192.168.1.6:5174", "http://192.168.1.6:3000"
-        ));
+                "http://192.168.1.6:5173", "http://192.168.1.6:5174", "http://192.168.1.6:3000"));
         configuration.setAllowedMethods(Arrays.asList("GET", "POST", "PUT", "DELETE", "PATCH", "OPTIONS"));
         configuration.setAllowedHeaders(List.of("*"));
         configuration.setAllowCredentials(true);

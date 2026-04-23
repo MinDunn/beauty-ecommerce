@@ -3,9 +3,21 @@ package com.beauty.ecommerce;
 import io.github.cdimascio.dotenv.Dotenv;
 import org.springframework.boot.SpringApplication;
 import org.springframework.boot.autoconfigure.SpringBootApplication;
+import org.springframework.scheduling.annotation.EnableScheduling;
+
+import jakarta.annotation.PostConstruct;
+import java.util.TimeZone;
 
 @SpringBootApplication
+@EnableScheduling
 public class EcommerceApplication {
+
+    @PostConstruct
+    public void init() {
+        // Thiết lập múi giờ Việt Nam
+        TimeZone.setDefault(TimeZone.getTimeZone("Asia/Ho_Chi_Minh"));
+        System.out.println(">>> [CONFIG] Ứng dụng đã được thiết lập múi giờ: " + TimeZone.getDefault().getID());
+    }
 
     public static void main(String[] args) {
         // Load .env from current directory or root directory (one level up)

@@ -9,8 +9,9 @@ export interface Review {
   productName: string;
   ratingStar: number;
   comment: string;
-  adminReply?: string;
-  repliedAt?: string;
+  adminReply: string | null;
+  repliedAt: string | null;
+  isEdited: boolean;
   createdAt: string;
 }
 

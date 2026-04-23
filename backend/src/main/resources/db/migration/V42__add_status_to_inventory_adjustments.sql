@@ -1,0 +1,1 @@
+ALTER TABLE inventory_adjustments ADD COLUMN status VARCHAR(20) DEFAULT 'COMPLETED';

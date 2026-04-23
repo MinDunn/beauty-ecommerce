@@ -10,13 +10,18 @@ import java.util.Map;
 @Builder
 public class DashboardResponse {
     private BigDecimal totalRevenue;
+    private BigDecimal totalProfit;
     private long totalOrders;
     private long totalCustomers;
     private long totalFeedback;
     private BigDecimal revenueGrowth;
+    private BigDecimal profitGrowth;
     private BigDecimal orderGrowth;
     private BigDecimal customerGrowth;
     private BigDecimal feedbackGrowth;
+    private BigDecimal totalCost;
+    private BigDecimal totalInventoryLoss;
+    private BigDecimal totalCompensation;
     private List<RevenueData> revenueHistory;
     private List<Map<String, Object>> recentOrders;
     private List<ProductTrendData> topFavoritedProducts;
@@ -43,6 +48,7 @@ public class DashboardResponse {
     public static class RevenueData {
         private String date;
         private BigDecimal revenue;
+        private BigDecimal profit;
     }
 
     @Getter

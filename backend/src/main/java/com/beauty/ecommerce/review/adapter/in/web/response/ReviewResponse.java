@@ -19,5 +19,6 @@ public class ReviewResponse {
     private String comment;
     private String adminReply;
     private String repliedAt;
+    private Boolean isEdited;
     private String createdAt;
 }

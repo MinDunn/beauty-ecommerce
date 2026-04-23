@@ -87,6 +87,24 @@ public class AdminInventoryController {
         return ResponseEntity.ok(com.beauty.ecommerce.common.dto.ApiResponse.success(inventoryService.getAllAdjustments()));
     }
 
+    @org.springframework.web.bind.annotation.GetMapping("/adjustments/pending")
+    public ResponseEntity<com.beauty.ecommerce.common.dto.ApiResponse<List<InventoryService.InventoryAdjustmentResponse>>> getPendingAdjustments() {
+        return ResponseEntity
+                .ok(com.beauty.ecommerce.common.dto.ApiResponse.success(inventoryService.getPendingAdjustments()));
+    }
+
+    @PostMapping("/adjustments/approve")
+    public ResponseEntity<Void> approveAdjustment(@org.springframework.web.bind.annotation.RequestParam Long id) {
+        inventoryService.approveAdjustment(id, "ADMIN");
+        return ResponseEntity.ok().build();
+    }
+
+    @PostMapping("/adjustments/reject")
+    public ResponseEntity<Void> rejectAdjustment(@org.springframework.web.bind.annotation.RequestParam Long id) {
+        inventoryService.rejectAdjustment(id, "ADMIN");
+        return ResponseEntity.ok().build();
+    }
+
     @Data
     public static class InventoryAdjustmentRequest {
         private Long productId;

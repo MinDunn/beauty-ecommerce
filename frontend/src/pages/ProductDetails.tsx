@@ -1,7 +1,7 @@
 import { useState, useEffect, useCallback } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useParams, Link, useNavigate } from 'react-router-dom';
-import { Star, ShoppingCart, Heart, ShieldCheck, Truck, Share2, Facebook, MessageCircle, ChevronRight, Minus, Plus, Loader2, Eye, AlertCircle } from 'lucide-react';
+import { Star, ShoppingCart, Heart, ShieldCheck, Truck, Share2, Facebook, MessageCircle, ChevronRight, Minus, Plus, Loader2, Eye, AlertCircle, Edit2 } from 'lucide-react';
 import { useDispatch, useSelector } from 'react-redux';
 import { addItem, selectOnlyItems } from '../store/slices/cartSlice';
 import { cn } from '../utils/cn';
@@ -827,18 +827,19 @@ const ProductDetails = () => {
                               </div>
                               <div>
                                 <p className="font-black text-gray-900 text-lg uppercase tracking-tight leading-none mb-2">{rev.userFullName}</p>
-                                <p className="text-[10px] text-gray-400 font-bold uppercase tracking-widest opacity-60 italic">{new Date(rev.createdAt).toLocaleDateString('vi-VN')}</p>
+                                <p className="text-[10px] text-gray-400 font-bold uppercase tracking-widest opacity-60 italic">{new Date(rev.createdAt).toLocaleDateString('vi-VN')} {rev.isEdited && <span className='ml-2 text-primary-400 font-black'>(Đã chỉnh sửa)</span>}</p>
                               </div>
                             </div>
                             <div className="flex flex-col items-end gap-2">
                                 <div className="flex items-center text-amber-500 gap-1 bg-amber-50 px-3 py-1.5 rounded-xl border border-amber-100 shadow-sm">
                                   {[1, 2, 3, 4, 5].map(s => <Star key={s} fill={s <= rev.ratingStar ? "currentColor" : "none"} size={14} />)}
                                 </div>
-                                {user && Number(user.id) === Number(rev.userId) && (
+                                {user && (String(user.id) == String(rev.userId) || rev.userFullName.includes(user.fullName) || user.fullName.includes(rev.userFullName)) && !rev.isEdited && (
                                    <button 
                                     onClick={() => setEditingReview({ ...rev })}
-                                    className="text-[10px] font-black text-primary-500 uppercase tracking-widest hover:underline italic"
+                                    className="flex items-center gap-1.5 px-3 py-1.5 bg-primary-50 text-primary-600 rounded-xl text-[10px] font-black uppercase tracking-widest hover:bg-primary-500 hover:text-white transition-all shadow-sm border border-primary-100"
                                    >
+                                      <Edit2 size={12} />
                                       Chỉnh sửa
                                    </button>
                                 )}
@@ -932,6 +933,12 @@ const ProductDetails = () => {
                                         className="glowzy-input min-h-[160px] resize-none p-6 text-base"
                                         placeholder="Nhập nội dung mới..."
                                     />
+                                    <div className="flex items-center gap-2 px-4 py-3 bg-amber-50 border border-amber-100 rounded-2xl">
+                                        <AlertCircle size={16} className="text-amber-500 shrink-0" />
+                                        <p className="text-[11px] font-bold text-amber-600 italic">
+                                            Lưu ý: Đánh giá này chỉ được phép chỉnh sửa <span className="underline decoration-2">01 lần duy nhất</span>.
+                                        </p>
+                                    </div>
                                 </div>
 
                                 <div className="flex flex-col sm:flex-row gap-4 pt-4">

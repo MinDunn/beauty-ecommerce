@@ -15,6 +15,10 @@ import {
   Eye,
   Star,
   AlertCircle,
+  TrendingDown,
+  Wallet,
+  Check,
+  X,
   type LucideIcon
 } from "lucide-react";
 
@@ -78,9 +82,10 @@ export const AdminDashboard = () => {
   const [days, setDays] = useState(7);
   const [showDaysDropdown, setShowDaysDropdown] = useState(false);
   const [showOrdersMenu, setShowOrdersMenu] = useState(false);
-  const [lowStockCount, setLowStockCount] = useState(0);
-  const [expiringSoonCount, setExpiringSoonCount] = useState(0);
+  const [lowStockProducts, setLowStockProducts] = useState<any[]>([]);
+  const [expiringProducts, setExpiringProducts] = useState<any[]>([]);
   const [recentReceipts, setRecentReceipts] = useState<any[]>([]);
+  const [pendingAdjustments, setPendingAdjustments] = useState<any[]>([]);
   const navigate = useNavigate();
 
   const fetchStats = async (rangeDays: number) => {
@@ -101,8 +106,8 @@ export const AdminDashboard = () => {
       const pResp = await productService.searchProducts({ size: 100, includeHidden: true });
       const allProducts = pResp.content || [];
       
-      const lowStock = allProducts.filter((p: any) => p.stockQuantity < 10 && p.stockQuantity > 0).length;
-      setLowStockCount(lowStock);
+      const lowStock = allProducts.filter((p: any) => p.stockQuantity < 10 && p.stockQuantity >= 0);
+      setLowStockProducts(lowStock);
 
       // Filter products expiring in next 6 months
       const sixMonthsFromNow = new Date();
@@ -111,14 +116,39 @@ export const AdminDashboard = () => {
         if (!p.expiryDate) return false;
         const expiry = new Date(p.expiryDate);
         return expiry <= sixMonthsFromNow && expiry > new Date();
-      }).length;
-      setExpiringSoonCount(expiring);
+      });
+      setExpiringProducts(expiring);
 
       // Get recent receipts
       const receipts = await adminService.getInventoryReceipts();
       setRecentReceipts(receipts.slice(0, 5));
+
+      // Get pending adjustments
+      const pending = await adminService.getPendingAdjustments();
+      setPendingAdjustments(pending);
     } catch (error) {
       console.error("Failed to fetch inventory stats for dashboard", error);
+    }
+  };
+
+  const handleApproveAdjustment = async (id: number) => {
+    try {
+      await adminService.approveAdjustment(id);
+      toast.success("Đã phê duyệt điều chỉnh kho");
+      fetchInventoryStats();
+      fetchStats(days);
+    } catch (error) {
+      toast.error("Lỗi khi phê duyệt");
+    }
+  };
+
+  const handleRejectAdjustment = async (id: number) => {
+    try {
+      await adminService.rejectAdjustment(id);
+      toast.success("Đã từ chối điều chỉnh kho");
+      fetchInventoryStats();
+    } catch (error) {
+      toast.error("Lỗi khi từ chối");
     }
   };
 
@@ -245,6 +275,13 @@ export const AdminDashboard = () => {
           onClick={() => navigate('/admin/orders')}
         />
         <StatCard 
+          title="Lợi nhuận ròng" 
+          value={`${((stats?.totalProfit || 0) / 1000000).toFixed(1)}M`} 
+          change={Math.abs(stats?.profitGrowth || 0).toFixed(1)} 
+          icon={Wallet} 
+          trend={(stats?.profitGrowth || 0) >= 0 ? 'up' : 'down'} 
+        />
+        <StatCard 
           title="Khách hàng" 
           value={stats?.totalCustomers?.toString() || "0"} 
           change={Math.abs(stats?.customerGrowth || 0).toFixed(1)} 
@@ -262,7 +299,7 @@ export const AdminDashboard = () => {
         />
         <StatCard 
           title="Tồn kho thấp" 
-          value={lowStockCount.toString()} 
+          value={lowStockProducts.length.toString()} 
           change="0" 
           icon={ShoppingBag} 
           trend="down" 
@@ -271,32 +308,113 @@ export const AdminDashboard = () => {
         />
       </div>
 
-      {/* Alert Banner / Insights */}
-      {(lowStockCount > 0 || expiringSoonCount > 0) && (
-        <motion.div 
-          initial={{ opacity: 0, y: -20 }}
-          animate={{ opacity: 1, y: 0 }}
-          className="bg-rose-500/10 border border-rose-500/20 p-4 rounded-2xl flex items-center justify-between gap-4"
-        >
-          <div className="flex items-center gap-4">
-             <div className="w-10 h-10 bg-rose-500/20 rounded-xl flex items-center justify-center text-rose-500">
-                <AlertCircle size={20} />
-             </div>
-             <div>
-                <p className="text-[10px] font-black text-rose-500 uppercase tracking-widest">Cảnh báo tồn kho & hạn dùng</p>
-                <p className="text-sm font-bold text-slate-300">
-                  {lowStockCount > 0 && `Có ${lowStockCount} sản phẩm sắp hết hàng.`} 
-                  {expiringSoonCount > 0 && ` Có ${expiringSoonCount} sản phẩm sắp hết hạn trong 6 tháng tới.`}
-                </p>
-             </div>
-          </div>
-          <button 
-            onClick={() => navigate('/admin/inventory/receipts')}
-            className="px-4 py-2 bg-rose-500 text-white text-[10px] font-black uppercase tracking-widest rounded-lg hover:bg-rose-600 transition-all"
-          >
-            Xử lý ngay
-          </button>
-        </motion.div>
+      {/* Inventory Alerts Banner */}
+      {(lowStockProducts.length > 0 || expiringProducts.length > 0 || pendingAdjustments.length > 0) && (
+        <div className="flex flex-col gap-4">
+          {(lowStockProducts.length > 0 || expiringProducts.length > 0) && (
+            <motion.div 
+              initial={{ opacity: 0, y: -20 }}
+              animate={{ opacity: 1, y: 0 }}
+              className="bg-rose-500/10 border border-rose-500/20 p-5 rounded-[2rem] shadow-xl"
+            >
+              <div className="flex flex-col md:flex-row md:items-center justify-between gap-6">
+                <div className="flex items-center gap-4">
+                   <div className="w-12 h-12 bg-rose-500/20 rounded-2xl flex items-center justify-center text-rose-500">
+                      <AlertCircle size={24} />
+                   </div>
+                   <div>
+                      <p className="text-[10px] font-black text-rose-500 uppercase tracking-widest">Cảnh báo tồn kho & hạn dùng</p>
+                      <h4 className="text-lg font-black text-white">
+                        {lowStockProducts.length > 0 && `${lowStockProducts.length} sản phẩm sắp hết hàng`}
+                        {lowStockProducts.length > 0 && expiringProducts.length > 0 && " & "}
+                        {expiringProducts.length > 0 && `${expiringProducts.length} sản phẩm sắp hết hạn`}
+                      </h4>
+                   </div>
+                </div>
+                <button 
+                  onClick={() => navigate('/admin/products')}
+                  className="px-6 py-3 bg-rose-500 text-white text-xs font-black uppercase tracking-widest rounded-xl hover:bg-rose-600 transition-all shadow-lg shadow-rose-500/20"
+                >
+                  Kiểm tra sản phẩm
+                </button>
+              </div>
+
+              <div className="mt-6 grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3">
+                 {[...lowStockProducts, ...expiringProducts].slice(0, 6).map((product, idx) => (
+                   <div key={idx} className="bg-slate-900/40 border border-slate-800/50 p-3 rounded-xl flex items-center gap-3">
+                      <div className="w-8 h-8 rounded-lg bg-slate-800 flex items-center justify-center text-[10px] font-black text-slate-500">
+                        {idx + 1}
+                      </div>
+                      <div className="flex-1 min-w-0">
+                        <p className="text-xs font-bold text-slate-200 truncate">{product.name}</p>
+                        <p className="text-[9px] font-black uppercase tracking-tighter text-rose-500/80">
+                          {product.stockQuantity < 10 ? `Còn ${product.stockQuantity} SP` : `Hết hạn: ${new Date(product.expiryDate).toLocaleDateString()}`}
+                        </p>
+                      </div>
+                   </div>
+                 ))}
+              </div>
+            </motion.div>
+          )}
+
+          {pendingAdjustments.length > 0 && (
+            <motion.div 
+              initial={{ opacity: 0, y: -20 }}
+              animate={{ opacity: 1, y: 0 }}
+              className="bg-amber-500/10 border border-amber-500/20 p-5 rounded-[2rem] shadow-xl"
+            >
+              <div className="flex items-center justify-between mb-6">
+                <div className="flex items-center gap-4">
+                   <div className="w-12 h-12 bg-amber-500/20 rounded-2xl flex items-center justify-center text-amber-500">
+                      <RefreshCcw size={24} className="animate-spin-slow" />
+                   </div>
+                   <div>
+                      <p className="text-[10px] font-black text-amber-500 uppercase tracking-widest">Yêu cầu phê duyệt chênh lệch kho</p>
+                      <h4 className="text-lg font-black text-white">Phát hiện {pendingAdjustments.length} sản phẩm bị lệch kho</h4>
+                   </div>
+                </div>
+                <button 
+                  onClick={() => navigate('/admin/inventory/adjustments')}
+                  className="text-xs font-black text-amber-500 uppercase tracking-widest hover:underline"
+                >
+                  Xem chi tiết
+                </button>
+              </div>
+
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                 {pendingAdjustments.slice(0, 4).map((adj, idx) => (
+                   <div key={idx} className="bg-slate-900/50 border border-slate-800 rounded-2xl p-4 flex items-center justify-between gap-4">
+                      <div className="flex-1 min-w-0">
+                         <p className="text-sm font-black text-white truncate">{adj.productName}</p>
+                         <p className="text-[10px] text-slate-400 font-medium italic mt-1 leading-tight">{adj.reason}</p>
+                      </div>
+                      <div className="flex items-center gap-2">
+                         <button 
+                            onClick={() => handleApproveAdjustment(adj.id)}
+                            className="w-8 h-8 rounded-lg bg-emerald-500/10 text-emerald-500 flex items-center justify-center hover:bg-emerald-500 hover:text-white transition-all shadow-lg"
+                            title="Đồng ý đồng bộ"
+                         >
+                            <Check size={16} />
+                         </button>
+                         <button 
+                            onClick={() => handleRejectAdjustment(adj.id)}
+                            className="w-8 h-8 rounded-lg bg-rose-500/10 text-rose-500 flex items-center justify-center hover:bg-rose-500 hover:text-white transition-all shadow-lg"
+                            title="Bỏ qua"
+                         >
+                            <X size={16} />
+                         </button>
+                      </div>
+                   </div>
+                 ))}
+                 {pendingAdjustments.length > 4 && (
+                   <div className="md:col-span-2 text-center text-[10px] font-black text-slate-500 uppercase tracking-widest mt-2">
+                      Và {pendingAdjustments.length - 4} yêu cầu khác...
+                   </div>
+                 )}
+              </div>
+            </motion.div>
+          )}
+        </div>
       )}
 
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
@@ -326,6 +444,10 @@ export const AdminDashboard = () => {
                     <stop offset="5%" stopColor="#F97316" stopOpacity={0.3}/>
                     <stop offset="95%" stopColor="#F97316" stopOpacity={0}/>
                   </linearGradient>
+                  <linearGradient id="colorProfit" x1="0" y1="0" x2="0" y2="1">
+                    <stop offset="5%" stopColor="#10B981" stopOpacity={0.3}/>
+                    <stop offset="95%" stopColor="#10B981" stopOpacity={0}/>
+                  </linearGradient>
                 </defs>
                 <XAxis 
                   dataKey="date" 
@@ -343,15 +465,29 @@ export const AdminDashboard = () => {
                   }}
                   itemStyle={{ color: '#F97316', fontWeight: 900, fontSize: 12 }}
                   labelStyle={{ color: '#94a3b8', fontSize: 10, fontWeight: 800, marginBottom: 4 }}
-                  formatter={(value: any) => [`${(Number(value) / 1000).toFixed(0)}K VNĐ`, 'Doanh thu']}
+                  formatter={(value: any, name: any) => [
+                    `${(Number(value) / 1000).toFixed(0)}K VNĐ`, 
+                    name === 'revenue' ? 'Doanh thu' : 'Lợi nhuận'
+                  ]}
                 />
                 <Area 
                   type="monotone" 
                   dataKey="revenue" 
+                  name="revenue"
                   stroke="#F97316" 
                   strokeWidth={4}
                   fillOpacity={1} 
                   fill="url(#colorRevenue)" 
+                  animationDuration={1500}
+                />
+                <Area 
+                  type="monotone" 
+                  dataKey="profit" 
+                  name="profit"
+                  stroke="#10B981" 
+                  strokeWidth={4}
+                  fillOpacity={1} 
+                  fill="url(#colorProfit)" 
                   animationDuration={1500}
                 />
               </AreaChart>
@@ -624,6 +760,45 @@ export const AdminDashboard = () => {
                   </div>
                 ))
               )}
+           </div>
+        </div>
+
+        {/* Financial Summary Widget */}
+        <div className="bg-slate-900 border border-slate-800 p-8 rounded-[2.5rem] shadow-xl">
+           <div className="flex items-center justify-between mb-8">
+              <h3 className="text-xl font-bold text-white uppercase tracking-tight">Chi tiết tài chính</h3>
+              <div className="p-2 rounded-lg bg-indigo-500/10 text-indigo-400">
+                <DollarSign size={16} />
+              </div>
+           </div>
+           
+           <div className="space-y-5">
+              {[
+                { label: 'Doanh thu gộp', value: stats?.totalRevenue, color: 'text-white', icon: DollarSign },
+                { label: 'Giá vốn hàng bán', value: -(stats?.totalCost || 0), color: 'text-rose-400', icon: TrendingDown },
+                { label: 'Thất thoát kho', value: -(stats?.totalInventoryLoss || 0), color: 'text-rose-500', icon: AlertCircle },
+                { label: 'Tiền đền bù', value: stats?.totalCompensation, color: 'text-emerald-400', icon: RefreshCcw },
+              ].map((item, idx) => (
+                <div key={idx} className="flex items-center justify-between py-2 border-b border-slate-800/50 last:border-0">
+                   <div className="flex items-center gap-3">
+                      <item.icon size={14} className="text-slate-500" />
+                      <span className="text-xs font-bold text-slate-400 uppercase tracking-widest">{item.label}</span>
+                   </div>
+                   <span className={`text-sm font-black ${item.color}`}>
+                      {item.value ? (item.value < 0 ? '-' : '+') : ''}{Math.abs(item.value || 0).toLocaleString()}đ
+                   </span>
+                </div>
+              ))}
+              
+              <div className="mt-8 p-6 rounded-3xl bg-slate-800/50 border border-slate-700/50">
+                 <p className="text-[10px] font-black text-slate-500 uppercase tracking-[0.2em] mb-2">Lợi nhuận ròng dự kiến</p>
+                 <div className="flex items-baseline gap-2">
+                    <h4 className="text-2xl font-black text-white">{(stats?.totalProfit || 0).toLocaleString()}đ</h4>
+                    <span className={`text-[10px] font-black ${ (stats?.profitGrowth || 0) >= 0 ? 'text-emerald-500' : 'text-rose-500'}`}>
+                       {(stats?.profitGrowth || 0) >= 0 ? '+' : ''}{stats?.profitGrowth?.toFixed(1)}%
+                    </span>
+                 </div>
+              </div>
            </div>
         </div>
 

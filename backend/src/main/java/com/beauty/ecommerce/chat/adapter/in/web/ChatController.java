@@ -1,6 +1,7 @@
 package com.beauty.ecommerce.chat.adapter.in.web;
 
 import com.beauty.ecommerce.chat.application.dto.ChatterDTO;
+import com.beauty.ecommerce.chat.application.service.BotService;
 import com.beauty.ecommerce.chat.application.service.ChatService;
 import com.beauty.ecommerce.chat.domain.entity.ChatMessage;
 import com.beauty.ecommerce.common.dto.ApiResponse;
@@ -24,6 +25,7 @@ public class ChatController {
     private final SimpMessagingTemplate messagingTemplate;
     private final ChatService chatService;
     private final CloudinaryService cloudinaryService;
+    private final BotService botService;
 
     @MessageMapping("/chat.sendMessage")
     public void sendMessage(@Payload ChatMessage chatMessage) {
@@ -33,20 +35,38 @@ public class ChatController {
         
         // Gửi tới hòm thư người nhận
         String recipientDest = "/topic/chat.messages." + savedMessage.getRecipientId();
-        log.info("[CHAT] Đang gửi tới recipient topic: {}", recipientDest);
         messagingTemplate.convertAndSend(recipientDest, savedMessage);
         
         // Gửi tới hòm thư người gửi (xác nhận)
         String senderDest = "/topic/chat.messages." + savedMessage.getSenderId();
         if (!senderDest.equals(recipientDest)) {
-            log.info("[CHAT] Đang gửi tới sender topic: {}", senderDest);
             messagingTemplate.convertAndSend(senderDest, savedMessage);
         }
         
         // Thông báo cho admin
         if ("ADMIN".equals(savedMessage.getRecipientId())) {
-            log.info("[CHAT] Đang gửi thông báo tới /topic/admin.messages");
             messagingTemplate.convertAndSend("/topic/admin.messages", savedMessage);
+            
+            // Xử lý BOT phản hồi tự động
+            botService.getResponse(savedMessage.getContent()).ifPresent(botResponse -> {
+                new Thread(() -> {
+                    try {
+                        Thread.sleep(1500); // Giả lập đang soạn tin
+                        ChatMessage botMessage = ChatMessage.builder()
+                                .senderId("ADMIN")
+                                .senderName("Hệ thống Glowzy")
+                                .recipientId(savedMessage.getSenderId())
+                                .content(botResponse)
+                                .type("ADMIN")
+                                .build();
+                        
+                        ChatMessage savedBotMessage = chatService.saveMessage(botMessage);
+                        messagingTemplate.convertAndSend("/topic/chat.messages." + savedMessage.getSenderId(), savedBotMessage);
+                    } catch (InterruptedException e) {
+                        Thread.currentThread().interrupt();
+                    }
+                }).start();
+            });
         }
     }
 
