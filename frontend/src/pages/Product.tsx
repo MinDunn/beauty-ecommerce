@@ -7,7 +7,7 @@ import { productService } from "../api/productService";
 import { categoryService } from "../api/categoryService";
 import { inventoryService } from "../api/inventoryService";
 import { toast } from "react-hot-toast";
-import { Plus, Save, Package, DollarSign, Tag, Image as ImageIcon, Loader2, Edit2, Trash2, Search, Warehouse, X, AlertCircle, Eye, EyeOff, ClipboardList, History, CheckCircle2, RefreshCcw } from "lucide-react";
+import { Plus, Save, Package, DollarSign, Tag, Image as ImageIcon, Loader2, Edit2, Trash2, Search, Warehouse, X, AlertCircle, Eye, EyeOff, ClipboardList, History, CheckCircle2, RefreshCcw, Box } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
 import { cn } from "../utils/cn";
 
@@ -840,10 +840,10 @@ export const Products = () => {
             onClick={() => setShowSyncConfirm(true)}
             disabled={isLoading || isSaving}
             className="bg-primary-500/10 hover:bg-primary-500/20 text-primary-500 px-6 py-3 rounded-2xl font-black text-xs uppercase tracking-widest flex items-center gap-2 transition-all border border-primary-500/20 active:scale-95 shrink-0 disabled:opacity-50"
-            title="Đồng bộ lại toàn bộ tồn kho dựa trên biến thể"
+            title="Khôi phục và tính toán lại tồn kho từ lịch sử nhập/bán hàng"
           >
             {isSaving ? <Loader2 size={18} className="animate-spin" /> : <RefreshCcw size={18} />}
-            <span className="hidden sm:inline">Đồng bộ</span>
+            <span className="hidden sm:inline">Khôi phục & Đồng bộ</span>
           </button>
 
           <button
@@ -1116,6 +1116,25 @@ export const Products = () => {
               </div>
             </div>
 
+            {/* Stock Quantity for Simple Product */}
+            {formData.variants.length === 0 && (
+              <div className="space-y-2">
+                <label className="text-[10px] font-black text-amber-500 uppercase tracking-widest ml-1 flex items-center gap-1.5">
+                  <Package size={12} /> Số lượng tồn kho (Sản phẩm đơn giản)
+                </label>
+                <div className="relative group">
+                  <Box className="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-500 group-focus-within:text-amber-500 transition-colors" />
+                  <input
+                    type="number"
+                    placeholder="0"
+                    className="bg-slate-800/50 border border-slate-700 w-full pl-11 pr-4 py-3.5 rounded-2xl text-white outline-none focus:border-amber-500/50 transition-all font-medium"
+                    value={formData.stockQuantity}
+                    onChange={e => setFormData({ ...formData, stockQuantity: e.target.value })}
+                  />
+                </div>
+              </div>
+            )}
+
             {/* Sale Price (Calculated & Read-only) */}
             <div className="bg-primary-500/5 border border-primary-500/10 p-5 rounded-[2rem] flex justify-between items-center group">
               <div>
@@ -1244,6 +1263,20 @@ export const Products = () => {
                           onChange={e => {
                             const newVariants = [...formData.variants];
                             newVariants[index].price = sanitizeCurrencyInput(e.target.value);
+                            setFormData({ ...formData, variants: newVariants });
+                          }}
+                        />
+                      </div>
+                      <div className="space-y-1.5">
+                        <label className="text-[10px] font-black text-amber-500 uppercase tracking-widest ml-1">Số lượng tồn kho</label>
+                        <input
+                          type="number"
+                          placeholder="0"
+                          className="w-full bg-slate-800 border border-slate-700 rounded-2xl px-4 py-3 text-white text-sm outline-none focus:border-amber-500/50 focus:ring-4 focus:ring-amber-500/5 transition-all font-black"
+                          value={variant.stockQuantity}
+                          onChange={e => {
+                            const newVariants = [...formData.variants];
+                            newVariants[index].stockQuantity = parseInt(e.target.value) || 0;
                             setFormData({ ...formData, variants: newVariants });
                           }}
                         />

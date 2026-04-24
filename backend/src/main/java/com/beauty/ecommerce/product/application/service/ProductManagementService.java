@@ -161,7 +161,15 @@ public class ProductManagementService implements ManageProductUseCase {
         }
 
         // Handle variants updates
-        if (command.getVariants() != null) {
+        if (command.getVariants() != null && !command.getVariants().isEmpty()) {
+            // Map existing stock by variant name to preserve it if not provided/zero in command
+            java.util.Map<String, Integer> existingStockByName = productEntity.getVariants().stream()
+                    .collect(java.util.stream.Collectors.toMap(
+                            com.beauty.ecommerce.product.adapter.out.persistence.ProductVariantJpaEntity::getVariantName,
+                            com.beauty.ecommerce.product.adapter.out.persistence.ProductVariantJpaEntity::getStockQuantity,
+                            (v1, v2) -> v1
+                    ));
+
             productEntity.getVariants().clear();
             productEntity.getVariants().addAll(command.getVariants().stream()
                     .map(v -> {
@@ -174,11 +182,17 @@ public class ProductManagementService implements ManageProductUseCase {
                             allSkinTypes.addAll(v.getSkinTypes());
                         }
 
+                        // Preserve existing stock if the command sends 0 or null (protection against UI bugs)
+                        Integer stock = v.getStockQuantity();
+                        if ((stock == null || stock == 0) && existingStockByName.containsKey(v.getVariantName())) {
+                            stock = existingStockByName.get(v.getVariantName());
+                        }
+
                         return ProductVariantJpaEntity.builder()
                             .variantName(v.getVariantName())
                             .price(v.getPrice())
                             .imageUrl(variantImageUrl)
-                            .stockQuantity(v.getStockQuantity())
+                            .stockQuantity(stock != null ? stock : 0)
                             .skinTypes(v.getSkinTypes() != null ? String.join(",", v.getSkinTypes()) : null)
                             .product(productEntity)
                             .build();
@@ -190,6 +204,10 @@ public class ProductManagementService implements ManageProductUseCase {
                     .mapToInt(v -> v.getStockQuantity() != null ? v.getStockQuantity() : 0)
                     .sum();
             productEntity.setStockQuantity(totalStock);
+        } else if (command.getVariants() != null) {
+            // If variants list is explicitly empty, clear them but keep the product's own stock from command
+            productEntity.getVariants().clear();
+            productEntity.setStockQuantity(command.getStockQuantity());
         }
 
         // Update product skin types from aggregated set

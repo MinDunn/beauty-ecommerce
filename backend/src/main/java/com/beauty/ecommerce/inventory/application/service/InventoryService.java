@@ -15,6 +15,10 @@ import java.time.LocalDateTime;
 import java.util.List;
 import java.util.Map;
 import java.util.stream.Collectors;
+import com.beauty.ecommerce.product.adapter.out.persistence.ProductVariantRepository;
+import com.beauty.ecommerce.order.adapter.out.persistence.OrderItemRepository;
+import com.beauty.ecommerce.inventory.adapter.out.persistence.InventoryAdjustmentJpaEntity;
+import com.beauty.ecommerce.product.adapter.out.persistence.ProductVariantJpaEntity;
 
 @Service
 @RequiredArgsConstructor
@@ -22,8 +26,9 @@ public class InventoryService {
 
     private final InventoryReceiptRepository receiptRepository;
     private final ProductRepository productRepository;
-    private final com.beauty.ecommerce.product.adapter.out.persistence.ProductVariantRepository variantRepository;
+    private final ProductVariantRepository variantRepository;
     private final InventoryAdjustmentRepository adjustmentRepository;
+    private final OrderItemRepository orderItemRepository;
 
     @Transactional
     public InventoryReceiptJpaEntity addStock(Long productId, BigDecimal costPrice, Integer quantity) {
@@ -145,53 +150,70 @@ public class InventoryService {
         ProductJpaEntity product = productRepository.findById(productId)
                 .orElseThrow(() -> new RuntimeException("Sản phẩm không tồn tại"));
 
-        // 1. Sync Stock from Variants
+        // 1. Sync Stock from History (Reconstruct source of truth)
         List<com.beauty.ecommerce.product.adapter.out.persistence.ProductVariantJpaEntity> variants = variantRepository.findByProductId(productId);
         
         if (variants != null && !variants.isEmpty()) {
-            int currentSum = variants.stream()
+            for (com.beauty.ecommerce.product.adapter.out.persistence.ProductVariantJpaEntity variant : variants) {
+                int calculatedStock = calculateStockFromHistory(productId, variant.getVariantName());
+                variant.setStockQuantity(calculatedStock);
+                variantRepository.save(variant);
+            }
+            
+            // Recalculate total from variants
+            int totalStock = variants.stream()
                     .mapToInt(v -> v.getStockQuantity() != null ? v.getStockQuantity() : 0)
                     .sum();
-            
-            Integer oldStock = product.getStockQuantity();
-            if (oldStock == null || oldStock != currentSum) {
-                if (oldStock != null) {
-                    int discrepancy = currentSum - oldStock;
-                    BigDecimal estimatedLoss = calculateEstimatedLoss(productId, null, discrepancy);
-                    
-                    // Kiểm tra xem đã có yêu cầu PENDING nào cho sản phẩm này với cùng mức chênh lệch chưa
-                    List<InventoryAdjustmentJpaEntity> pendingAdjustments = adjustmentRepository.findAll().stream()
-                            .filter(a -> a.getProductId().equals(productId))
-                            .filter(a -> "PENDING".equals(a.getStatus()))
-                            .filter(a -> a.getQuantity() != null && a.getQuantity().equals(discrepancy))
-                            .collect(Collectors.toList());
-
-                    if (pendingAdjustments.isEmpty()) {
-                        String detailedReason = String.format("Hệ thống phát hiện chênh lệch (Tổng biến thể: %d != Tổng kho: %d)", currentSum, oldStock);
-                        InventoryAdjustmentJpaEntity adjustment = InventoryAdjustmentJpaEntity.builder()
-                                .productId(productId)
-                                .quantity(discrepancy)
-                                .reason(detailedReason)
-                                .compensationAmount(BigDecimal.ZERO)
-                                .estimatedLossAmount(estimatedLoss)
-                                .remarks("Cần phê duyệt để đồng bộ dữ liệu kho.")
-                                .createdBy("SYSTEM")
-                                .status("PENDING")
-                                .createdAt(LocalDateTime.now())
-                                .build();
-                        adjustmentRepository.save(adjustment);
-                    }
-                }
-            }
+            product.setStockQuantity(totalStock);
+        } else {
+            int calculatedStock = calculateStockFromHistory(productId, null);
+            product.setStockQuantity(calculatedStock);
         }
 
         // 2. Sync Sold Count from Orders
         Integer actualSold = productRepository.findActualSoldCount(productId);
         if (actualSold != null && !actualSold.equals(product.getSold())) {
             product.setSold(actualSold);
-            productRepository.save(product);
         }
+        
+        productRepository.save(product);
+        syncProductExpiryDate(productId);
     }
+
+    private int calculateStockFromHistory(Long productId, String variantName) {
+        // Sum of all receipts for this product/variant
+        long totalIn = receiptRepository.findAll().stream()
+                .filter(r -> r.getProductId().equals(productId))
+                .filter(r -> (variantName == null && (r.getVariantName() == null || r.getVariantName().isEmpty())) || 
+                            (variantName != null && variantName.equalsIgnoreCase(r.getVariantName())))
+                .mapToLong(r -> r.getQuantity() != null ? r.getQuantity() : 0)
+                .sum();
+
+        // Sum of all approved adjustments
+        long totalAdj = adjustmentRepository.findAll().stream()
+                .filter(a -> a.getProductId().equals(productId))
+                .filter(a -> "APPROVED".equals(a.getStatus()))
+                .filter(a -> (variantName == null && (a.getVariantName() == null || a.getVariantName().isEmpty())) || 
+                            (variantName != null && variantName.equalsIgnoreCase(a.getVariantName())))
+                .mapToLong(a -> a.getQuantity() != null ? a.getQuantity() : 0)
+                .sum();
+
+        // Sum of all sold items in confirmed orders
+        long totalOut = orderItemRepository.findAll().stream()
+                .filter(i -> i.getProduct().getId().equals(productId))
+                .filter(i -> (variantName == null && (i.getVariantName() == null || i.getVariantName().isEmpty())) || 
+                            (variantName != null && variantName.equalsIgnoreCase(i.getVariantName())))
+                .filter(i -> {
+                    String s = i.getOrder().getStatus();
+                    return "DELIVERED".equals(s) || "COMPLETED".equals(s) || "SHIPPED".equals(s) || "CONFIRMED".equals(s);
+                })
+                .mapToLong(i -> i.getQuantity() != null ? i.getQuantity() : 0)
+                .sum();
+
+        return (int) (totalIn + totalAdj - totalOut);
+    }
+
+
 
     @Transactional
     public void approveAdjustment(Long adjustmentId, String adminName) {
