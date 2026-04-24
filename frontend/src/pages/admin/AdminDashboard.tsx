@@ -40,6 +40,8 @@ import {
   PieChart,
   Pie,
   Legend,
+  CartesianGrid,
+  ReferenceLine,
 } from "recharts";
 
 interface StatCardProps {
@@ -433,11 +435,11 @@ export const AdminDashboard = () => {
             </div>
           </div>
           
-          <div className="h-64 mt-4">
+          <div className="h-72 mt-4">
             <ResponsiveContainer width="100%" height="100%">
               <AreaChart
                 data={stats?.revenueHistory}
-                margin={{ top: 10, right: 10, left: -20, bottom: 0 }}
+                margin={{ top: 10, right: 10, left: 0, bottom: 0 }}
               >
                 <defs>
                   <linearGradient id="colorRevenue" x1="0" y1="0" x2="0" y2="1">
@@ -449,12 +451,24 @@ export const AdminDashboard = () => {
                     <stop offset="95%" stopColor="#10B981" stopOpacity={0}/>
                   </linearGradient>
                 </defs>
+                <CartesianGrid 
+                  strokeDasharray="3 3" 
+                  vertical={false} 
+                  stroke="#1e293b" 
+                  opacity={0.5}
+                />
                 <XAxis 
                   dataKey="date" 
                   axisLine={false}
                   tickLine={false}
                   tick={{ fill: '#64748b', fontSize: 10, fontWeight: 800 }}
                   dy={10}
+                />
+                <YAxis 
+                  axisLine={false}
+                  tickLine={false}
+                  tick={{ fill: '#64748b', fontSize: 10, fontWeight: 800 }}
+                  tickFormatter={(val) => `${(val / 1000000).toFixed(1)}M`}
                 />
                 <Tooltip 
                   contentStyle={{ 
@@ -463,13 +477,25 @@ export const AdminDashboard = () => {
                     borderRadius: '16px',
                     boxShadow: '0 20px 25px -5px rgb(0 0 0 / 0.5)'
                   }}
-                  itemStyle={{ color: '#F97316', fontWeight: 900, fontSize: 12 }}
+                  itemStyle={{ fontWeight: 900, fontSize: 12 }}
                   labelStyle={{ color: '#94a3b8', fontSize: 10, fontWeight: 800, marginBottom: 4 }}
                   formatter={(value: any, name: any) => [
-                    `${(Number(value) / 1000).toFixed(0)}K VNĐ`, 
+                    `${Number(value).toLocaleString()} VNĐ`, 
                     name === 'revenue' ? 'Doanh thu' : 'Lợi nhuận'
                   ]}
                 />
+                <Legend 
+                  verticalAlign="top" 
+                  align="right"
+                  height={36}
+                  iconType="circle"
+                  formatter={(value) => (
+                    <span className="text-[10px] font-black uppercase text-slate-400 tracking-widest ml-1">
+                      {value === 'revenue' ? 'Doanh thu' : 'Lợi nhuận'}
+                    </span>
+                  )}
+                />
+                <ReferenceLine y={0} stroke="#475569" strokeWidth={2} strokeDasharray="5 5" />
                 <Area 
                   type="monotone" 
                   dataKey="revenue" 
